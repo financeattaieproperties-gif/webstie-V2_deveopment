@@ -1,7 +1,8 @@
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SlidersHorizontal, Bed, Bath, Maximize2, Layers, MapPin, CalendarDays, Building2, ArrowUpRight, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import gsap from 'gsap';
+import { SlidersHorizontal, Bed, Bath, Maximize2, Layers, MapPin, Building2, Eye, LayoutGrid, Map as MapIcon, Columns2, X, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
@@ -10,8 +11,16 @@ import { FilterSidebar, FilterState } from '../components/property/FilterSidebar
 import { PropertyCard } from '../components/ui/PropertyCard';
 import { ProjectCard } from '../components/ui/ProjectCard';
 import { PropertyCardSkeleton } from '../components/ui/PropertyCardSkeleton';
-import { VisitRequestDialog, type VisitTarget } from '../components/forms/VisitRequestDialog';
-import { QuickContactModal } from '../components/forms/QuickContactModal';
+import { ProjectCardSkeleton } from '../components/ui/ProjectCardSkeleton';
+import { PropertiesPageSkeleton } from '../components/ui/PageGridSkeletons';
+import { Skeleton } from '../components/ui/Skeleton';
+import { ApartmentFullInfoModal } from '../components/project/ProjectUnitsSection';
+import type { MapPropertyItem } from '../components/map/AttaieGoogleMap';
+import { MapSkeleton } from '../components/map/MapSkeleton';
+
+const AttaieGoogleMap = lazy(() =>
+  import('../components/map/AttaieGoogleMap').then((m) => ({ default: m.AttaieGoogleMap }))
+);
 import {
   getProperties,
   getProjects,
@@ -38,23 +47,29 @@ const defaultFilters: FilterState = {
 
 function ProjectUnitInventoryCard({
   unit,
-  onRequestVisit,
 }: {
   unit: ProjectUnit;
-  onRequestVisit: (target: VisitTarget) => void;
 }) {
   const { t } = useTranslation();
-  const [quickContactOpen, setQuickContactOpen] = useState(false);
+  const [selectedUnitOpen, setSelectedUnitOpen] = useState(false);
   const projectLabel = unit.project_name || `Project #${unit.project_id}`;
-  const unitHref = `/projects/${unit.project_id}#unit-${unit.id}`;
-  const bookable = !['sold', 'rented'].includes(unit.status);
   const unitTitle = unit.title || `${projectLabel} — ${t('projectUnits.unitPrefix', { number: unit.unit_number })}`;
-  const priceDisplay = unit.price !== null ? `$${Number(unit.price).toLocaleString()}` : 'Price on request';
 
   return (
     <>
-      <div className="group bg-white rounded-2xl overflow-hidden border border-brand-navy/8 shadow-brand-sm hover:shadow-brand-lg transition-all duration-300 flex flex-col h-full">
-        <Link to={unitHref} className="relative block aspect-[16/10] overflow-hidden bg-brand-navy">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setSelectedUnitOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setSelectedUnitOpen(true);
+          }
+        }}
+        className="group bg-white rounded-2xl overflow-hidden border border-brand-navy/8 hover:border-brand-gold/60 shadow-brand-sm hover:shadow-brand-lg transition-all duration-300 flex flex-col h-full cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-brand-gold"
+      >
+        <div className="relative block aspect-[16/10] overflow-hidden bg-brand-navy">
           {unit.image_url ? (
             <img
               src={unit.image_url}
@@ -79,19 +94,21 @@ function ProjectUnitInventoryCard({
             <span className="text-xs font-bold bg-black/50 backdrop-blur-xs px-2.5 py-1 rounded-lg">
               {projectLabel} · {t('projectUnits.unitPrefix', { number: unit.unit_number })}
             </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-brand-navy shadow-xs">
+              <Eye size={12} className="text-brand-gold" />
+              Full Info
+            </span>
           </div>
-        </Link>
+        </div>
 
         <div className="p-5 flex-1 flex flex-col justify-between">
           <div>
             <p className="text-xs font-bold text-brand-gold uppercase tracking-wider mb-1">
               {projectLabel}
             </p>
-            <Link to={unitHref} className="block group-hover:text-brand-gold transition-colors">
-              <h3 className="text-lg font-bold text-brand-navy line-clamp-1">
-                {unitTitle}
-              </h3>
-            </Link>
+            <h3 className="text-lg font-bold text-brand-navy line-clamp-1 group-hover:text-brand-gold transition-colors">
+              {unitTitle}
+            </h3>
             {unit.project_location && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs text-neutral-500">
                 <MapPin size={13} className="text-brand-gold shrink-0" />
@@ -148,57 +165,22 @@ function ProjectUnitInventoryCard({
                 <p className="text-sm font-semibold text-neutral-500">Price on request</p>
               )}
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setQuickContactOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-gold transition-colors"
-              >
-                <MessageSquare size={13} />
-                <span>Inquire Now</span>
-              </button>
-              {bookable && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    onRequestVisit({
-                      label: `${projectLabel} — ${t('projectUnits.unitPrefix', { number: unit.unit_number })}`,
-                      projectId: unit.project_id,
-                      projectUnitId: unit.id,
-                    })
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand-gold px-3 py-1.5 text-xs font-bold text-brand-gold hover:bg-brand-gold hover:text-white transition-colors"
-                >
-                  <CalendarDays size={13} />
-                  {t('projectUnits.requestVisit')}
-                </button>
-              )}
-              <Link
-                to={unitHref}
-                className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 px-2.5 py-1.5 text-xs font-bold text-brand-navy hover:bg-neutral-200 transition-colors"
-                title={t('projectUnits.viewInProject', { project: projectLabel })}
-              >
-                <ArrowUpRight size={14} />
-              </Link>
-            </div>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-gold group-hover:translate-x-0.5 transition-transform">
+              Open Full Apartment Info →
+            </span>
           </div>
         </div>
       </div>
 
-      <QuickContactModal
-        open={quickContactOpen}
-        onClose={() => setQuickContactOpen(false)}
-        property={{
-          id: `unit-${unit.id}`,
-          serialNumber: unit.unit_number,
-          title: unitTitle,
-          priceDisplay,
-          location: unit.project_location || 'Kabul, Afghanistan',
-          type: 'Project Apartment',
-          listingType: 'sale',
-          image: unit.image_url,
-        }}
-      />
+      <AnimatePresence>
+        {selectedUnitOpen && (
+          <ApartmentFullInfoModal
+            unit={unit}
+            projectName={projectLabel}
+            onClose={() => setSelectedUnitOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -213,6 +195,8 @@ function PropertiesContent() {
   const initialPurpose: FilterState['purpose'] =
     initialPurposeParam === 'rent' || initialPurposeParam === 'commercial' ? initialPurposeParam : 'buy';
   const initialTypeParam = searchParams.get('type');
+  const initialBedsParam = searchParams.get('beds');
+  const initialMaxPriceParam = Number(searchParams.get('maxPrice') || 0);
 
   const [allProperties, setAllProperties] = useState<Property[]>([]);
   const [allProjectUnits, setAllProjectUnits] = useState<ProjectUnit[]>([]);
@@ -221,13 +205,48 @@ function PropertiesContent() {
     ...defaultFilters,
     purpose: initialPurpose,
     type: initialTypeParam ? [initialTypeParam] : [],
+    beds: initialBedsParam ? [initialBedsParam === '6+' ? '5+' : initialBedsParam] : [],
+    maxPrice: initialMaxPriceParam > 0 ? initialMaxPriceParam : defaultFilters.maxPrice,
   }));
   const [searchQuery, setSearchQuery] = useState(
     () => searchParams.get('search') ?? searchParams.get('serial_number') ?? ''
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [visitTarget, setVisitTarget] = useState<VisitTarget | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'split' | 'map'>(() => {
+    const viewParam = searchParams.get('view');
+    return viewParam === 'map' || viewParam === 'split' ? viewParam : 'grid';
+  });
+  const heroHeaderRef = useRef<HTMLDivElement>(null);
+
+  const handleViewModeChange = useCallback(
+    (nextMode: 'grid' | 'split' | 'map') => {
+      setViewMode(nextMode);
+      const nextParams = new URLSearchParams(searchParams);
+      if (nextMode === 'grid') {
+        nextParams.delete('view');
+      } else {
+        nextParams.set('view', nextMode);
+      }
+      setSearchParams(nextParams, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
+
+  // Minimal GSAP header entrance
+  useEffect(() => {
+    if (!heroHeaderRef.current) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        heroHeaderRef.current,
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' }
+      );
+    }, heroHeaderRef);
+    return () => ctx.revert();
+  }, []);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -395,6 +414,65 @@ function PropertiesContent() {
     );
   });
 
+  const mapItems: MapPropertyItem[] = useMemo(() => {
+    if (isProjects) {
+      return projects
+        .filter((proj) => proj.status !== 'Sold Out')
+        .map((proj) => ({
+          id: `proj-${proj.id}`,
+          title: proj.name,
+          locationQuery: proj.location || 'Wazir Akbar Khan, Kabul',
+          priceDisplay:
+            proj.available_units !== undefined ? `${proj.available_units} Units Available` : undefined,
+          type: 'Signature Project',
+          status: proj.status,
+          imageUrl: proj.image_url,
+          href: `/projects/${proj.id}`,
+        }));
+    }
+
+    const availableProperties =
+      filters.status.length > 0
+        ? properties
+        : properties.filter((p) => p.status === 'available');
+
+    const propItems: MapPropertyItem[] = availableProperties.map((p) => ({
+      id: `prop-${p.id}`,
+      title: p.title,
+      locationQuery: p.location || 'Kabul, Afghanistan',
+      priceDisplay:
+        p.listing_type === 'rent' ? `$${p.price.toLocaleString()} / mo` : `$${p.price.toLocaleString()}`,
+      type: p.type,
+      status: p.status,
+      beds: p.beds,
+      baths: p.baths,
+      area: p.area,
+      imageUrl: p.image_url,
+      href: `/properties/${p.id}`,
+    }));
+
+    const availableUnits =
+      filters.status.length > 0
+        ? projectUnits
+        : projectUnits.filter((u) => u.status === 'available');
+
+    const unitItems: MapPropertyItem[] = availableUnits.map((u) => ({
+      id: `unit-${u.id}`,
+      title: u.title || `${u.project_name || 'Project'} — Unit ${u.unit_number}`,
+      locationQuery: u.project_location || 'Wazir Akbar Khan, Kabul',
+      priceDisplay: u.price !== null ? `$${Number(u.price).toLocaleString()}` : 'Price on request',
+      type: 'Project Apartment',
+      status: u.status,
+      beds: u.beds,
+      baths: u.baths,
+      area: u.area,
+      imageUrl: u.image_url,
+      href: `/projects/${u.project_id}#unit-${u.id}`,
+    }));
+
+    return [...propItems, ...unitItems];
+  }, [isProjects, projects, properties, projectUnits, filters.status]);
+
   const totalInventoryCount = properties.length + projectUnits.length;
   const seo = buildPropertiesListingSeo({ isProjects, search: searchQuery.trim() });
 
@@ -412,7 +490,7 @@ function PropertiesContent() {
       <div className="relative bg-brand-navy pt-32 pb-16 overflow-hidden">
         <div className="absolute inset-0 islamic-pattern" />
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent" />
-        <div className="container-custom relative z-10">
+        <div ref={heroHeaderRef} className="container-custom relative z-10">
           <Breadcrumbs
             variant="light"
             items={[
@@ -442,40 +520,85 @@ function PropertiesContent() {
 
       {/* Tab bar with sliding active indicator */}
       <div className="bg-white/95 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-40 shadow-sm">
-        <div className="container-custom flex gap-1 py-3">
-          {[
-            { label: 'Individual Properties', href: '/properties?category=individual', active: !isProjects },
-            { label: 'Signature Projects', href: '/projects', active: isProjects },
-          ].map((tab) => (
-            <a
-              key={tab.label}
-              href={tab.href}
-              className={`relative px-5 py-2 rounded-lg text-sm font-bold transition-colors duration-200 ${
-                tab.active ? 'text-white' : 'text-neutral-500 hover:text-brand-navy hover:bg-neutral-100'
-              }`}
-            >
-              {tab.active && (
-                <motion.span
-                  layoutId="tab-bg"
-                  className="absolute inset-0 bg-brand-navy rounded-lg"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10">{tab.label}</span>
-            </a>
-          ))}
+        <div className="container-custom flex flex-wrap items-center justify-between gap-3 py-3">
+          <div className="flex gap-1">
+            {[
+              { label: 'Individual Properties', href: '/properties?category=individual', active: !isProjects },
+              { label: 'Signature Projects', href: '/projects', active: isProjects },
+            ].map((tab) => (
+              <a
+                key={tab.label}
+                href={tab.href}
+                className={`relative px-5 py-2 rounded-lg text-sm font-bold transition-colors duration-200 ${
+                  tab.active ? 'text-white' : 'text-neutral-500 hover:text-brand-navy hover:bg-neutral-100'
+                }`}
+              >
+                {tab.active && (
+                  <motion.span
+                    layoutId="tab-bg"
+                    className="absolute inset-0 bg-brand-navy rounded-lg"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
+              </a>
+            ))}
+          </div>
+
+          {/* Grid / Split / Interactive Map Toggle */}
+          <div
+            role="group"
+            aria-label="Switch between Grid and Map views"
+            className="inline-flex items-center gap-1 rounded-xl bg-neutral-100 p-1 border border-brand-navy/10"
+          >
+            {[
+              { id: 'grid' as const, label: 'Grid View', icon: LayoutGrid },
+              { id: 'split' as const, label: 'Split View', icon: Columns2 },
+              { id: 'map' as const, label: 'Map View', icon: MapIcon, count: mapItems.length },
+            ].map((opt) => {
+              const Icon = opt.icon;
+              const active = viewMode === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => handleViewModeChange(opt.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    active
+                      ? 'bg-brand-navy text-white shadow-xs'
+                      : 'text-neutral-600 hover:text-brand-navy'
+                  }`}
+                >
+                  <Icon size={14} className={active ? 'text-brand-gold' : ''} />
+                  <span>{opt.label}</span>
+                  {opt.count !== undefined && !loading && (
+                    <span
+                      className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold tabular-nums ${
+                        active
+                          ? 'bg-brand-gold text-white'
+                          : 'bg-brand-navy/10 text-brand-navy'
+                      }`}
+                    >
+                      {opt.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       <div className="container-custom py-12 flex-grow">
         <div className="flex flex-col lg:flex-row gap-8">
-          {!isProjects && (
+          {!isProjects && viewMode !== 'map' && (
             <aside className="w-full lg:w-72 shrink-0">
               <FilterSidebar filters={filters} onChange={setFilters} className="sticky top-24" />
             </aside>
           )}
 
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Error state with retry */}
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center justify-between gap-4">
@@ -490,151 +613,250 @@ function PropertiesContent() {
               </div>
             )}
 
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-1 h-6 bg-brand-gold rounded-full" />
                 <AnimatePresence mode="wait">
-                  <motion.h2
-                    key={loading ? 'loading' : isProjects ? projects.length : totalInventoryCount}
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-lg font-bold text-brand-navy"
-                  >
-                    {loading
-                      ? 'Loading…'
-                      : isProjects
-                      ? `${projects.length} Projects Available`
-                      : `${totalInventoryCount} Properties Found`}
-                  </motion.h2>
+                  {loading ? (
+                    <motion.div
+                      key="loading-count"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <Skeleton className="h-7 w-48 rounded-lg bg-neutral-200" />
+                    </motion.div>
+                  ) : (
+                    <motion.h2
+                      key={isProjects ? projects.length : totalInventoryCount}
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-lg font-bold text-brand-navy tabular-nums"
+                    >
+                      {isProjects
+                        ? `${projects.length} Projects Available`
+                        : `${totalInventoryCount} Properties Found`}
+                    </motion.h2>
+                  )}
                 </AnimatePresence>
               </div>
-            </div>
 
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <PropertyCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : isProjects ? (
-              <motion.div
-                key="projects"
-                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                initial="hidden"
-                animate="visible"
-                variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07 } } }}
-              >
-                {projects.map((proj) => (
+              {/* 21st.dev + Motion.dev Interactive Filter Transition Bar */}
+              {!isProjects &&
+                (searchQuery.trim() ||
+                  filters.type.length > 0 ||
+                  filters.beds.length > 0 ||
+                  filters.status.length > 0) && (
                   <motion.div
-                    key={proj.id}
-                    variants={{
-                      hidden: { opacity: 0, y: 20, scale: 0.97 },
-                      visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
-                    }}
+                    layout
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-wrap items-center gap-2"
                   >
-                    <ProjectCard
-                      id={String(proj.id)}
-                      name={proj.name}
-                      location={proj.location}
-                      deliveryDate={proj.delivery_date ?? undefined}
-                      status={proj.status}
-                      availableUnits={proj.available_units}
-                      image={proj.image_url}
-                    />
-                  </motion.div>
-                ))}
-              </motion.div>
-            ) : (
-              <>
-                {!loading && totalInventoryCount === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center justify-center py-24 text-center"
-                  >
-                    <div className="w-20 h-20 rounded-full bg-brand-gold/10 flex items-center justify-center mb-6">
-                      <SlidersHorizontal size={32} className="text-brand-gold" />
-                    </div>
-                    <h3 className="text-xl font-bold text-brand-navy mb-2">No properties match your filters</h3>
-                    <p className="text-neutral-500 mb-6 max-w-xs">
-                      Try adjusting your search criteria to see more results.
-                    </p>
+                    {searchQuery.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => handleSearchChange('')}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-brand-navy text-white text-xs font-semibold hover:bg-brand-gold transition-colors cursor-pointer"
+                      >
+                        <span>“{searchQuery.trim()}”</span>
+                        <X size={12} />
+                      </button>
+                    )}
+                    {filters.type.map((tItem) => (
+                      <button
+                        key={tItem}
+                        type="button"
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            type: prev.type.filter((x) => x !== tItem),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white border border-brand-navy/15 text-brand-navy text-xs font-semibold hover:border-brand-gold transition-colors cursor-pointer"
+                      >
+                        <span>{tItem}</span>
+                        <X size={12} />
+                      </button>
+                    ))}
                     <button
                       type="button"
                       onClick={() => {
                         setFilters(defaultFilters);
                         handleSearchChange('');
                       }}
-                      className="px-6 py-2.5 bg-brand-navy text-white rounded-lg font-semibold text-sm hover:bg-brand-navy-light transition-colors"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-brand-gold hover:underline cursor-pointer ml-1"
                     >
-                      Clear All Filters
+                      <RotateCcw size={12} />
+                      <span>Reset all</span>
                     </button>
                   </motion.div>
                 )}
+            </div>
 
-                {totalInventoryCount > 0 && (
-                  <motion.div
-                    key="properties"
-                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                    initial="hidden"
-                    animate="visible"
-                    variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07 } } }}
-                  >
-                    {properties.map((prop) => (
-                      <motion.div
-                        key={`prop-${prop.id}`}
-                        variants={{
-                          hidden: { opacity: 0, y: 20, scale: 0.97 },
-                          visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
-                        }}
-                      >
-                        <PropertyCard
-                          id={String(prop.id)}
-                          serialNumber={prop.serial_number}
-                          title={prop.title}
-                          price={prop.price}
-                          location={prop.location}
-                          beds={prop.beds ?? undefined}
-                          baths={prop.baths ?? undefined}
-                          area={prop.area ?? undefined}
-                          floor={prop.floor ?? undefined}
-                          status={prop.status}
-                          type={prop.type}
-                          listingType={prop.listing_type}
-                          image={prop.image_url}
-                        />
-                      </motion.div>
-                    ))}
-                    {projectUnits.map((unit) => (
-                      <motion.div
-                        key={`unit-${unit.id}`}
-                        variants={{
-                          hidden: { opacity: 0, y: 20, scale: 0.97 },
-                          visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
-                        }}
-                      >
-                        <ProjectUnitInventoryCard
-                          unit={unit}
-                          onRequestVisit={setVisitTarget}
-                        />
-                      </motion.div>
-                    ))}
-                  </motion.div>
+            {viewMode === 'map' ? (
+              <Suspense fallback={<MapSkeleton heightClass="h-[640px]" />}>
+                <AttaieGoogleMap
+                  mode="multi-property"
+                  items={mapItems}
+                  heightClass="h-[640px]"
+                  showNeighborhoodTools={true}
+                  showDirections={true}
+                />
+              </Suspense>
+            ) : (
+              <div className={viewMode === 'split' ? 'grid grid-cols-1 xl:grid-cols-12 gap-6 items-start' : ''}>
+                <div className={viewMode === 'split' ? 'xl:col-span-7' : ''}>
+                  {loading ? (
+                    <div
+                      role="status"
+                      aria-busy="true"
+                      aria-label={isProjects ? 'Loading projects' : 'Loading properties'}
+                      className={`grid grid-cols-1 md:grid-cols-2 ${
+                        viewMode === 'split' ? '' : 'xl:grid-cols-3'
+                      } gap-6`}
+                    >
+                      {Array.from({ length: 6 }).map((_, i) =>
+                        isProjects ? (
+                          <ProjectCardSkeleton key={i} />
+                        ) : (
+                          <PropertyCardSkeleton key={i} />
+                        )
+                      )}
+                    </div>
+                  ) : isProjects ? (
+                    <motion.div
+                      key="projects"
+                      className={`grid grid-cols-1 md:grid-cols-2 ${
+                        viewMode === 'split' ? '' : 'xl:grid-cols-3'
+                      } gap-6`}
+                      initial="hidden"
+                      animate="visible"
+                      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07 } } }}
+                    >
+                      {projects.map((proj) => (
+                        <motion.div
+                          key={proj.id}
+                          variants={{
+                            hidden: { opacity: 0, y: 20, scale: 0.97 },
+                            visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
+                          }}
+                        >
+                          <ProjectCard
+                            id={String(proj.id)}
+                            name={proj.name}
+                            location={proj.location}
+                            deliveryDate={proj.delivery_date ?? undefined}
+                            status={proj.status}
+                            availableUnits={proj.available_units}
+                            image={proj.image_url}
+                          />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <>
+                      {!loading && totalInventoryCount === 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex flex-col items-center justify-center py-24 text-center"
+                        >
+                          <div className="w-20 h-20 rounded-full bg-brand-gold/10 flex items-center justify-center mb-6">
+                            <SlidersHorizontal size={32} className="text-brand-gold" />
+                          </div>
+                          <h3 className="text-xl font-bold text-brand-navy mb-2">No properties match your filters</h3>
+                          <p className="text-neutral-500 mb-6 max-w-xs">
+                            Try adjusting your search criteria to see more results.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFilters(defaultFilters);
+                              handleSearchChange('');
+                            }}
+                            className="px-6 py-2.5 bg-brand-navy text-white rounded-lg font-semibold text-sm hover:bg-brand-navy-light transition-colors"
+                          >
+                            Clear All Filters
+                          </button>
+                        </motion.div>
+                      )}
+
+                      {totalInventoryCount > 0 && (
+                        <motion.div
+                          key="properties"
+                          className={`grid grid-cols-1 md:grid-cols-2 ${
+                            viewMode === 'split' ? '' : 'xl:grid-cols-3'
+                          } gap-6`}
+                          initial="hidden"
+                          animate="visible"
+                          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07 } } }}
+                        >
+                          {properties.map((prop) => (
+                            <motion.div
+                              key={`prop-${prop.id}`}
+                              variants={{
+                                hidden: { opacity: 0, y: 20, scale: 0.97 },
+                                visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
+                              }}
+                            >
+                              <PropertyCard
+                                id={String(prop.id)}
+                                serialNumber={prop.serial_number}
+                                title={prop.title}
+                                price={prop.price}
+                                location={prop.location}
+                                beds={prop.beds ?? undefined}
+                                baths={prop.baths ?? undefined}
+                                area={prop.area ?? undefined}
+                                floor={prop.floor ?? undefined}
+                                status={prop.status}
+                                type={prop.type}
+                                listingType={prop.listing_type}
+                                image={prop.image_url}
+                                galleryImages={prop.gallery_images}
+                              />
+                            </motion.div>
+                          ))}
+                          {projectUnits.map((unit) => (
+                            <motion.div
+                              key={`unit-${unit.id}`}
+                              variants={{
+                                hidden: { opacity: 0, y: 20, scale: 0.97 },
+                                visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
+                              }}
+                            >
+                              <ProjectUnitInventoryCard
+                                unit={unit}
+                              />
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {viewMode === 'split' && (
+                  <div className="xl:col-span-5 sticky top-24">
+                    <Suspense fallback={<MapSkeleton heightClass="h-[580px]" />}>
+                      <AttaieGoogleMap
+                        mode="multi-property"
+                        items={mapItems}
+                        heightClass="h-[580px]"
+                        showNeighborhoodTools={true}
+                        showDirections={true}
+                      />
+                    </Suspense>
+                  </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
       </div>
-
-      {visitTarget && (
-        <VisitRequestDialog
-          target={visitTarget}
-          onClose={() => setVisitTarget(null)}
-        />
-      )}
 
       <Footer />
     </main>
@@ -643,7 +865,7 @@ function PropertiesContent() {
 
 export default function PropertiesPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<PropertiesPageSkeleton />}>
       <PropertiesContent />
     </Suspense>
   );

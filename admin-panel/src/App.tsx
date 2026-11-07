@@ -19,6 +19,7 @@ import SeoPage from './pages/SeoPage';
 import Careers from './pages/Careers';
 import CareerForm from './pages/CareerForm';
 import CareerApplications from './pages/CareerApplications';
+import ChatInbox from './pages/ChatInbox';
 
 const isElectron = !!window.electronAPI?.isElectron;
 const Router = isElectron ? HashRouter : BrowserRouter;
@@ -50,6 +51,7 @@ function ProtectedRoutes() {
         <Route path="/projects/new" element={<ProjectForm />} />
         <Route path="/projects/:id/edit" element={<ProjectForm />} />
         <Route path="/leads" element={<Leads />} />
+        <Route path="/chat" element={<ChatInbox />} />
         <Route path="/visits" element={<Visits />} />
         <Route path="/agents" element={<Agents />} />
         <Route path="/agents/new" element={<AgentForm />} />

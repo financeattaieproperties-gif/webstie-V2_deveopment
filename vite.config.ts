@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin, type ViteDevServer, type PreviewServer } from 'vite';
+import { defineConfig, loadEnv, type Plugin, type ViteDevServer, type PreviewServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import fs from 'fs';
@@ -1132,43 +1132,68 @@ function createMockPhpApiPlugin(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-    createMockPhpApiPlugin(),
-  ],
-  server: {
-    port: 3000,
-    host: '0.0.0.0',
-    allowedHosts: true,
-    hmr: false,
-  },
-  resolve: {
-    alias: { '@': path.resolve(import.meta.dirname, './src') },
-  },
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (
-            id.includes('node_modules/react-dom') ||
-            id.includes('node_modules/react/') ||
-            id.includes('node_modules/react-router')
-          ) {
-            return 'vendor';
-          }
-          if (id.includes('node_modules/framer-motion')) {
-            return 'animations';
-          }
-          if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/zod')) {
-            return 'forms';
-          }
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const gmpKey =
+    env.GOOGLE_MAPS_PLATFORM_KEY ||
+    env.VITE_GOOGLE_MAPS_API_KEY ||
+    env.GOOGLE_MAPS_API_KEY ||
+    process.env.GOOGLE_MAPS_PLATFORM_KEY ||
+    process.env.VITE_GOOGLE_MAPS_API_KEY ||
+    '';
+
+  return {
+    define: {
+      'process.env.GOOGLE_MAPS_PLATFORM_KEY': JSON.stringify(gmpKey),
+      'import.meta.env.VITE_GOOGLE_MAPS_API_KEY': JSON.stringify(gmpKey),
+    },
+    plugins: [
+      react(),
+      tailwindcss(),
+      createMockPhpApiPlugin(),
+    ],
+    server: {
+      port: 3000,
+      host: '0.0.0.0',
+      allowedHosts: true,
+      hmr: false,
+    },
+    resolve: {
+      alias: { '@': path.resolve(import.meta.dirname, './src') },
+    },
+    build: {
+      outDir: 'dist',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-router')
+            ) {
+              return 'vendor-core';
+            }
+            if (id.includes('node_modules/@vis.gl/react-google-maps')) {
+              return 'vendor-maps';
+            }
+            if (id.includes('node_modules/swiper')) {
+              return 'vendor-swiper';
+            }
+            if (id.includes('node_modules/gsap')) {
+              return 'vendor-gsap';
+            }
+            if (id.includes('node_modules/framer-motion') || id.includes('node_modules/motion')) {
+              return 'vendor-animations';
+            }
+            if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/zod')) {
+              return 'vendor-forms';
+            }
+          },
         },
       },
+      chunkSizeWarningLimit: 600,
     },
-    chunkSizeWarningLimit: 600,
-  },
+  };
 });
+
 

@@ -1,9 +1,13 @@
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 const CSRF_STORAGE_KEY = 'admin_csrf_token';
 
-async function getCsrfToken(): Promise<string> {
-  const cached = sessionStorage.getItem(CSRF_STORAGE_KEY);
-  if (cached) return cached;
+async function getCsrfToken(forceRefresh = false): Promise<string> {
+  if (forceRefresh) {
+    sessionStorage.removeItem(CSRF_STORAGE_KEY);
+  } else {
+    const cached = sessionStorage.getItem(CSRF_STORAGE_KEY);
+    if (cached) return cached;
+  }
   try {
     const res = await fetch(`${BASE}/admin/csrf.php`, { credentials: 'include' });
     if (res.ok) {
@@ -34,11 +38,25 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     }
   }
 
-  const res = await fetch(`${BASE}${path}`, {
+  let res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
     ...options,
     headers,
   });
+
+  // If CSRF token in sessionStorage is stale (403), refresh token once and retry
+  if (res.status === 403 && isMutation && !path.includes('admin-login')) {
+    const freshToken = await getCsrfToken(true);
+    if (freshToken) {
+      headers['X-CSRF-Token'] = freshToken;
+      res = await fetch(`${BASE}${path}`, {
+        credentials: 'include',
+        ...options,
+        headers,
+      });
+    }
+  }
+
   if (!res.ok) {
     if (res.status === 401 && !path.includes('admin-login')) {
       sessionStorage.removeItem('admin_logged_in');
@@ -264,23 +282,48 @@ export const api = {
   },
 
   uploadImage: async (file: File, purpose?: 'blueprint' | 'gallery'): Promise<string> => {
-    const form = new FormData();
-    form.append('image', file);
-    if (purpose) {
-      form.append('purpose', purpose);
-    }
+    const buildForm = () => {
+      const form = new FormData();
+      form.append('image', file);
+      if (purpose) {
+        form.append('purpose', purpose);
+      }
+      return form;
+    };
+
     const token = await getCsrfToken();
     const headers: Record<string, string> = {};
     if (token) {
       headers['X-CSRF-Token'] = token;
     }
     const endpoint = `${BASE}/admin/upload.php${purpose ? `?purpose=${encodeURIComponent(purpose)}` : ''}`;
-    const res = await fetch(endpoint, {
+    let res = await fetch(endpoint, {
       method: 'POST',
       credentials: 'include',
       headers,
-      body: form,
+      body: buildForm(),
     });
+
+    if (res.status === 403) {
+      const freshToken = await getCsrfToken(true);
+      if (freshToken) {
+        headers['X-CSRF-Token'] = freshToken;
+        res = await fetch(endpoint, {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+          body: buildForm(),
+        });
+      }
+    }
+
+    if (res.status === 401) {
+      sessionStorage.removeItem('admin_logged_in');
+      sessionStorage.removeItem(CSRF_STORAGE_KEY);
+      window.location.reload();
+      throw new Error('Your admin session expired. Please sign in again.');
+    }
+
     if (res.ok) {
       const data = (await res.json()) as { url: string };
       return data.url;
@@ -327,7 +370,457 @@ export const api = {
 
     throw new Error(errBody.error || `Upload failed (HTTP ${res.status})`);
   },
+
+  getChatConversations: async (): Promise<ChatConversation[]> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    try {
+      const res = await fetch(`${baseRoot}/chat-service.php?action=admin_list&t=${Date.now()}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { conversations?: ChatConversation[] };
+        if (Array.isArray(data.conversations)) {
+          try {
+            localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(data.conversations));
+          } catch {
+            // ignore
+          }
+          return data.conversations;
+        }
+      }
+    } catch {
+      // fallback to localStorage in static preview
+    }
+    try {
+      const raw = localStorage.getItem('attaie_chat_conversations_v1');
+      return raw ? (JSON.parse(raw) as ChatConversation[]) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  replyToChat: async (
+    sessionId: string,
+    message: string,
+    adminName = 'Attaie Admin'
+  ): Promise<ChatConversation | null> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    try {
+      const res = await fetch(`${baseRoot}/chat-service.php?action=admin_reply`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'admin_reply',
+          session_id: sessionId,
+          message,
+          admin_name: adminName,
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { conversation?: ChatConversation };
+        if (data.conversation) {
+          try {
+            const raw = localStorage.getItem('attaie_chat_conversations_v1');
+            const list: ChatConversation[] = raw ? JSON.parse(raw) : [];
+            const filtered = list.filter(c => c.id !== sessionId);
+            filtered.unshift(data.conversation);
+            localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(filtered));
+          } catch {
+            // ignore
+          }
+          return data.conversation;
+        }
+      }
+    } catch {
+      // fallback to localStorage in static preview
+    }
+
+    try {
+      const raw = localStorage.getItem('attaie_chat_conversations_v1');
+      const list: ChatConversation[] = raw ? JSON.parse(raw) : [];
+      const idx = list.findIndex(c => c.id === sessionId);
+      if (idx === -1) return null;
+      const now = new Date().toISOString();
+      const updatedMessages = list[idx].messages.map(m =>
+        m.sender === 'customer' && m.read_status !== 'read'
+          ? { ...m, read_status: 'read' as const, read_at: now }
+          : m
+      );
+      const newMsg: ChatMessage = {
+        id: `msg_${Date.now()}_adm`,
+        sender: 'admin',
+        sender_name: adminName,
+        text: message,
+        created_at: now,
+        read_status: 'sent',
+        read_at: null,
+      };
+      const updated: ChatConversation = {
+        ...list[idx],
+        unread_admin: 0,
+        unread_customer: (list[idx].unread_customer || 0) + 1,
+        typing_admin_at: null,
+        is_admin_typing: false,
+        updated_at: now,
+        messages: [...updatedMessages, newMsg],
+      };
+      list.splice(idx, 1);
+      list.unshift(updated);
+      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(list));
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('attaie_live_chat_channel');
+          bc.postMessage({
+            type: 'NEW_ADMIN_REPLY',
+            conversationId: sessionId,
+            messageId: newMsg.id,
+            senderName: adminName,
+            createdAt: now,
+          });
+          bc.close();
+        }
+      } catch {
+        // ignore
+      }
+      return updated;
+    } catch {
+      return null;
+    }
+  },
+
+  markChatRead: async (sessionId: string): Promise<void> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    try {
+      await fetch(`${baseRoot}/chat-service.php?action=mark_read`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'mark_read',
+          reader: 'admin',
+          session_id: sessionId,
+        }),
+      });
+    } catch {
+      // ignore
+    }
+    try {
+      const raw = localStorage.getItem('attaie_chat_conversations_v1');
+      if (!raw) return;
+      const list: ChatConversation[] = JSON.parse(raw);
+      const now = new Date().toISOString();
+      const updated = list.map(c => {
+        if (c.id !== sessionId) return c;
+        return {
+          ...c,
+          unread_admin: 0,
+          messages: c.messages.map(m =>
+            m.sender === 'customer'
+              ? { ...m, read_status: 'read' as const, read_at: m.read_at || now }
+              : m
+          ),
+        };
+      });
+      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(updated));
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('attaie_live_chat_channel');
+        bc.postMessage({
+          type: 'MESSAGES_READ',
+          conversationId: sessionId,
+          reader: 'admin',
+          readAt: now,
+        });
+        bc.close();
+      }
+    } catch {
+      // ignore
+    }
+  },
+
+  sendAdminTypingSignal: async (
+    sessionId: string,
+    isTyping: boolean,
+    adminName = 'Attaie Advisor'
+  ): Promise<void> => {
+    if (!sessionId) return;
+    const now = new Date().toISOString();
+    try {
+      const raw = localStorage.getItem('attaie_chat_conversations_v1');
+      if (raw) {
+        const list: ChatConversation[] = JSON.parse(raw);
+        const idx = list.findIndex(c => c.id === sessionId);
+        if (idx !== -1) {
+          list[idx] = {
+            ...list[idx],
+            typing_admin_at: isTyping ? now : null,
+            typing_admin_name: adminName,
+            is_admin_typing: isTyping,
+          };
+          localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(list));
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('attaie_live_chat_channel');
+        bc.postMessage({
+          type: 'TYPING_STATUS',
+          conversationId: sessionId,
+          sender: 'admin',
+          senderName: adminName,
+          isTyping,
+          timestamp: now,
+        });
+        bc.close();
+      }
+    } catch {
+      // ignore
+    }
+
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    try {
+      await fetch(`${baseRoot}/chat-service.php?action=typing`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'typing',
+          session_id: sessionId,
+          sender: 'admin',
+          sender_name: adminName,
+          is_typing: isTyping,
+        }),
+      });
+    } catch {
+      // ignore
+    }
+  },
+
+  updateChatStatus: async (sessionId: string, status: 'open' | 'resolved'): Promise<void> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    try {
+      await fetch(`${baseRoot}/chat-service.php?action=admin_status`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'admin_status', session_id: sessionId, status }),
+      });
+    } catch {
+      // ignore
+    }
+    try {
+      const raw = localStorage.getItem('attaie_chat_conversations_v1');
+      if (!raw) return;
+      const list: ChatConversation[] = JSON.parse(raw);
+      const updated = list.map(c => (c.id === sessionId ? { ...c, status, unread_admin: 0 } : c));
+      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  },
+
+  deleteChatConversation: async (sessionId: string): Promise<void> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    try {
+      await fetch(`${baseRoot}/chat-service.php?action=admin_delete`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'admin_delete', session_id: sessionId }),
+      });
+    } catch {
+      // ignore
+    }
+    try {
+      const raw = localStorage.getItem('attaie_chat_conversations_v1');
+      if (!raw) return;
+      const list: ChatConversation[] = JSON.parse(raw);
+      localStorage.setItem(
+        'attaie_chat_conversations_v1',
+        JSON.stringify(list.filter(c => c.id !== sessionId))
+      );
+    } catch {
+      // ignore
+    }
+  },
+
+  getAiAdminSettings: async (): Promise<AiAdminSettings> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    const token = await getCsrfToken();
+    const res = await fetch(`${baseRoot}/ai-chat/admin-settings.php`, {
+      credentials: 'include',
+      headers: token ? { 'X-CSRF-Token': token } : {},
+      cache: 'no-store',
+    });
+    const ct = res.headers.get('content-type') || '';
+    if (res.ok && ct.includes('application/json')) {
+      const data = (await res.json()) as { settings: AiAdminSettings };
+      return data.settings;
+    }
+    throw new Error(`Unable to load AI settings from PHP backend (HTTP ${res.status}).`);
+  },
+
+  saveAiProviderKey: async (payload: {
+    provider: 'openai' | 'gemini' | 'anthropic';
+    api_key: string;
+    model: string;
+  }): Promise<{ message: string; settings: AiAdminSettings }> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    const token = await getCsrfToken();
+    const res = await fetch(`${baseRoot}/ai-chat/admin-settings.php`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'X-CSRF-Token': token } : {}),
+      },
+      body: JSON.stringify({
+        action: 'save_provider_key',
+        ...payload,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+      message?: string;
+      settings?: AiAdminSettings;
+    };
+    if (!res.ok || !data.ok || !data.settings) {
+      throw new Error(data.error || `Failed to save API key (HTTP ${res.status})`);
+    }
+    return { message: data.message || 'Saved.', settings: data.settings };
+  },
+
+  deleteAiProviderKey: async (
+    provider: 'openai' | 'gemini' | 'anthropic'
+  ): Promise<{ message: string; settings: AiAdminSettings }> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    const token = await getCsrfToken();
+    const res = await fetch(`${baseRoot}/ai-chat/admin-settings.php`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'X-CSRF-Token': token } : {}),
+      },
+      body: JSON.stringify({
+        action: 'delete_provider_key',
+        provider,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+      message?: string;
+      settings?: AiAdminSettings;
+    };
+    if (!res.ok || !data.ok || !data.settings) {
+      throw new Error(data.error || `Failed to delete API key (HTTP ${res.status})`);
+    }
+    return { message: data.message || 'Deleted.', settings: data.settings };
+  },
+
+  activateAiProvider: async (payload: {
+    provider: 'openai' | 'gemini' | 'anthropic';
+    model: string;
+    enabled?: boolean;
+    allow_fallback?: boolean;
+    max_output_tokens?: number;
+    daily_request_limit?: number;
+    retention_days?: number;
+  }): Promise<{ message: string; settings: AiAdminSettings }> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    const token = await getCsrfToken();
+    const res = await fetch(`${baseRoot}/ai-chat/admin-settings.php`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'X-CSRF-Token': token } : {}),
+      },
+      body: JSON.stringify({
+        action: 'activate_provider',
+        ...payload,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+      message?: string;
+      settings?: AiAdminSettings;
+    };
+    if (!res.ok || !data.ok || !data.settings) {
+      throw new Error(data.error || `Failed to activate provider (HTTP ${res.status})`);
+    }
+    return { message: data.message || 'Updated.', settings: data.settings };
+  },
+
+  testAiProviderConnection: async (payload: {
+    provider: 'openai' | 'gemini' | 'anthropic';
+    model: string;
+    api_key?: string;
+  }): Promise<{ ok: boolean; message?: string; sample?: string; error?: string; settings?: AiAdminSettings }> => {
+    const baseRoot = BASE.replace(/\/api\/?$/, '');
+    const token = await getCsrfToken();
+    const res = await fetch(`${baseRoot}/ai-chat/admin-settings.php`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'X-CSRF-Token': token } : {}),
+      },
+      body: JSON.stringify({
+        action: 'test_connection',
+        ...payload,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      message?: string;
+      sample?: string;
+      error?: string;
+      settings?: AiAdminSettings;
+    };
+    return {
+      ok: Boolean(res.ok && data.ok),
+      message: data.message,
+      sample: data.sample,
+      error: data.error,
+      settings: data.settings,
+    };
+  },
 };
+
+export interface AiProviderConfig {
+  id: 'openai' | 'gemini' | 'anthropic';
+  label: string;
+  models: Record<string, string>;
+  default_model: string;
+  billing_note: string;
+  selected_model: string;
+  has_key: boolean;
+  masked_key: string;
+  updated_at: string | null;
+  last_test_ok: boolean | null;
+}
+
+export interface AiAdminSettings {
+  enabled: boolean;
+  active_provider: 'openai' | 'gemini' | 'anthropic';
+  active_model: string;
+  allow_fallback: boolean;
+  max_output_tokens: number;
+  daily_request_limit: number;
+  retention_days: number;
+  handoff_channel: string;
+  storage_outside_webroot: boolean;
+  providers: Record<'openai' | 'gemini' | 'anthropic', AiProviderConfig>;
+}
 
 export interface SitemapCrawlUrl {
   loc: string;
@@ -519,5 +1012,36 @@ export interface CareerApplication {
   cv_mime_type: string;
   cv_size: number;
   created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'customer' | 'admin' | 'system';
+  sender_name: string;
+  text: string;
+  created_at: string;
+  read_status?: 'sent' | 'read';
+  read_at?: string | null;
+}
+
+export interface ChatConversation {
+  id: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  property_id?: string | null;
+  property_name?: string | null;
+  page_context?: string | null;
+  status: 'open' | 'resolved';
+  unread_admin: number;
+  unread_customer: number;
+  typing_customer_at?: string | null;
+  typing_admin_at?: string | null;
+  typing_admin_name?: string | null;
+  is_customer_typing?: boolean;
+  is_admin_typing?: boolean;
+  created_at: string;
+  updated_at: string;
+  messages: ChatMessage[];
 }
 

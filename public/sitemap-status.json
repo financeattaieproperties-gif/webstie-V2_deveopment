@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-11-04T12:01:13.811Z",
+  "generated_at": "2026-11-07T16:08:44.074Z",
   "canonical_base_url": "https://www.attaieproperties.com",
   "sitemap_url": "https://www.attaieproperties.com/sitemap.xml",
   "counts": {
     "static": 7,
-    "properties": 6,
-    "projects": 3,
+    "properties": 4,
+    "projects": 1,
     "careers": 3,
-    "agents": 3,
-    "total": 22
+    "agents": 23,
+    "total": 38
   },
   "urls": [
     {
       "loc": "https://www.attaieproperties.com/",
-      "lastmod": "2026-11-04",
+      "lastmod": "2026-11-07",
       "changefreq": "daily",
       "priority": "1.0",
       "category": "static",
@@ -22,7 +22,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/properties",
-      "lastmod": "2026-11-04",
+      "lastmod": "2026-11-07",
       "changefreq": "daily",
       "priority": "0.9",
       "category": "static",
@@ -31,7 +31,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/projects",
-      "lastmod": "2026-11-04",
+      "lastmod": "2026-11-07",
       "changefreq": "weekly",
       "priority": "0.8",
       "category": "static",
@@ -40,7 +40,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/careers",
-      "lastmod": "2026-11-04",
+      "lastmod": "2026-11-07",
       "changefreq": "daily",
       "priority": "0.8",
       "category": "static",
@@ -49,7 +49,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents",
-      "lastmod": "2026-11-04",
+      "lastmod": "2026-11-07",
       "changefreq": "weekly",
       "priority": "0.7",
       "category": "static",
@@ -58,7 +58,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/about",
-      "lastmod": "2026-11-04",
+      "lastmod": "2026-11-07",
       "changefreq": "monthly",
       "priority": "0.6",
       "category": "static",
@@ -67,7 +67,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/contact",
-      "lastmod": "2026-11-04",
+      "lastmod": "2026-11-07",
       "changefreq": "monthly",
       "priority": "0.7",
       "category": "static",
@@ -75,85 +75,49 @@
       "image_count": 0
     },
     {
-      "loc": "https://www.attaieproperties.com/properties/1",
-      "lastmod": "2026-01-15",
+      "loc": "https://www.attaieproperties.com/properties/4",
+      "lastmod": "2026-11-05",
       "changefreq": "daily",
       "priority": "0.85",
       "category": "properties",
-      "title": "Exclusive Luxury Villa in Wazir Akbar Khan",
-      "image_count": 2
-    },
-    {
-      "loc": "https://www.attaieproperties.com/properties/2",
-      "lastmod": "2026-02-01",
-      "changefreq": "daily",
-      "priority": "0.85",
-      "category": "properties",
-      "title": "Contemporary High-Rise Apartment in Shahr-e-Naw",
-      "image_count": 1
+      "title": "آپارتمان فروشی پنج اطاقه  نوساخت",
+      "image_count": 6
     },
     {
       "loc": "https://www.attaieproperties.com/properties/3",
-      "lastmod": "2026-02-10",
+      "lastmod": "2026-11-05",
       "changefreq": "daily",
       "priority": "0.85",
       "category": "properties",
-      "title": "Prime Commercial Plaza Space on Kolola Pushta Main",
-      "image_count": 1
+      "title": "آپارتمان فروشی چهار اطاقه نو ساخت",
+      "image_count": 6
     },
     {
-      "loc": "https://www.attaieproperties.com/properties/4",
-      "lastmod": "2026-02-15",
-      "changefreq": "daily",
-      "priority": "0.85",
+      "loc": "https://www.attaieproperties.com/properties/2",
+      "lastmod": "2026-11-05",
+      "changefreq": "weekly",
+      "priority": "0.70",
       "category": "properties",
-      "title": "Classic Family Residence with Private Garden",
-      "image_count": 1
+      "title": "آپارتمان فروشی چهار اطاقه نو ساخت  VIP",
+      "image_count": 2
     },
     {
-      "loc": "https://www.attaieproperties.com/properties/5",
-      "lastmod": "2026-02-20",
+      "loc": "https://www.attaieproperties.com/properties/1",
+      "lastmod": "2026-11-05",
       "changefreq": "daily",
       "priority": "0.85",
       "category": "properties",
-      "title": "Luxury Penthouse with Mountain Panoramas",
-      "image_count": 1
-    },
-    {
-      "loc": "https://www.attaieproperties.com/properties/6",
-      "lastmod": "2026-03-01",
-      "changefreq": "daily",
-      "priority": "0.85",
-      "category": "properties",
-      "title": "Diplomatic Compound with Enhanced Security",
-      "image_count": 1
+      "title": "آپارتمان فروشی چهار اطاقه تخت بام دار نو ساخت",
+      "image_count": 6
     },
     {
       "loc": "https://www.attaieproperties.com/projects/1",
-      "lastmod": "2026-01-10",
+      "lastmod": "2026-11-05",
       "changefreq": "weekly",
       "priority": "0.85",
       "category": "projects",
-      "title": "The Kabul Heights",
-      "image_count": 1
-    },
-    {
-      "loc": "https://www.attaieproperties.com/projects/2",
-      "lastmod": "2026-01-20",
-      "changefreq": "weekly",
-      "priority": "0.85",
-      "category": "projects",
-      "title": "Wazir Luxury Residences",
-      "image_count": 1
-    },
-    {
-      "loc": "https://www.attaieproperties.com/projects/3",
-      "lastmod": "2026-02-05",
-      "changefreq": "weekly",
-      "priority": "0.85",
-      "category": "projects",
-      "title": "Emerald Business Tower",
-      "image_count": 1
+      "title": "KABUL PLAZA 5",
+      "image_count": 2
     },
     {
       "loc": "https://www.attaieproperties.com/careers/1",
@@ -183,30 +147,210 @@
       "image_count": 0
     },
     {
-      "loc": "https://www.attaieproperties.com/agents/1",
-      "lastmod": "2026-01-01",
+      "loc": "https://www.attaieproperties.com/agents/21",
+      "lastmod": "2026-11-07",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
-      "title": "Ahmad Attaie",
+      "title": "Abdul Khaliq BARAKZAI",
       "image_count": 1
     },
     {
-      "loc": "https://www.attaieproperties.com/agents/2",
-      "lastmod": "2026-01-05",
+      "loc": "https://www.attaieproperties.com/agents/24",
+      "lastmod": "2026-11-07",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
-      "title": "Zahra Karimi",
+      "title": "Ahmad Maqsood HASAN",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/20",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Ahmad Masoud NIKZAD",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/16",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "AttahUllah KATAWAL",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/7",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Basir SUFIZADA",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/5",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Basir WAHIDI",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/18",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Ekram Ullah MALIK",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/15",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Erfan Malik",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/12",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Faisal ATTAIE",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/8",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Fardin Hanifi",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/22",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Haris ASEM",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/23",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Milad Ahmad",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/13",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Mohammad Aseel",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/9",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Mohammad Javed WAHIDI",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/6",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Mohammad Reza Yousufi",
       "image_count": 1
     },
     {
       "loc": "https://www.attaieproperties.com/agents/3",
-      "lastmod": "2026-01-10",
+      "lastmod": "2026-11-07",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
-      "title": "Mohammad Ramin",
+      "title": "Roheen AHMADI",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/2",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Sameer Kakar",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/19",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Samim Mosa Khail",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/11",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Samim Yousufi",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/10",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Sayed Azam SADAT",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/14",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Sayed Lemar HASHIMI",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/4",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Shabir ATTAIE",
+      "image_count": 1
+    },
+    {
+      "loc": "https://www.attaieproperties.com/agents/17",
+      "lastmod": "2026-11-07",
+      "changefreq": "monthly",
+      "priority": "0.65",
+      "category": "agents",
+      "title": "Shaheer AHMADI",
       "image_count": 1
     }
   ]

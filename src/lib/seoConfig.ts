@@ -148,6 +148,12 @@ export const SEO_CONFIG = {
         '@type': 'City',
         name: 'Kabul',
       },
+      sameAs: [
+        'https://www.facebook.com/profile.php?id=61554275223244',
+        'https://www.facebook.com/attaiepropertiesofficialRahnomaonlineAttaie',
+        'https://www.youtube.com/@attaieproperties-buy-sell-Rent',
+        'https://www.youtube.com/@AttaieRealEstate',
+      ],
     };
   },
 };
@@ -261,12 +267,17 @@ export function buildPropertySeo(property: Property | null, fallbackId?: string 
   }
 
   const listingLabel = property.listing_type === 'rent' ? 'For Rent' : 'For Sale';
-  const formattedPrice =
-    property.listing_type === 'rent'
-      ? `$${Number(property.price).toLocaleString()}/mo`
-      : `$${Number(property.price).toLocaleString()}`;
+  const numericPrice = Number(property.price || 0);
+  const hasPrice = numericPrice > 0;
+  const formattedPrice = hasPrice
+    ? property.listing_type === 'rent'
+      ? `$${numericPrice.toLocaleString()}/mo`
+      : `$${numericPrice.toLocaleString()}`
+    : '';
 
-  const title = `${property.title} — ${property.type} ${listingLabel} in ${property.location} (${formattedPrice}) | ${SEO_CONFIG.siteName}`;
+  const title = hasPrice
+    ? `${property.title} — ${property.type} ${listingLabel} in ${property.location} (${formattedPrice}) | ${SEO_CONFIG.siteName}`
+    : `${property.title} — ${property.type} ${listingLabel} in ${property.location} | ${SEO_CONFIG.siteName}`;
 
   const specSummary = [
     property.beds != null ? `${property.beds} bed` : null,
@@ -276,10 +287,14 @@ export function buildPropertySeo(property: Property | null, fallbackId?: string 
     .filter(Boolean)
     .join(', ');
 
+  const priceSentence = hasPrice
+    ? `Priced at ${formattedPrice} in ${property.location}, Kabul.`
+    : `Located in ${property.location}, Kabul.`;
+
   const rawDescription =
     property.description && property.description.trim().length > 30
-      ? `${property.description.trim()} — ${specSummary ? `${specSummary}. ` : ''}Priced at ${formattedPrice} in ${property.location}, Kabul.`
-      : `${property.title}: ${specSummary ? `${specSummary} ` : ''}${property.type.toLowerCase()} ${listingLabel.toLowerCase()} in ${property.location}, Kabul. Priced at ${formattedPrice}. Ref: ${property.serial_number || property.id}.`;
+      ? `${property.description.trim()} — ${specSummary ? `${specSummary}. ` : ''}${priceSentence}`
+      : `${property.title}: ${specSummary ? `${specSummary} ` : ''}${property.type.toLowerCase()} ${listingLabel.toLowerCase()}. ${priceSentence} Ref: ${property.serial_number || property.id}.`;
 
   const description = truncateMetaDescription(rawDescription, 158);
 

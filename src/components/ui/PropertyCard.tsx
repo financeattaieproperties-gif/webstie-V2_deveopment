@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { MapPin, Bed, Bath, Maximize2, Layers, Heart, Building2, MessageSquare } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination } from 'swiper/modules';
+import {
+  MapPin,
+  Bed,
+  Bath,
+  Maximize2,
+  Layers,
+  Heart,
+  Building2,
+  Images,
+} from 'lucide-react';
 import { Badge } from './Badge';
-import { QuickContactModal } from '../forms/QuickContactModal';
 
 export interface PropertyCardProps {
   id: string;
@@ -17,6 +27,7 @@ export interface PropertyCardProps {
   status: 'available' | 'pending' | 'sold' | 'rented';
   type: string;
   image?: string | null;
+  galleryImages?: string[];
   listingType?: 'sale' | 'rent';
   tag?: string;
 }
@@ -34,6 +45,7 @@ export const PropertyCard = ({
   status,
   type,
   image,
+  galleryImages,
   listingType,
   tag,
 }: PropertyCardProps) => {
@@ -41,37 +53,88 @@ export const PropertyCard = ({
   const [heartAnim, setHeartAnim] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [quickContactOpen, setQuickContactOpen] = useState(false);
 
   const priceDisplay =
-    listingType === 'rent'
-      ? `$${price.toLocaleString()}/mo`
-      : `$${price.toLocaleString()}`;
+    listingType === 'rent' ? `$${price.toLocaleString()}/mo` : `$${price.toLocaleString()}`;
+
+  // Consolidate primary image + galleryImages into a unique array for the Swiper photo slider
+  const photoList = React.useMemo(() => {
+    const raw = [
+      ...(image ? [image] : []),
+      ...(Array.isArray(galleryImages) ? galleryImages.filter(Boolean) : []),
+    ];
+    return Array.from(new Set(raw));
+  }, [image, galleryImages]);
+
+  const hasMultiplePhotos = photoList.length > 1;
 
   return (
     <>
       <motion.a
         href={`/properties/${id}`}
-        className="group flex flex-col h-full bg-white/80 backdrop-blur-md rounded-2xl overflow-hidden transition-colors duration-300 border border-white/60 hover:border-brand-gold/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2"
+        layout
+        className="group flex flex-col h-full bg-white/90 backdrop-blur-md rounded-2xl overflow-hidden transition-colors duration-300 border border-brand-navy/8 hover:border-brand-gold/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2"
         whileHover={{ y: -6 }}
         transition={{ type: 'spring', stiffness: 300, damping: 22 }}
         style={{
           boxShadow: isHovered
-            ? '0 20px 60px -12px rgba(26,35,53,0.22), 0 8px 24px -8px rgba(26,35,53,0.12)'
-            : '0 1px 4px 0 rgba(26,35,53,0.07), 0 2px 8px -2px rgba(26,35,53,0.06)',
+            ? '0 20px 60px -12px rgba(2,14,58,0.20), 0 8px 24px -8px rgba(2,14,58,0.10)'
+            : '0 1px 4px 0 rgba(2,14,58,0.07), 0 2px 8px -2px rgba(2,14,58,0.06)',
         }}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
       >
-        {/* Image */}
+        {/* Image / Swiper Photo Carousel */}
         <motion.div
           className="relative aspect-[4/3] w-full overflow-hidden bg-brand-navy"
           whileHover="hovered"
         >
-          {image ? (
+          {hasMultiplePhotos ? (
+            <div
+              className="w-full h-full"
+              onClick={(e) => {
+                // Allow clicking pagination/arrows without navigating away
+                const target = e.target as HTMLElement;
+                if (
+                  target.closest('.swiper-button-prev') ||
+                  target.closest('.swiper-button-next') ||
+                  target.closest('.swiper-pagination')
+                ) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }}
+            >
+              <Swiper
+                modules={[Navigation, Pagination]}
+                navigation
+                pagination={{ clickable: true, dynamicBullets: true }}
+                loop={photoList.length > 2}
+                className="w-full h-full property-card-swiper"
+              >
+                {photoList.map((src, idx) => (
+                  <SwiperSlide key={`${id}-photo-${idx}`}>
+                    <img
+                      src={src}
+                      alt={`${title} — photo ${idx + 1}`}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+              <span className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/55 backdrop-blur-xs text-[11px] font-semibold text-white pointer-events-none tabular-nums">
+                <Images size={11} />
+                {photoList.length}
+              </span>
+            </div>
+          ) : photoList.length === 1 ? (
             <motion.img
-              src={image}
+              src={photoList[0]}
               alt={`${title} — ${type} for ${listingType === 'rent' ? 'rent' : 'sale'} in ${location}`}
+              referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
               loading="lazy"
               decoding="async"
@@ -94,18 +157,18 @@ export const PropertyCard = ({
             </div>
           )}
 
-          {/* Dark gradient at bottom of image */}
-          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
+          {/* Measured bottom contrast scrim */}
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/65 to-transparent pointer-events-none z-10" />
 
           {/* Tag override / For Sale / For Rent badge */}
           {(tag || listingType) && (
-            <div className="absolute top-3 left-3 z-10">
+            <div className="absolute top-3 left-3 z-20">
               <span
-                className={`text-xs font-bold px-3 py-1.5 rounded-full shadow-md ${
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl shadow-md whitespace-nowrap ${
                   tag
                     ? 'bg-red-500 text-white'
                     : listingType === 'rent'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-brand-navy text-white'
                     : 'bg-brand-gold text-white'
                 }`}
               >
@@ -115,7 +178,7 @@ export const PropertyCard = ({
           )}
 
           {/* Status badge */}
-          <div className="absolute top-3 right-12 z-10">
+          <div className="absolute top-3 right-12 z-20">
             <Badge status={status} className="bg-white/90 backdrop-blur-sm shadow-md" />
           </div>
 
@@ -132,7 +195,7 @@ export const PropertyCard = ({
             }}
             animate={heartAnim ? { scale: [1, 1.4, 1] } : { scale: 1 }}
             transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+            className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform cursor-pointer"
           >
             <Heart
               size={15}
@@ -141,8 +204,8 @@ export const PropertyCard = ({
           </motion.button>
 
           {/* Price overlay at bottom of image */}
-          <div className="absolute bottom-3 left-3 z-10">
-            <span className="text-white font-bold text-xl drop-shadow-lg">
+          <div className="absolute bottom-3 left-3 z-20 pointer-events-none">
+            <span className="text-white font-bold text-xl drop-shadow-lg tabular-nums">
               {priceDisplay}
             </span>
           </div>
@@ -151,15 +214,15 @@ export const PropertyCard = ({
         {/* Content */}
         <div className="p-5 flex-1 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-              <Badge type={type} />
+            <div className="flex items-center justify-between gap-2 mb-1.5 text-xs text-neutral-500">
+              <span className="font-semibold text-brand-navy">{type}</span>
               {serialNumber && (
-                <span className="font-mono text-xs font-semibold tracking-wide text-brand-gold">
+                <span className="font-mono text-xs font-semibold tracking-wide text-brand-gold tabular-nums">
                   Ref. {serialNumber}
                 </span>
               )}
             </div>
-            <h3 className="font-heading text-lg font-bold text-brand-navy mt-1.5 mb-1.5 line-clamp-1 group-hover:text-brand-gold transition-colors duration-200">
+            <h3 className="font-heading text-lg font-bold text-brand-navy mt-1 mb-1.5 line-clamp-1 group-hover:text-brand-gold transition-colors duration-200">
               {title}
             </h3>
             <div className="flex items-center text-neutral-500 mb-4 text-sm">
@@ -172,7 +235,7 @@ export const PropertyCard = ({
             {/* Visual property feature icons */}
             <div
               aria-label="Property features"
-              className="grid grid-cols-2 sm:flex sm:items-center sm:flex-wrap gap-2.5 pt-4 border-t border-neutral-100 text-neutral-700 text-xs"
+              className="grid grid-cols-2 sm:flex sm:items-center sm:flex-wrap gap-2.5 pt-4 border-t border-neutral-100 text-neutral-700 text-xs tabular-nums"
             >
               {beds !== undefined && (
                 <div className="flex items-center gap-2" title={`${beds} Bedrooms`}>
@@ -220,42 +283,15 @@ export const PropertyCard = ({
               )}
             </div>
 
-            {/* Inquire Now action bar */}
+            {/* View Details action bar */}
             <div className="pt-3 border-t border-neutral-100 flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-neutral-500 group-hover:text-brand-navy transition-colors">
+              <span className="text-xs font-semibold text-neutral-500 group-hover:text-brand-gold transition-colors whitespace-nowrap">
                 View Details →
               </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setQuickContactOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-navy px-3.5 py-2 text-xs font-bold text-white hover:bg-brand-gold transition-colors shadow-xs"
-              >
-                <MessageSquare size={13} />
-                <span>Inquire Now</span>
-              </button>
             </div>
           </div>
         </div>
       </motion.a>
-
-      <QuickContactModal
-        open={quickContactOpen}
-        onClose={() => setQuickContactOpen(false)}
-        property={{
-          id,
-          serialNumber,
-          title,
-          priceDisplay,
-          location,
-          type,
-          listingType,
-          image,
-        }}
-      />
     </>
   );
 };

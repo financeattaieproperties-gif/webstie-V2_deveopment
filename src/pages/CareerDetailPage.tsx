@@ -17,7 +17,6 @@ import { Footer } from '../components/layout/Footer';
 import { SeoHead } from '../components/seo/SeoHead';
 import { buildCareerSeo } from '../lib/seoConfig';
 import { getCareer, submitCareerApplication, type CareerJob } from '../lib/dbService';
-import { KabulLiveInfoBar } from './CareersPage';
 import { Button } from '../components/ui/Button';
 import { Breadcrumbs } from '../components/ui/Breadcrumbs';
 
@@ -202,8 +201,6 @@ export default function CareerDetailPage() {
               </h1>
             </div>
           )}
-
-          <KabulLiveInfoBar />
         </div>
       </section>
 

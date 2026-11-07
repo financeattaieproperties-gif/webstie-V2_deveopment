@@ -45,7 +45,7 @@ export const WhyAttaieSection = () => (
           Why Choose Us
           <span className="inline-block w-8 h-[1px] bg-brand-gold/50" />
         </p>
-        <h2 className="text-4xl font-bold text-white">The Attaie Difference</h2>
+        <h2 className="text-4xl font-bold text-white">The Attaie Properties Difference</h2>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

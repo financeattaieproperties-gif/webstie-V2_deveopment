@@ -1,8 +1,39 @@
+# Dependencies
 node_modules/
-.next/
+admin-panel/node_modules/
+
+# Build output directories
+dist/
+build/
 out/
+.next/
+public/admin/
+admin-panel/dist/
+admin-panel/out/
+admin-panel/release/
+
+# Environment files and sensitive database config
+.env
 .env.local
 .env*.local
-*.tsbuildinfo
 public/api/db.php
-admin-panel/node_modules/
+
+# Package archives
+*.zip
+*.tar.gz
+
+# Test results and temporary screenshot artifacts
+test-results/
+verify-*.png
+screenshot-*.png
+
+# Cache and build tool outputs
+.gmp_cache/
+*.tsbuildinfo
+.aistudio/
+
+# AI Studio / IDE metadata
+.mcp.json
+.cursor/mcp.json
+.gemini/settings.json
+opencode.json

@@ -63,26 +63,38 @@ if (preg_match('#^/(properties|projects|agents|careers)/(\d+)/?$#', $uri, $m) &&
                     if ($row) {
                         $listingLabel = ($row['listing_type'] ?? 'sale') === 'rent' ? 'For Rent' : 'For Sale';
                         $priceNum = (float) ($row['price'] ?? 0);
-                        $priceFormatted = ($row['listing_type'] ?? 'sale') === 'rent'
-                            ? '$' . number_format($priceNum) . '/mo'
-                            : '$' . number_format($priceNum);
-                        $title = sprintf(
-                            '%s — %s %s in %s (%s) | Attaie Properties',
-                            $row['title'],
-                            $row['type'],
-                            $listingLabel,
-                            $row['location'],
-                            $priceFormatted
-                        );
+                        $hasPrice = $priceNum > 0;
+                        $priceFormatted = $hasPrice
+                            ? (($row['listing_type'] ?? 'sale') === 'rent'
+                                ? '$' . number_format($priceNum) . '/mo'
+                                : '$' . number_format($priceNum))
+                            : '';
+                        $title = $hasPrice
+                            ? sprintf(
+                                '%s — %s %s in %s (%s) | Attaie Properties',
+                                $row['title'],
+                                $row['type'],
+                                $listingLabel,
+                                $row['location'],
+                                $priceFormatted
+                            )
+                            : sprintf(
+                                '%s — %s %s in %s | Attaie Properties',
+                                $row['title'],
+                                $row['type'],
+                                $listingLabel,
+                                $row['location']
+                            );
                         $specs = array_filter([
                             $row['beds'] !== null ? ((int) $row['beds']) . ' bed' : null,
                             $row['baths'] !== null ? ((int) $row['baths']) . ' bath' : null,
                             $row['area'] !== null ? ((float) $row['area']) . ' m²' : null,
                         ]);
                         $specStr = implode(', ', $specs);
+                        $priceSentence = $hasPrice ? "Priced at $priceFormatted in {$row['location']}, Kabul." : "Located in {$row['location']}, Kabul.";
                         $rawDesc = !empty($row['description']) && mb_strlen(trim($row['description'])) > 30
-                            ? trim($row['description']) . ' — ' . ($specStr ? "$specStr. " : '') . "Priced at $priceFormatted in {$row['location']}, Kabul."
-                            : "{$row['title']}: " . ($specStr ? "$specStr " : '') . strtolower($row['type']) . ' ' . strtolower($listingLabel) . " in {$row['location']}, Kabul. Priced at $priceFormatted.";
+                            ? trim($row['description']) . ' — ' . ($specStr ? "$specStr. " : '') . $priceSentence
+                            : "{$row['title']}: " . ($specStr ? "$specStr " : '') . strtolower($row['type']) . ' ' . strtolower($listingLabel) . ". $priceSentence";
                         $desc = seo_truncate($rawDesc, 158);
                         $gallery = !empty($row['gallery_images']) ? json_decode($row['gallery_images'], true) : [];
                         $firstGallery = is_array($gallery) && count($gallery) > 0 ? $gallery[0] : null;

@@ -50,6 +50,7 @@
     "propertiesSection": "ملکیت‌ها",
     "contactUs": "تماس با ما",
     "rights": "© ۲۰۲۶ اتایی پراپرتیز. تمام حقوق محفوظ است.",
+    "developerCredit": "Developed by Roheen Ahmadi",
     "privacy": "سیاست حریم خصوصی",
     "terms": "شرایط خدمات",
     "langToggle": "English"
@@ -179,6 +180,28 @@
     "projectDetails": "جزئیات پروژه",
     "agentDetails": "پروفایل مشاور",
     "careerDetails": "جزئیات بست شغلی"
+  },
+  "chat": {
+    "buttonLabel": "گفتگو با ادمین",
+    "title": "پشتیبانی مستقیم اتایی",
+    "subtitle": "سوالات خود درباره املاک، پروژه‌ها و قیمت‌ها را مستقیماً بپرسید",
+    "onlineBadge": "پاسخگوی آنلاین",
+    "nameLabel": "نام شما *",
+    "namePlaceholder": "مثلاً احمد خان",
+    "phoneLabel": "شماره تماس / واتساپ *",
+    "phonePlaceholder": "+93 78 222 2279",
+    "emailLabel": "ایمیل (اختیاری)",
+    "emailPlaceholder": "you@example.com",
+    "messagePlaceholder": "پیام یا سوال خود را برای ادمین بنویسید…",
+    "sendButton": "ارسال",
+    "startChatButton": "ارسال پیام به ادمین",
+    "quickQ1": "معلومات درباره قیمت و شرایط پرداخت",
+    "quickQ2": "هماهنگی جهت بازدید حضوری ملک",
+    "quickQ3": "کدام آپارتمان‌ها یا ویلاها موجود است؟",
+    "welcomeBanner": "سوالی دارید؟ مستقیماً به تیم مدیریت ما پیام بفرستید و در همینجا پاسخ دریافت کنید.",
+    "advisorLabel": "ادمین اتایی",
+    "youLabel": "شما",
+    "editContact": "ویرایش مشخصات تماس"
   }
 }
 

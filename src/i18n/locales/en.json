@@ -50,6 +50,7 @@
     "propertiesSection": "Properties",
     "contactUs": "Contact Us",
     "rights": "© 2026 ATTAIE PROPERTIES. All rights reserved.",
+    "developerCredit": "Developed by Roheen Ahmadi",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "langToggle": "فارسی"
@@ -179,6 +180,28 @@
     "projectDetails": "Project Details",
     "agentDetails": "Agent Details",
     "careerDetails": "Career Details"
+  },
+  "chat": {
+    "buttonLabel": "Chat with Admin",
+    "title": "Attaie Direct Support",
+    "subtitle": "Ask our team directly about any property, project, or pricing",
+    "onlineBadge": "Advisors Online",
+    "nameLabel": "Your Name *",
+    "namePlaceholder": "e.g. Ahmad Khan",
+    "phoneLabel": "Phone / WhatsApp *",
+    "phonePlaceholder": "e.g. +93 78 222 2279",
+    "emailLabel": "Email (Optional)",
+    "emailPlaceholder": "you@example.com",
+    "messagePlaceholder": "Type your question for our admin…",
+    "sendButton": "Send",
+    "startChatButton": "Send Message to Admin",
+    "quickQ1": "Ask about pricing & payment plans",
+    "quickQ2": "Schedule a property viewing",
+    "quickQ3": "Which apartments/villas are available?",
+    "welcomeBanner": "Have a question? Send a direct message to our admin team and receive a reply right here.",
+    "advisorLabel": "Attaie Admin",
+    "youLabel": "You",
+    "editContact": "Update Contact Info"
   }
 }
 
