@@ -40,6 +40,7 @@ import {
   type RoomHotspot,
 } from '@/lib/projectExplorerUtils';
 import { ApartmentFullInfoModal } from './ProjectUnitsSection';
+import { BlueprintViewer } from './BlueprintViewer';
 
 export interface DualPaneElevationXRayViewProps {
   projectId?: number | string;
@@ -123,6 +124,7 @@ export const DualPaneElevationXRayView: React.FC<DualPaneElevationXRayViewProps>
   const [viewMode, setViewMode] = useState<'split' | 'furnished' | 'technical' | 'side-by-side'>('split');
   const [elevationDisplayMode, setElevationDisplayMode] = useState<'svg-cad' | 'photorealistic'>('svg-cad');
   const [modalUnit, setModalUnit] = useState<ProjectUnit | null>(null);
+  const [isBlueprintModalOpen, setIsBlueprintModalOpen] = useState(false);
 
   // Keep selected floor valid
   useEffect(() => {
@@ -880,15 +882,11 @@ export const DualPaneElevationXRayView: React.FC<DualPaneElevationXRayViewProps>
                 {activePlans.masterplanImg && (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (activePlans.masterplanImg) {
-                        window.open(activePlans.masterplanImg, '_blank');
-                      }
-                    }}
+                    onClick={() => setIsBlueprintModalOpen(true)}
                     className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-white/80 border border-white/15 transition-colors cursor-pointer inline-flex items-center gap-1.5 self-start sm:self-auto"
                   >
                     <FileText size={13} className="text-brand-gold-lt" />
-                    <span>Floor Plate Masterplan</span>
+                    <span>Floor Plate Blueprint &amp; Hotspots</span>
                   </button>
                 )}
               </div>
@@ -1272,6 +1270,39 @@ export const DualPaneElevationXRayView: React.FC<DualPaneElevationXRayViewProps>
           unit={modalUnit}
           projectName={projectName}
           onClose={() => setModalUnit(null)}
+        />
+      )}
+
+      {/* Interactive Blueprint Viewer with Unit Hotspots Modal */}
+      {isBlueprintModalOpen && (
+        <BlueprintViewer
+          floorPlanUrl={activePlans.masterplanImg || activePlans.technicalPlan}
+          propertyTitle={`${projectName} — Level ${activeFloor.floor} Floor Plate`}
+          threeDPlanUrl={activePlans.furnishedPlan}
+          units={currentFloorUnits.map((u) => ({
+            id: u.id,
+            unit_number: u.unit_number,
+            title: u.title,
+            floor: u.floor,
+            beds: u.beds,
+            baths: u.baths,
+            area: u.area,
+            price: u.price,
+            currency: u.currency,
+            status: u.status,
+            xPct: (u as { xPct?: number }).xPct ?? 0,
+            yPct: (u as { yPct?: number }).yPct ?? 0,
+            description: u.description,
+          }))}
+          selectedUnitId={selectedUnit.id}
+          onSelectUnit={(hotspot) => {
+            const numId = Number(hotspot.id);
+            if (!isNaN(numId)) {
+              setSelectedUnitId(numId);
+            }
+          }}
+          onRequestVisit={onRequestVisit}
+          onClose={() => setIsBlueprintModalOpen(false)}
         />
       )}
     </section>
