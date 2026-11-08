@@ -1166,6 +1166,74 @@ export const AttaieGoogleMap: React.FC<AttaieGoogleMapProps> = ({
   const effectiveDirections = showDirections ?? showRoutePlanner ?? true;
   const effectiveHeight = heightClass ?? heightClassName ?? 'h-[460px]';
 
+  if (!apiKey) {
+    return (
+      <div
+        className={`w-full ${effectiveHeight} rounded-2xl bg-brand-navy text-white p-6 relative overflow-hidden flex flex-col justify-between shadow-brand-lg`}
+      >
+        <div className="absolute inset-0 islamic-pattern opacity-15 pointer-events-none" />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-gold text-white text-xs font-bold">
+              <MapPin size={13} />
+              <span>Kabul Interactive Map Directory</span>
+            </span>
+            <span className="text-xs text-white/70">Wazir Akbar Khan &amp; Shahr-e-Naw</span>
+          </div>
+          <h3 className="text-xl font-display font-bold text-white mb-2">
+            Attaie Properties Prime Locations in Kabul
+          </h3>
+          <p className="text-xs text-white/75 mb-6 max-w-lg leading-relaxed">
+            Explore our verified listings and flagship multi-unit developments across Kabul’s premier growth corridors.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[260px] overflow-y-auto pr-1">
+            {effectiveItems.map((item, idx) => (
+              <div
+                key={item.id || idx}
+                className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 flex flex-col justify-between hover:bg-white/15 transition-colors"
+              >
+                <div>
+                  <h4 className="text-sm font-bold text-white line-clamp-1 mb-1">{item.title}</h4>
+                  <p className="text-xs text-white/70 flex items-center gap-1 mb-2">
+                    <MapPin size={12} className="text-brand-gold shrink-0" />
+                    <span className="line-clamp-1">{item.locationQuery}</span>
+                  </p>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
+                  <span className="font-extrabold text-brand-gold">
+                    {item.priceDisplay || item.type || 'Verified'}
+                  </span>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.locationQuery)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-white hover:text-brand-gold font-bold transition-colors"
+                  >
+                    <span>Open Map</span>
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
+          <span>Coordinates: 34.5553° N, 69.2075° E (Kabul, Afghanistan)</span>
+          <a
+            href="https://maps.google.com/?q=Wazir+Akbar+Khan+Kabul"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-gold hover:underline font-semibold"
+          >
+            View Kabul Region on Google Maps →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <APIProvider apiKey={apiKey} language="en" region="AF">
       <MapWorkspaceInner

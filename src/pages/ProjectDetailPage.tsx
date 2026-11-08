@@ -12,7 +12,7 @@ import {
   Building2,
   CheckCircle2,
 } from 'lucide-react';
-import { getProject, type Project } from '@/lib/dbService';
+import { getProject, type Project, type ProjectUnit } from '@/lib/dbService';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/Button';
@@ -28,6 +28,11 @@ import fallbackHouseImg from '@/assets/images/category_master_projects_179403742
 const PremiumProjectExplorer = lazy(() =>
   import('@/components/project/PremiumProjectExplorer').then((m) => ({
     default: m.PremiumProjectExplorer,
+  }))
+);
+const DualPaneElevationXRayView = lazy(() =>
+  import('@/components/project/DualPaneElevationXRayView').then((m) => ({
+    default: m.DualPaneElevationXRayView,
   }))
 );
 const AttaieGoogleMap = lazy(() =>
@@ -161,6 +166,8 @@ export function ProjectDetailPage() {
   const { t, i18n } = useTranslation();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncedFloor, setSyncedFloor] = useState<number | null>(null);
+  const [syncedUnit, setSyncedUnit] = useState<ProjectUnit | null>(null);
   const isRtl = i18n.language === 'fa';
 
   useEffect(() => {
@@ -257,11 +264,15 @@ export function ProjectDetailPage() {
               </div>
             }
           >
-            <PremiumProjectExplorer
+            <DualPaneElevationXRayView
               projectId={project.id}
               projectName={name}
               projectLocation={location}
               deliveryDate={project.delivery_date}
+              projectStatus={project.status}
+              masterplanImageUrl={project.masterplan_image}
+              onFloorHover={(f) => setSyncedFloor(f)}
+              onSelectUnit={(u) => setSyncedUnit(u)}
               initialExteriorUrl={
                 project.image_url ||
                 (project.id === 2

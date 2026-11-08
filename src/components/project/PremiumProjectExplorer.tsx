@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   motion,
   AnimatePresence,
   useMotionValue,
   useSpring,
   useTransform,
-} from 'motion/react';
+} from 'framer-motion';
 import {
   SlidersHorizontal,
   RotateCcw,
@@ -14,10 +14,33 @@ import {
   Eye,
   MoveHorizontal,
   X,
+  Layers,
+  Bed,
+  Bath,
+  Maximize2,
+  Calendar,
+  CheckCircle2,
+  Columns2,
+  FileText,
+  MessageCircle,
+  Sparkles,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
-import defaultExteriorImg from '../../assets/images/project_exterior_elevation_1793995966183.jpg';
-import defaultTechnicalPlanImg from '../../assets/images/floorplan_technical_blueprint_1793995969202.jpg';
-import defaultFurnishedPlanImg from '../../assets/images/floorplan_furnished_3d_1793995968986.jpg';
+import { useTranslation } from 'react-i18next';
+import { getProjectUnits, type ProjectUnit } from '@/lib/dbService';
+import {
+  resolveUnitPlans,
+  buildFloorGroups,
+  getUnitRooms,
+  defaultExteriorImg,
+  defaultTechnicalPlanImg,
+  defaultFurnishedPlanImg,
+  type FloorGroup,
+  type RoomHotspot,
+} from '@/lib/projectExplorerUtils';
+import { ApartmentFullInfoModal } from './ProjectUnitsSection';
 
 export interface ExplorerCustomAssets {
   exteriorUrl: string;
@@ -31,504 +54,185 @@ export interface PremiumProjectExplorerProps {
   projectName?: string;
   projectLocation?: string;
   deliveryDate?: string | null;
+  projectStatus?: string;
   initialExteriorUrl?: string | null;
   initialTechnicalPlanUrl?: string | null;
   initialFurnishedPlanUrl?: string | null;
+  masterplanImageUrl?: string | null;
+  units?: ProjectUnit[];
   onRequestVisit?: (unitLabel: string) => void;
+  onSelectUnit?: (unit: ProjectUnit) => void;
 }
 
-interface FloorSpec {
-  floor: number;
-  label: string;
-  elevationMeters: number;
-  bandTopPct: number;
-  bandHeightPct: number;
-  totalUnits: number;
-  availableUnits: number;
-  reservedUnits: number;
-  soldUnits: number;
-  typologyId: 'type-a' | 'type-b' | 'penthouse';
-  startingPriceUsd: number;
-  status: 'available' | 'limited' | 'reserved' | 'sold';
-}
-
-interface RoomHotspot {
-  id: string;
-  nameEn: string;
-  nameFa: string;
-  areaSqm: number;
-  dimensions: string;
-  xPct: number;
-  yPct: number;
-  orientation: string;
-  finishSpec: string;
-  structuralNote: string;
-}
-
-interface UnitTypology {
-  id: 'type-a' | 'type-b' | 'penthouse';
-  code: string;
-  name: string;
-  nameFa: string;
-  totalAreaSqm: number;
-  balconyAreaSqm: number;
-  beds: number;
-  baths: number;
-  hasMehmankhana: boolean;
-  aspect: string;
-  basePriceUsd: number;
-  ceilingHeightM: number;
-  rooms: RoomHotspot[];
-}
-
-const CUSTOM_ASSETS_STORAGE_KEY = 'attaie_custom_project_explorer_assets_v1';
-
-const UNIT_TYPOLOGIES: Record<'type-a' | 'type-b' | 'penthouse', UnitTypology> = {
-  'type-a': {
-    id: 'type-a',
-    code: 'TYPE A · RESIDENCE',
-    name: '3-Bedroom + Formal Mehmankhana',
-    nameFa: 'اپارتمان ۳ اتاقه + مهمان‌خانه مستقل',
-    totalAreaSqm: 210,
-    balconyAreaSqm: 12.5,
-    beds: 3,
-    baths: 3,
-    hasMehmankhana: true,
-    aspect: 'South-East / Mountain & Courtyard View',
-    basePriceUsd: 168000,
-    ceilingHeightM: 3.15,
-    rooms: [
-      {
-        id: 'salon',
-        nameEn: 'Family Living Salon',
-        nameFa: 'صالون نشیمن خانوادگی',
-        areaSqm: 57.8,
-        dimensions: '6.80m × 8.50m',
-        xPct: 24,
-        yPct: 62,
-        orientation: 'South Terrace Glazing',
-        finishSpec: 'Herringbone Oak Parquet · Acoustic Cove Ceiling',
-        structuralNote: 'Clear-span RC beam · 250×450mm perimeter columns',
-      },
-      {
-        id: 'mehmankhana',
-        nameEn: 'Formal Mehmankhana (Guest Reception)',
-        nameFa: 'مهمان‌خانه رسمی با ورودی مجزا',
-        areaSqm: 24.0,
-        dimensions: '4.20m × 5.70m',
-        xPct: 43,
-        yPct: 66,
-        orientation: 'South-Central',
-        finishSpec: 'Hand-finished Travertine Threshold · Dual Pocket Doors',
-        structuralNote: 'Direct foyer privacy separation from family wing',
-      },
-      {
-        id: 'kitchen',
-        nameEn: 'Closed & Open Dual Kitchen',
-        nameFa: 'آشپزخانه مدرن با جزیره سنگ مرمر',
-        areaSqm: 18.5,
-        dimensions: '3.60m × 5.15m',
-        xPct: 55,
-        yPct: 31,
-        orientation: 'North-Central',
-        finishSpec: 'Calacatta Quartz Countertop · Dedicated Utility Balcony',
-        structuralNote: 'Central wet-riser shaft + natural ventilation duct',
-      },
-      {
-        id: 'master',
-        nameEn: 'Master Bedroom Suite + Walk-In',
-        nameFa: 'اتاق خواب ماستر با الماری و تشناب مستقل',
-        areaSqm: 28.0,
-        dimensions: '4.20m × 6.65m',
-        xPct: 83,
-        yPct: 27,
-        orientation: 'East Morning Sun',
-        finishSpec: 'En-suite 8.5 m² Marble Bath · 6.0 m² Walk-In Closet',
-        structuralNote: 'Double-glazed thermal break aluminum curtain wall',
-      },
-      {
-        id: 'bedroom-1',
-        nameEn: 'Bedroom 2 (South Wing)',
-        nameFa: 'اتاق خواب دوم (سمت آفتاب‌رخ)',
-        areaSqm: 18.0,
-        dimensions: '3.60m × 5.00m',
-        xPct: 60,
-        yPct: 64,
-        orientation: 'South Daylight',
-        finishSpec: 'Built-in Walnut Wardrobe · Shared 6.0 m² Bath',
-        structuralNote: '200mm acoustic block partition wall',
-      },
-      {
-        id: 'bedroom-2',
-        nameEn: 'Bedroom 3 (Corner Suite)',
-        nameFa: 'اتاق خواب سوم',
-        areaSqm: 17.5,
-        dimensions: '4.20m × 4.15m',
-        xPct: 84,
-        yPct: 68,
-        orientation: 'South-East Corner',
-        finishSpec: 'Adjacent 5.5 m² Bathroom · Full-Height Casement Windows',
-        structuralNote: 'Corner shear-wall seismic reinforcement',
-      },
-      {
-        id: 'terrace',
-        nameEn: 'Landscaped Panorama Terrace',
-        nameFa: 'بام‌تراس و بالکن سرتاسری',
-        areaSqm: 12.5,
-        dimensions: '1.80m × 6.95m',
-        xPct: 30,
-        yPct: 86,
-        orientation: 'Full South Exposure',
-        finishSpec: 'Non-slip Frost-Proof Porcelain · Integrated Planter Box',
-        structuralNote: 'Cantilevered slab with thermal bridge insulation',
-      },
-    ],
-  },
-  'type-b': {
-    id: 'type-b',
-    code: 'TYPE B · EXECUTIVE',
-    name: '2-Bedroom + Mehmankhana Corner',
-    nameFa: 'اپارتمان ۲ اتاقه + مهمان‌خانه و بالکن',
-    totalAreaSqm: 165,
-    balconyAreaSqm: 9.8,
-    beds: 2,
-    baths: 2,
-    hasMehmankhana: true,
-    aspect: 'South-West / Sunset City View',
-    basePriceUsd: 132000,
-    ceilingHeightM: 3.1,
-    rooms: [
-      {
-        id: 'salon',
-        nameEn: 'Open Family Salon & Dining',
-        nameFa: 'صالون نشیمن و غذاخوری',
-        areaSqm: 46.5,
-        dimensions: '6.20m × 7.50m',
-        xPct: 26,
-        yPct: 60,
-        orientation: 'South-West Glazing',
-        finishSpec: 'Natural Oak Plank · Recessed Linear Lighting',
-        structuralNote: 'Post-tensioned flat slab · zero drop beams',
-      },
-      {
-        id: 'mehmankhana',
-        nameEn: 'Guest Mehmankhana Suite',
-        nameFa: 'مهمان‌خانه مستقل',
-        areaSqm: 21.0,
-        dimensions: '4.00m × 5.25m',
-        xPct: 44,
-        yPct: 65,
-        orientation: 'South',
-        finishSpec: 'Acoustic Sliding Partition · Guest Powder Room Access',
-        structuralNote: 'Dual-entry lobby vestibule',
-      },
-      {
-        id: 'kitchen',
-        nameEn: 'Enclosed Chef Kitchen',
-        nameFa: 'آشپزخانه مجهز با تهویه طبیعی',
-        areaSqm: 15.2,
-        dimensions: '3.60m × 4.20m',
-        xPct: 55,
-        yPct: 32,
-        orientation: 'North',
-        finishSpec: 'Matte Anthracite Cabinetry · Turkish Granite Top',
-        structuralNote: 'Dedicated utility laundry alcove (4.2 m²)',
-      },
-      {
-        id: 'master',
-        nameEn: 'Master Suite + En-suite Bath',
-        nameFa: 'اتاق خواب ماستر',
-        areaSqm: 26.5,
-        dimensions: '4.20m × 6.30m',
-        xPct: 82,
-        yPct: 29,
-        orientation: 'West Mountain View',
-        finishSpec: 'Walk-in Dressing Room · Rain Shower En-suite',
-        structuralNote: 'Triple-seal acoustic window frames',
-      },
-      {
-        id: 'bedroom-1',
-        nameEn: 'Second Bedroom',
-        nameFa: 'اتاق خواب دوم',
-        areaSqm: 16.8,
-        dimensions: '3.60m × 4.65m',
-        xPct: 62,
-        yPct: 66,
-        orientation: 'South',
-        finishSpec: 'Full-Height Wardrobe · Balcony Access',
-        structuralNote: 'Insulated exterior cavity wall',
-      },
-      {
-        id: 'terrace',
-        nameEn: 'Recessed Sky Balcony',
-        nameFa: 'بالکن آفتاب‌رخ',
-        areaSqm: 9.8,
-        dimensions: '1.80m × 5.45m',
-        xPct: 32,
-        yPct: 86,
-        orientation: 'South-West',
-        finishSpec: 'Tempered Laminated Glass Balustrade',
-        structuralNote: 'Integrated floor drainage channel',
-      },
-    ],
-  },
-  penthouse: {
-    id: 'penthouse',
-    code: 'SKY PENTHOUSE · LEVEL 11–12',
-    name: '4-Bedroom Panorama Sky Residence',
-    nameFa: 'پنت‌هاوس ۴ اتاقه با تخت‌بام اختصاصی',
-    totalAreaSqm: 320,
-    balconyAreaSqm: 38.0,
-    beds: 4,
-    baths: 4,
-    hasMehmankhana: true,
-    aspect: '360° Kabul Mountain & Paghman Panorama',
-    basePriceUsd: 285000,
-    ceilingHeightM: 3.6,
-    rooms: [
-      {
-        id: 'salon',
-        nameEn: 'Grand Double-Aspect Salon',
-        nameFa: 'صالون بزرگ پنت‌هاوس',
-        areaSqm: 78.0,
-        dimensions: '8.20m × 9.50m',
-        xPct: 25,
-        yPct: 60,
-        orientation: 'South & West Panorama',
-        finishSpec: 'Bookmatched Marble Feature Wall · Smart Climate Zone',
-        structuralNote: '3.60m clear ceiling height',
-      },
-      {
-        id: 'mehmankhana',
-        nameEn: 'Royal Mehmankhana Pavilion',
-        nameFa: 'مهمان‌خانه تشریفاتی و تخت‌بام',
-        areaSqm: 36.0,
-        dimensions: '5.00m × 7.20m',
-        xPct: 44,
-        yPct: 65,
-        orientation: 'South Terrace Direct Access',
-        finishSpec: 'Custom Hand-Carved Cedar Ceiling Trim · Private Foyer',
-        structuralNote: 'Direct elevator lobby access',
-      },
-      {
-        id: 'kitchen',
-        nameEn: 'Show Kitchen + Back Service Kitchen',
-        nameFa: 'آشپزخانه سرد و گرم',
-        areaSqm: 26.0,
-        dimensions: '4.50m × 5.80m',
-        xPct: 55,
-        yPct: 30,
-        orientation: 'North-East',
-        finishSpec: 'Waterfall Marble Island · Pantry & Staff Utility',
-        structuralNote: 'Dual exhaust & filtered fresh-air supply',
-      },
-      {
-        id: 'master',
-        nameEn: 'Presidential Master Wing',
-        nameFa: 'سوئیت ماستر اختصاصی',
-        areaSqm: 44.0,
-        dimensions: '5.50m × 8.00m',
-        xPct: 83,
-        yPct: 28,
-        orientation: 'East Sunrise Panorama',
-        finishSpec: 'His & Hers Walk-In Closets · Freestanding Soaking Tub',
-        structuralNote: 'Private east morning balcony',
-      },
-      {
-        id: 'terrace',
-        nameEn: 'Landscaped Takht-e-Bam Sky Garden',
-        nameFa: 'تخت‌بام سرسبز اختصاصی با آلاچیق',
-        areaSqm: 38.0,
-        dimensions: '2.60m × 14.60m',
-        xPct: 30,
-        yPct: 86,
-        orientation: 'Full Southern Horizon',
-        finishSpec: 'Pergola Gazebo · Outdoor Kitchen & Heated Seating Area',
-        structuralNote: 'Reinforced roof garden waterproofing membrane',
-      },
-    ],
-  },
-};
-
-const TOWER_FLOORS: FloorSpec[] = [
-  {
-    floor: 12,
-    label: 'Level 12 · Sky Penthouse North/South',
-    elevationMeters: 41.5,
-    bandTopPct: 9.5,
-    bandHeightPct: 5.5,
-    totalUnits: 2,
-    availableUnits: 1,
-    reservedUnits: 1,
-    soldUnits: 0,
-    typologyId: 'penthouse',
-    startingPriceUsd: 295000,
-    status: 'limited',
-  },
-  {
-    floor: 11,
-    label: 'Level 11 · Sky Penthouse Lower',
-    elevationMeters: 37.8,
-    bandTopPct: 15.2,
-    bandHeightPct: 5.4,
-    totalUnits: 2,
-    availableUnits: 2,
-    reservedUnits: 0,
-    soldUnits: 0,
-    typologyId: 'penthouse',
-    startingPriceUsd: 285000,
-    status: 'available',
-  },
-  {
-    floor: 10,
-    label: 'Level 10 · High-Zone Residence',
-    elevationMeters: 34.4,
-    bandTopPct: 21.0,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 3,
-    reservedUnits: 1,
-    soldUnits: 0,
-    typologyId: 'type-a',
-    startingPriceUsd: 182000,
-    status: 'available',
-  },
-  {
-    floor: 9,
-    label: 'Level 09 · High-Zone Residence',
-    elevationMeters: 31.1,
-    bandTopPct: 26.7,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 2,
-    reservedUnits: 1,
-    soldUnits: 1,
-    typologyId: 'type-a',
-    startingPriceUsd: 178000,
-    status: 'available',
-  },
-  {
-    floor: 8,
-    label: 'Level 08 · Panorama Residence',
-    elevationMeters: 27.8,
-    bandTopPct: 32.4,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 4,
-    reservedUnits: 0,
-    soldUnits: 0,
-    typologyId: 'type-a',
-    startingPriceUsd: 174000,
-    status: 'available',
-  },
-  {
-    floor: 7,
-    label: 'Level 07 · Mid-Rise Executive',
-    elevationMeters: 24.5,
-    bandTopPct: 38.1,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 1,
-    reservedUnits: 2,
-    soldUnits: 1,
-    typologyId: 'type-a',
-    startingPriceUsd: 170000,
-    status: 'limited',
-  },
-  {
-    floor: 6,
-    label: 'Level 06 · Mid-Rise Executive',
-    elevationMeters: 21.2,
-    bandTopPct: 43.8,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 3,
-    reservedUnits: 0,
-    soldUnits: 1,
-    typologyId: 'type-b',
-    startingPriceUsd: 138000,
-    status: 'available',
-  },
-  {
-    floor: 5,
-    label: 'Level 05 · Courtyard View',
-    elevationMeters: 17.9,
-    bandTopPct: 49.5,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 2,
-    reservedUnits: 2,
-    soldUnits: 0,
-    typologyId: 'type-b',
-    startingPriceUsd: 135000,
-    status: 'available',
-  },
-  {
-    floor: 4,
-    label: 'Level 04 · Courtyard View',
-    elevationMeters: 14.6,
-    bandTopPct: 55.2,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 0,
-    reservedUnits: 1,
-    soldUnits: 3,
-    typologyId: 'type-b',
-    startingPriceUsd: 132000,
-    status: 'reserved',
-  },
-  {
-    floor: 3,
-    label: 'Level 03 · Garden Canopy Residence',
-    elevationMeters: 11.3,
-    bandTopPct: 60.9,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 2,
-    reservedUnits: 1,
-    soldUnits: 1,
-    typologyId: 'type-a',
-    startingPriceUsd: 168000,
-    status: 'available',
-  },
-  {
-    floor: 2,
-    label: 'Level 02 · Podium Residence',
-    elevationMeters: 8.0,
-    bandTopPct: 66.6,
-    bandHeightPct: 5.4,
-    totalUnits: 4,
-    availableUnits: 0,
-    reservedUnits: 0,
-    soldUnits: 4,
-    typologyId: 'type-b',
-    startingPriceUsd: 128000,
-    status: 'sold',
-  },
-  {
-    floor: 1,
-    label: 'Level 01 · Grand Lobby & Concierge',
-    elevationMeters: 4.5,
-    bandTopPct: 72.5,
-    bandHeightPct: 7.5,
-    totalUnits: 2,
-    availableUnits: 1,
-    reservedUnits: 1,
-    soldUnits: 0,
-    typologyId: 'type-a',
-    startingPriceUsd: 165000,
-    status: 'limited',
-  },
-];
+const CUSTOM_ASSETS_STORAGE_KEY = 'attaie_custom_project_explorer_assets_v2';
 
 export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
+  projectId = 1,
   projectName = 'Attaie Signature Towers — Wazir Akbar Khan',
   projectLocation = 'Street 10, Wazir Akbar Khan, Kabul',
   deliveryDate = 'Q4 2027',
+  projectStatus = 'In Progress',
   initialExteriorUrl,
   initialTechnicalPlanUrl,
   initialFurnishedPlanUrl,
+  masterplanImageUrl,
+  units: propUnits,
+  onRequestVisit,
+  onSelectUnit,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'fa';
+  const numericProjectId = Number(projectId) || 1;
+
+  // 1. Live project units state (from props or API)
+  const [internalUnits, setInternalUnits] = useState<ProjectUnit[]>(propUnits || []);
+  const [loadingUnits, setLoadingUnits] = useState<boolean>(!propUnits || propUnits.length === 0);
+
+  useEffect(() => {
+    if (propUnits && propUnits.length > 0) {
+      setInternalUnits(propUnits);
+      setLoadingUnits(false);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingUnits(true);
+    getProjectUnits(numericProjectId)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.items && res.items.length > 0) {
+          setInternalUnits(res.items);
+        }
+      })
+      .catch(() => {
+        // Fallbacks will be handled gracefully by buildFloorGroups
+      })
+      .finally(() => {
+        if (isMounted) setLoadingUnits(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [propUnits, numericProjectId]);
+
+  // 2. Dynamic Floor Groups derived from the project's actual data
+  const floorGroups = useMemo<FloorGroup[]>(() => {
+    return buildFloorGroups(internalUnits, numericProjectId);
+  }, [internalUnits, numericProjectId]);
+
+  // 3. Selection State
+  const [selectedFloorNum, setSelectedFloorNum] = useState<number>(() => {
+    return floorGroups[0]?.floor ?? 4;
+  });
+  const [hoveredFloorNum, setHoveredFloorNum] = useState<number | null>(null);
+  const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('salon');
+  const [showDimensionPins, setShowDimensionPins] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<'split' | 'furnished' | 'technical' | 'side-by-side'>('split');
+  const [modalUnit, setModalUnit] = useState<ProjectUnit | null>(null);
+  const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
+
+  // Keep selected floor valid when floorGroups change
+  useEffect(() => {
+    if (floorGroups.length > 0) {
+      const exists = floorGroups.some((g) => g.floor === selectedFloorNum);
+      if (!exists) {
+        setSelectedFloorNum(floorGroups[0].floor);
+      }
+    }
+  }, [floorGroups, selectedFloorNum]);
+
+  // Active Floor Group
+  const activeFloor = useMemo<FloorGroup>(() => {
+    const target = hoveredFloorNum ?? selectedFloorNum;
+    return (
+      floorGroups.find((f) => f.floor === target) ||
+      floorGroups[0] || {
+        floor: 1,
+        label: 'Level 01',
+        elevationMeters: 3.5,
+        bandTopPct: 50,
+        bandHeightPct: 6,
+        units: [],
+        totalUnits: 4,
+        availableUnits: 3,
+        reservedUnits: 1,
+        soldUnits: 0,
+        startingPriceUsd: 135000,
+        status: 'available',
+      }
+    );
+  }, [floorGroups, hoveredFloorNum, selectedFloorNum]);
+
+  const lockedFloor = useMemo<FloorGroup>(() => {
+    return (
+      floorGroups.find((f) => f.floor === selectedFloorNum) ||
+      floorGroups[0] ||
+      activeFloor
+    );
+  }, [floorGroups, selectedFloorNum, activeFloor]);
+
+  // Available units on currently locked floor
+  const floorUnits = useMemo<ProjectUnit[]>(() => {
+    if (lockedFloor.units && lockedFloor.units.length > 0) {
+      return lockedFloor.units;
+    }
+    // Synthesize fallback units for this floor level if database has no units for it yet
+    return [
+      {
+        id: lockedFloor.floor * 100 + 1,
+        project_id: numericProjectId,
+        unit_number: `Floor ${lockedFloor.floor} — Unit A`,
+        title: '3+1 Bedroom Luxury Residence',
+        floor: lockedFloor.floor,
+        beds: 3,
+        baths: 3,
+        area: 173,
+        price: lockedFloor.startingPriceUsd,
+        currency: 'USD',
+        status: 'available',
+        image_url: null,
+        description: `Sunlit residence on Floor ${lockedFloor.floor} with private guest salon (Mehmankhana), double glazing, and city views.`,
+      },
+      {
+        id: lockedFloor.floor * 100 + 2,
+        project_id: numericProjectId,
+        unit_number: `Floor ${lockedFloor.floor} — Unit B`,
+        title: '4+1 Bedroom Family Corner Suite',
+        floor: lockedFloor.floor,
+        beds: 4,
+        baths: 3,
+        area: 215,
+        price: lockedFloor.startingPriceUsd + 28000,
+        currency: 'USD',
+        status: 'available',
+        image_url: null,
+        description: `Corner multi-generational suite on Floor ${lockedFloor.floor} with dual balconies and panoramic mountain vistas.`,
+      },
+    ];
+  }, [lockedFloor, numericProjectId]);
+
+  // Selected Unit
+  const selectedUnit = useMemo<ProjectUnit>(() => {
+    if (selectedUnitId !== null) {
+      const match = floorUnits.find((u) => u.id === selectedUnitId);
+      if (match) return match;
+    }
+    return floorUnits[0];
+  }, [floorUnits, selectedUnitId]);
+
+  // Synchronize unit selection when floor changes
+  useEffect(() => {
+    if (floorUnits.length > 0) {
+      const stillInList = floorUnits.some((u) => u.id === selectedUnitId);
+      if (!stillInList) {
+        setSelectedUnitId(floorUnits[0].id);
+      }
+    }
+  }, [floorUnits, selectedUnitId]);
+
+  // 4. Custom assets with fallback
   const [customAssets, setCustomAssets] = useState<ExplorerCustomAssets>(() => {
     try {
       const saved = localStorage.getItem(CUSTOM_ASSETS_STORAGE_KEY);
@@ -536,8 +240,10 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
         const parsed = JSON.parse(saved) as Partial<ExplorerCustomAssets>;
         return {
           exteriorUrl: parsed.exteriorUrl || initialExteriorUrl || defaultExteriorImg,
-          technicalPlanUrl: parsed.technicalPlanUrl || initialTechnicalPlanUrl || defaultTechnicalPlanImg,
-          furnishedPlanUrl: parsed.furnishedPlanUrl || initialFurnishedPlanUrl || defaultFurnishedPlanImg,
+          technicalPlanUrl:
+            parsed.technicalPlanUrl || initialTechnicalPlanUrl || defaultTechnicalPlanImg,
+          furnishedPlanUrl:
+            parsed.furnishedPlanUrl || initialFurnishedPlanUrl || defaultFurnishedPlanImg,
         };
       }
     } catch {
@@ -550,16 +256,43 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
     };
   });
 
-  const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
+  // 5. Resolved plans for selected unit
+  const activePlans = useMemo(() => {
+    const resolved = resolveUnitPlans(selectedUnit, {
+      id: numericProjectId,
+      image_url: initialExteriorUrl,
+      masterplan_image: masterplanImageUrl,
+    });
 
-  // Explorer State
-  const [selectedFloorNum, setSelectedFloorNum] = useState<number>(8);
-  const [hoveredFloorNum, setHoveredFloorNum] = useState<number | null>(null);
-  const [selectedTypologyId, setSelectedTypologyId] = useState<'type-a' | 'type-b' | 'penthouse'>('type-a');
-  const [selectedRoomId, setSelectedRoomId] = useState<string>('salon');
-  const [showDimensionPins, setShowDimensionPins] = useState<boolean>(true);
+    return {
+      technicalPlan: customAssets.technicalPlanUrl !== defaultTechnicalPlanImg
+        ? customAssets.technicalPlanUrl
+        : resolved.technicalPlan,
+      furnishedPlan: customAssets.furnishedPlanUrl !== defaultFurnishedPlanImg
+        ? customAssets.furnishedPlanUrl
+        : resolved.furnishedPlan,
+      legendImg: resolved.legendImg,
+      masterplanImg: resolved.masterplanImg || masterplanImageUrl,
+    };
+  }, [
+    selectedUnit,
+    numericProjectId,
+    initialExteriorUrl,
+    masterplanImageUrl,
+    customAssets.technicalPlanUrl,
+    customAssets.furnishedPlanUrl,
+  ]);
 
-  // Default 50/50 X-Ray Split Slider
+  // 6. Interactive room hotspots for selected unit
+  const unitRooms = useMemo<RoomHotspot[]>(() => {
+    return getUnitRooms(selectedUnit);
+  }, [selectedUnit]);
+
+  const activeRoom = useMemo<RoomHotspot>(() => {
+    return unitRooms.find((r) => r.id === selectedRoomId) || unitRooms[0];
+  }, [unitRooms, selectedRoomId]);
+
+  // 7. Interactive 50/50 X-Ray Split Slider
   const [splitPct, setSplitPct] = useState<number>(50);
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const [isDraggingSplit, setIsDraggingSplit] = useState(false);
@@ -567,23 +300,6 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
   const smoothSplit = useSpring(splitMotion, { stiffness: 320, damping: 32 });
   const clipPathRight = useTransform(smoothSplit, (v) => `inset(0 ${100 - v}% 0 0)`);
   const splitHandleLeft = useTransform(smoothSplit, (v) => `${v}%`);
-
-  const activeFloor =
-    TOWER_FLOORS.find((f) => f.floor === (hoveredFloorNum ?? selectedFloorNum)) || TOWER_FLOORS[4];
-  const lockedFloor =
-    TOWER_FLOORS.find((f) => f.floor === selectedFloorNum) || TOWER_FLOORS[4];
-  const activeTypology = UNIT_TYPOLOGIES[selectedTypologyId];
-  const activeRoom =
-    activeTypology.rooms.find((r) => r.id === selectedRoomId) || activeTypology.rooms[0];
-
-  const handleSelectFloor = (floorSpec: FloorSpec) => {
-    setSelectedFloorNum(floorSpec.floor);
-    setSelectedTypologyId(floorSpec.typologyId);
-    const nextTypology = UNIT_TYPOLOGIES[floorSpec.typologyId];
-    if (!nextTypology.rooms.some((r) => r.id === selectedRoomId)) {
-      setSelectedRoomId(nextTypology.rooms[0].id);
-    }
-  };
 
   useEffect(() => {
     splitMotion.set(splitPct);
@@ -617,6 +333,18 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
     };
   }, [isDraggingSplit, updateSplitFromClientX]);
 
+  const handleSelectFloor = (floorGroup: FloorGroup) => {
+    setSelectedFloorNum(floorGroup.floor);
+    if (floorGroup.units.length > 0) {
+      setSelectedUnitId(floorGroup.units[0].id);
+    }
+  };
+
+  const handleSelectUnit = (unit: ProjectUnit) => {
+    setSelectedUnitId(unit.id);
+    if (onSelectUnit) onSelectUnit(unit);
+  };
+
   const handleFileUpload = (
     slot: keyof Pick<ExplorerCustomAssets, 'exteriorUrl' | 'technicalPlanUrl' | 'furnishedPlanUrl'>,
     file: File | undefined
@@ -631,7 +359,7 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
         try {
           localStorage.setItem(CUSTOM_ASSETS_STORAGE_KEY, JSON.stringify(next));
         } catch {
-          // ignore if data URL exceeds localStorage quota
+          // ignore localStorage quota limit
         }
         return next;
       });
@@ -653,25 +381,35 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
     }
   };
 
-  const unitPrice = lockedFloor.startingPriceUsd || activeTypology.basePriceUsd;
+  const unitPrice = selectedUnit.price || lockedFloor.startingPriceUsd;
+  const unitTitle = selectedUnit.title || `${selectedUnit.unit_number} Residence`;
+  const areaValue = selectedUnit.area || 173;
 
   return (
     <section
       id="interactive-project-explorer"
-      className="my-12 rounded-2xl bg-brand-navy-deep text-white border border-white/10 overflow-hidden shadow-brand-xl"
+      className="my-10 rounded-2xl bg-brand-navy-deep text-white border border-white/10 overflow-hidden shadow-2xl"
     >
-      {/* Top Studio Bar: Title + Elevation + X-Ray Split Indicator + Custom Asset Studio Button */}
+      {/* Top Studio Bar: Title + Realtime Breadcrumbs + Image Studio Toggle */}
       <div className="border-b border-white/10 bg-brand-navy px-5 py-5 sm:px-8">
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs text-white/60 mb-1.5">
-              <span className="font-semibold text-brand-gold-lt">Interactive Architectural Explorer</span>
+              <span className="font-semibold text-brand-gold-lt uppercase tracking-wider">
+                {t('projects.interactiveExplorer', 'Interactive Architectural Development Explorer')}
+              </span>
               <span aria-hidden="true">·</span>
               <span>{projectLocation}</span>
               {deliveryDate && (
                 <>
                   <span aria-hidden="true">·</span>
-                  <span>Delivery {deliveryDate}</span>
+                  <span>{t('projects.delivery', 'Delivery')}: {deliveryDate}</span>
+                </>
+              )}
+              {projectStatus && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="text-emerald-400 font-medium">{projectStatus}</span>
                 </>
               )}
             </div>
@@ -683,7 +421,7 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-gold text-white text-xs font-bold shadow-sm">
               <SlidersHorizontal size={14} className="shrink-0" />
-              <span>Elevation + 50/50 X-Ray Split</span>
+              <span>{t('projects.facadeFloorXray', 'Facade Floor Selector + 50/50 X-Ray')}</span>
             </div>
 
             <button
@@ -696,12 +434,12 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
               }`}
             >
               <Upload size={14} />
-              <span>Custom Project Images</span>
+              <span>{t('projects.customProjectAssets', 'Project Images & Uploads')}</span>
             </button>
           </div>
         </div>
 
-        {/* Collapsible Custom Project Asset Uploader Drawer */}
+        {/* Collapsible Custom Asset Drawer */}
         <AnimatePresence initial={false}>
           {assetDrawerOpen && (
             <motion.div
@@ -715,10 +453,10 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                   <div>
                     <h3 className="text-sm font-bold text-white">
-                      Load Your Project Exterior &amp; X-Ray Split Floor Plans
+                      Custom Building Elevation &amp; Floor Plan Layers
                     </h3>
                     <p className="text-xs text-white/65">
-                      Upload local files or paste image URLs below to update the Elevation + 50/50 X-Ray Split stage.
+                      Upload local images or paste live render URLs to customize this interactive explorer.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -728,13 +466,13 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
                       className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-semibold text-white/85 transition-colors whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5"
                     >
                       <RotateCcw size={13} />
-                      <span>Reset Default Assets</span>
+                      <span>Reset Defaults</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setAssetDrawerOpen(false)}
                       className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white/75 cursor-pointer"
-                      aria-label="Close Custom Images Drawer"
+                      aria-label="Close Drawer"
                     >
                       <X size={15} />
                     </button>
@@ -747,20 +485,20 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
                       {
                         key: 'exteriorUrl' as const,
                         title: '01. Exterior Building Elevation',
-                        subtitle: 'Used in Tower Floor Selector',
+                        subtitle: 'Tower facade with interactive floor bands',
                         value: customAssets.exteriorUrl,
                       },
                       {
                         key: 'technicalPlanUrl' as const,
-                        title: '02. Left X-Ray Layer',
-                        subtitle: '2D Architectural Plan Layer',
-                        value: customAssets.technicalPlanUrl,
+                        title: '02. 2D Technical Architectural Blueprint',
+                        subtitle: 'Structural dimensions & CAD layer',
+                        value: activePlans.technicalPlan,
                       },
                       {
                         key: 'furnishedPlanUrl' as const,
-                        title: '03. Right X-Ray Layer',
-                        subtitle: 'Spatial Interior Plan Layer',
-                        value: customAssets.furnishedPlanUrl,
+                        title: '03. 3D Furnished Interior Layout',
+                        subtitle: 'Spatial rendered plan layer',
+                        value: activePlans.furnishedPlan,
                       },
                     ] as const
                   ).map((slot) => (
@@ -812,295 +550,586 @@ export const PremiumProjectExplorer: React.FC<PremiumProjectExplorerProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Shared KPI Telemetry Bar (No Book Viewing button) */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 border-b border-white/10 bg-brand-navy-deep/70 divide-y lg:divide-y-0 lg:divide-x divide-white/10">
+      {/* Shared KPI Telemetry Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-5 border-b border-white/10 bg-brand-navy-deep/70 divide-y md:divide-y-0 md:divide-x divide-white/10">
         <div className="px-5 py-3.5">
-          <p className="text-[11px] text-white/55">Selected Floor Plate</p>
+          <p className="text-[11px] text-white/55">{t('projects.selectedFloor', 'Selected Floor Plate')}</p>
           <p className="text-base font-bold text-white mt-0.5 tabular-nums">
             Floor {String(lockedFloor.floor).padStart(2, '0')} · +{lockedFloor.elevationMeters}m
           </p>
         </div>
         <div className="px-5 py-3.5">
-          <p className="text-[11px] text-white/55">Apartment Typology</p>
-          <p className="text-base font-bold text-white mt-0.5 truncate">
-            {activeTypology.totalAreaSqm} m² · {activeTypology.beds} Bed + Mehmankhana
+          <p className="text-[11px] text-white/55">{t('projects.selectedApartment', 'Selected Apartment')}</p>
+          <p className="text-base font-bold text-brand-gold-lt mt-0.5 truncate">
+            {selectedUnit.unit_number} ({areaValue} m²)
           </p>
         </div>
         <div className="px-5 py-3.5">
-          <p className="text-[11px] text-white/55">Floor Availability</p>
+          <p className="text-[11px] text-white/55">{t('projects.floorInventory', 'Floor Units')}</p>
           <p className="text-base font-bold text-white mt-0.5 tabular-nums">
-            {lockedFloor.availableUnits} Available · {lockedFloor.reservedUnits} Reserved
+            {lockedFloor.availableUnits} Available · {lockedFloor.totalUnits} Total
           </p>
         </div>
         <div className="px-5 py-3.5">
-          <p className="text-[11px] text-white/55">Active Room Focus</p>
-          <p className="text-base font-bold text-brand-gold-lt mt-0.5 truncate tabular-nums">
+          <p className="text-[11px] text-white/55">{t('projects.roomFocus', 'Active Room Focus')}</p>
+          <p className="text-base font-bold text-white mt-0.5 truncate tabular-nums">
             {activeRoom.nameEn.split(' ')[0]} · {activeRoom.areaSqm} m²
           </p>
         </div>
-        <div className="px-5 py-3.5 col-span-2 lg:col-span-1">
-          <p className="text-[11px] text-white/55">Starting Valuation</p>
-          <p className="text-base font-bold text-white mt-0.5 tabular-nums">
-            ${unitPrice.toLocaleString()}
+        <div className="px-5 py-3.5 col-span-2 md:col-span-1">
+          <p className="text-[11px] text-white/55">{t('projects.startingValuation', 'Price / Valuation')}</p>
+          <p className="text-base font-bold text-emerald-400 mt-0.5 tabular-nums">
+            ${unitPrice.toLocaleString()} {selectedUnit.currency || 'USD'}
           </p>
         </div>
       </div>
 
-      {/* Elevation + 50/50 X-Ray Split Stage */}
-      <div className="p-5 sm:p-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-          <div>
-            <p className="text-xs font-semibold text-brand-gold-lt">
-              Interactive Tower Elevation &amp; 50/50 X-Ray Floor Plan Stage
-            </p>
-            <h3 className="text-xl font-bold text-white mt-1">
-              Hover or select any residential floor on the tower facade, then drag the 50/50 X-Ray curtain across the floor plate
-            </h3>
-          </div>
-
-          {/* 50/50 X-Ray Split Control Only */}
-          <div className="flex items-center gap-1.5 bg-brand-navy p-1 rounded-xl border border-white/10 self-start">
-            <button
-              type="button"
-              onClick={() => setSplitPct(50)}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-brand-gold text-white transition-colors whitespace-nowrap cursor-pointer"
-            >
-              50/50 X-Ray Split ({splitPct}%)
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* Left 5 Cols: Interactive Exterior Elevation Facade */}
-          <div className="lg:col-span-5 flex flex-col rounded-xl bg-brand-navy border border-white/10 overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between text-xs">
+      {/* Main 2-Column Responsive Stage */}
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* ========================================================= */}
+          {/* LEFT 5 COLS: Dynamic Exterior Building Facade + Floor Bands */}
+          {/* ========================================================= */}
+          <div className="lg:col-span-5 flex flex-col rounded-xl bg-brand-navy border border-white/10 overflow-hidden shadow-lg">
+            {/* Facade Header */}
+            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between text-xs bg-brand-navy-deep/80">
               <span className="font-bold text-white flex items-center gap-2">
                 <Building2 size={15} className="text-brand-gold-lt" />
-                <span>Exterior Elevation Selector</span>
+                <span>{t('projects.buildingElevation', 'Building Elevation Facade')}</span>
               </span>
-              <span className="text-white/60 tabular-nums">12 Stories · 42 Units</span>
+              <span className="text-white/60 tabular-nums">
+                {floorGroups.length} {t('projects.floors', 'Floors')} · {lockedFloor.totalUnits} {t('projects.unitsOnFloor', 'Units on Floor')}
+              </span>
             </div>
 
-            <div className="relative flex-1 min-h-[440px] bg-brand-navy-deep overflow-hidden select-none">
-              <img
-                src={customAssets.exteriorUrl}
-                alt={`${projectName} Exterior Elevation`}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-deep/90 via-brand-navy-deep/20 to-brand-navy-deep/50" />
+            {/* Facade Image with Overlaid Floor Bands & Quick Elevator Stepper */}
+            <div className="relative min-h-[480px] sm:min-h-[560px] bg-brand-navy-deep overflow-hidden select-none flex">
+              {/* Background Exterior Image */}
+              <div className="relative flex-1 h-full overflow-hidden">
+                <img
+                  src={customAssets.exteriorUrl}
+                  alt={`${projectName} Building Elevation`}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-deep via-brand-navy-deep/20 to-brand-navy-deep/50 pointer-events-none" />
 
-              {/* Interactive Horizontal Floor Bands Overlay */}
-              <div className="absolute inset-x-6 inset-y-0">
-                {TOWER_FLOORS.map((f) => {
-                  const isSelected = f.floor === selectedFloorNum;
-                  const isHovered = f.floor === hoveredFloorNum;
-                  const isActive = isSelected || isHovered;
-                  const isSoldOut = f.availableUnits === 0;
+                {/* Overlaid Interactive Horizontal Floor Bands on the Exterior Facade */}
+                <div className="absolute inset-x-3 sm:inset-x-5 inset-y-0 pointer-events-auto">
+                  {floorGroups.map((fg) => {
+                    const isSelected = fg.floor === selectedFloorNum;
+                    const isHovered = fg.floor === hoveredFloorNum;
+                    const isActive = isSelected || isHovered;
+                    const isSoldOut = fg.availableUnits === 0;
 
-                  return (
-                    <button
-                      key={f.floor}
-                      type="button"
-                      onClick={() => handleSelectFloor(f)}
-                      onMouseEnter={() => setHoveredFloorNum(f.floor)}
-                      onMouseLeave={() => setHoveredFloorNum(null)}
-                      style={{
-                        top: `${f.bandTopPct}%`,
-                        height: `${f.bandHeightPct}%`,
-                      }}
-                      className={`group absolute left-0 right-0 rounded-md transition-all duration-150 flex items-center justify-between px-3 cursor-pointer ${
-                        isActive
-                          ? 'bg-brand-gold/55 border border-white shadow-md'
-                          : 'bg-brand-navy/20 hover:bg-brand-gold/35 border border-white/15'
-                      }`}
-                      aria-label={`Select Floor ${f.floor}`}
-                    >
-                      <span className="text-[11px] font-mono font-bold text-white drop-shadow tabular-nums">
-                        F{String(f.floor).padStart(2, '0')}
-                      </span>
-                      <span className="text-[11px] font-semibold text-white drop-shadow tabular-nums">
-                        {isSoldOut
-                          ? 'Fully Reserved'
-                          : `${f.availableUnits} of ${f.totalUnits} Open · $${(
-                              f.startingPriceUsd / 1000
-                            ).toFixed(0)}k`}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Bottom Active Floor Callout Bar */}
-              <div className="absolute bottom-3 inset-x-3 rounded-xl bg-brand-navy-deep/95 backdrop-blur-md border border-white/15 p-3.5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold text-white">{activeFloor.label}</p>
-                  <p className="text-[11px] text-white/65 mt-0.5 tabular-nums">
-                    Elevation +{activeFloor.elevationMeters}m · {activeFloor.availableUnits} Available ·{' '}
-                    {activeFloor.reservedUnits} Reserved · {activeFloor.soldUnits} Sold
-                  </p>
+                    return (
+                      <button
+                        key={fg.floor}
+                        type="button"
+                        onClick={() => handleSelectFloor(fg)}
+                        onMouseEnter={() => setHoveredFloorNum(fg.floor)}
+                        onMouseLeave={() => setHoveredFloorNum(null)}
+                        style={{
+                          top: `${fg.bandTopPct}%`,
+                          height: `${fg.bandHeightPct}%`,
+                        }}
+                        className={`group absolute left-0 right-0 rounded-md transition-all duration-150 flex items-center justify-between px-2.5 sm:px-3 cursor-pointer ${
+                          isActive
+                            ? 'bg-brand-gold/65 border-2 border-white shadow-lg z-20 scale-[1.01]'
+                            : 'bg-brand-navy/30 hover:bg-brand-gold/40 border border-white/20 z-10'
+                        }`}
+                        aria-label={`Select Floor ${fg.floor}`}
+                      >
+                        <span className="text-[11px] sm:text-xs font-mono font-bold text-white drop-shadow tabular-nums flex items-center gap-1.5">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              isSoldOut ? 'bg-red-400' : 'bg-emerald-400'
+                            }`}
+                          />
+                          <span>F{String(fg.floor).padStart(2, '0')}</span>
+                        </span>
+                        <span className="text-[10px] sm:text-[11px] font-semibold text-white drop-shadow tabular-nums truncate max-w-[170px] text-right">
+                          {isSoldOut
+                            ? t('property.status.sold', 'Reserved')
+                            : `${fg.availableUnits}/${fg.totalUnits} Open · $${Math.round(
+                                fg.startingPriceUsd / 1000
+                              )}k+`}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <span className="text-xs font-mono font-bold text-brand-gold-lt tabular-nums shrink-0">
-                  ${activeFloor.startingPriceUsd.toLocaleString()}
-                </span>
+
+                {/* Floating Bottom Floor Summary Card */}
+                <div className="absolute bottom-3 inset-x-3 rounded-xl bg-brand-navy-deep/95 backdrop-blur-md border border-white/15 p-3.5 flex items-center justify-between gap-3 shadow-xl">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold text-white">{activeFloor.label}</p>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-gold/20 text-brand-gold-lt">
+                        +{activeFloor.elevationMeters}m
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-white/65 mt-0.5 tabular-nums">
+                      {activeFloor.availableUnits} Available · {activeFloor.reservedUnits} Reserved · {activeFloor.soldUnits} Sold
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-white/50 block">From</span>
+                    <span className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
+                      ${activeFloor.startingPriceUsd.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
+
+              {/* Vertical Floor Stepper / Elevator Column for Quick 1-Click Jumping */}
+              <div className="w-11 sm:w-12 bg-brand-navy border-l border-white/10 flex flex-col py-2 px-1 items-center justify-between overflow-y-auto">
+                <div className="text-[9px] uppercase tracking-wider font-bold text-white/50 mb-1 text-center">
+                  Fl
+                </div>
+                <div className="flex flex-col gap-1 w-full flex-1 justify-center">
+                  {floorGroups.map((fg) => {
+                    const isSelected = fg.floor === selectedFloorNum;
+                    return (
+                      <button
+                        key={fg.floor}
+                        type="button"
+                        onClick={() => handleSelectFloor(fg)}
+                        title={fg.label}
+                        className={`w-full py-1 text-center rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-brand-gold text-white shadow-sm ring-1 ring-white'
+                            : 'text-white/70 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {String(fg.floor).padStart(2, '0')}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="text-[9px] text-white/40 mt-1">
+                  <ChevronDown size={12} className="mx-auto" />
+                </div>
+              </div>
+            </div>
+
+            {/* Instruction Footer */}
+            <div className="px-4 py-2.5 bg-brand-navy-deep/60 border-t border-white/10 text-[11px] text-white/60 flex items-center justify-between">
+              <span>{t('projects.clickFloorToInspect', 'Click any floor band on the building facade to explore its apartments')}</span>
+              <Layers size={13} className="text-brand-gold-lt shrink-0" />
             </div>
           </div>
 
-          {/* Right 7 Cols: Interactive 50/50 X-Ray Split Curtain + Room Pins */}
-          <div className="lg:col-span-7 flex flex-col rounded-xl bg-brand-navy border border-white/10 overflow-hidden">
-            {/* Typology Selector Bar */}
-            <div className="px-4 py-3 border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5">
-                {(Object.values(UNIT_TYPOLOGIES) as UnitTypology[]).map((typ) => {
-                  const active = typ.id === selectedTypologyId;
+          {/* ========================================================= */}
+          {/* RIGHT 7 COLS: Floor Apartments + Technical & 3D Plan Stage */}
+          {/* ========================================================= */}
+          <div className="lg:col-span-7 flex flex-col gap-5">
+            {/* 1. Floor Level Apartments Selector (Showing all floor plans of the selected floor) */}
+            <div className="rounded-xl bg-brand-navy border border-white/10 p-4 sm:p-5 shadow-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-white/10">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-brand-gold animate-pulse" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                      {lockedFloor.label} — {floorUnits.length} {t('projects.unitsAvailableOnFloor', 'Apartment Layouts')}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-white/60 mt-0.5">
+                    {t(
+                      'projects.selectApartmentPrompt',
+                      'Select an apartment to inspect its 2D Technical Blueprint and 3D Furnished Plan'
+                    )}
+                  </p>
+                </div>
+
+                {activePlans.masterplanImg && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activePlans.masterplanImg) {
+                        window.open(activePlans.masterplanImg, '_blank');
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-white/80 border border-white/15 transition-colors cursor-pointer inline-flex items-center gap-1.5 self-start sm:self-auto"
+                  >
+                    <FileText size={13} className="text-brand-gold-lt" />
+                    <span>{t('projects.viewFloorPlate', 'Floor Plate Masterplan')}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Apartment Cards Grid on this Floor */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {floorUnits.map((u) => {
+                  const isUnitSelected = u.id === selectedUnit.id;
+                  const unitPlans = resolveUnitPlans(u, {
+                    id: numericProjectId,
+                    image_url: initialExteriorUrl,
+                    masterplan_image: masterplanImageUrl,
+                  });
+
                   return (
                     <button
-                      key={typ.id}
+                      key={u.id}
                       type="button"
-                      onClick={() => {
-                        setSelectedTypologyId(typ.id);
-                        setSelectedRoomId(typ.rooms[0].id);
-                      }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                        active
-                          ? 'bg-brand-gold text-white'
-                          : 'bg-white/5 text-white/70 hover:text-white'
+                      onClick={() => handleSelectUnit(u)}
+                      className={`p-3 rounded-xl border text-left transition-all duration-150 cursor-pointer flex gap-3 relative ${
+                        isUnitSelected
+                          ? 'bg-brand-navy-deep border-brand-gold shadow-md ring-1 ring-brand-gold'
+                          : 'bg-white/5 hover:bg-white/10 border-white/10'
                       }`}
                     >
-                      {typ.id === 'type-a'
-                        ? 'Type A · 210 m²'
-                        : typ.id === 'type-b'
-                        ? 'Type B · 165 m²'
-                        : 'Penthouse · 320 m²'}
+                      {/* Plan Thumbnail */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/10 shrink-0 border border-white/15 flex items-center justify-center">
+                        <img
+                          src={unitPlans.furnishedPlan || activePlans.furnishedPlan}
+                          alt={u.unit_number}
+                          className="w-full h-full object-contain bg-white p-0.5"
+                          loading="lazy"
+                        />
+                      </div>
+
+                      {/* Specs */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-xs font-bold text-white truncate">
+                            {u.unit_number}
+                          </span>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              u.status === 'sold'
+                                ? 'bg-red-500/20 text-red-300'
+                                : u.status === 'reserved'
+                                ? 'bg-amber-500/20 text-amber-300'
+                                : 'bg-emerald-500/20 text-emerald-300'
+                            }`}
+                          >
+                            {u.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-white/70 truncate mb-1.5">
+                          {u.title || `${u.beds || 3} Bed Residence`}
+                        </p>
+                        <div className="flex items-center gap-3 text-[11px] text-white/60">
+                          <span className="font-mono tabular-nums">{u.area || 173} m²</span>
+                          <span aria-hidden="true">·</span>
+                          <span>{u.beds || 3} Bed</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="font-mono text-emerald-400 font-semibold tabular-nums">
+                            ${((u.price || lockedFloor.startingPriceUsd) / 1000).toFixed(0)}k
+                          </span>
+                        </div>
+                      </div>
+
+                      {isUnitSelected && (
+                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-gold" />
+                      )}
                     </button>
                   );
                 })}
               </div>
-
-              <div className="flex items-center gap-3 text-xs text-white/70">
-                <button
-                  type="button"
-                  onClick={() => setShowDimensionPins((v) => !v)}
-                  className="hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
-                >
-                  <Eye size={14} className="text-brand-gold-lt" />
-                  <span>{showDimensionPins ? 'Hide Room Pins' : 'Show Room Pins'}</span>
-                </button>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">50/50 X-Ray Split: {splitPct}%</span>
-              </div>
             </div>
 
-            {/* Interactive Split-Curtain Canvas */}
-            <div
-              ref={splitContainerRef}
-              onMouseDown={(e) => {
-                setIsDraggingSplit(true);
-                updateSplitFromClientX(e.clientX);
-              }}
-              onTouchStart={(e) => {
-                setIsDraggingSplit(true);
-                if (e.touches[0]) updateSplitFromClientX(e.touches[0].clientX);
-              }}
-              className="relative flex-1 min-h-[400px] bg-neutral-900 overflow-hidden select-none cursor-ew-resize"
-            >
-              {/* Base Layer */}
-              <img
-                src={customAssets.furnishedPlanUrl}
-                alt={`${activeTypology.name} Spatial Layout`}
-                referrerPolicy="no-referrer"
-                draggable={false}
-                className="w-full h-full object-contain bg-neutral-100"
-              />
+            {/* 2. Interactive Technical 2D Blueprint & 3D Furnished Plan Stage */}
+            <div className="rounded-xl bg-brand-navy border border-white/10 overflow-hidden shadow-lg flex flex-col">
+              {/* Plan Controls Toolbar */}
+              <div className="px-4 py-3 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-brand-navy-deep/80">
+                {/* View Modes */}
+                <div className="flex items-center gap-1.5 p-1 rounded-lg bg-white/5 border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('split')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 ${
+                      viewMode === 'split'
+                        ? 'bg-brand-gold text-white shadow-sm'
+                        : 'text-white/70 hover:text-white'
+                    }`}
+                  >
+                    <SlidersHorizontal size={13} />
+                    <span>50/50 X-Ray Split</span>
+                  </button>
 
-              {/* Top Clipped Layer */}
-              <motion.div
-                style={{ clipPath: clipPathRight }}
-                className="absolute inset-0 pointer-events-none"
-              >
-                <img
-                  src={customAssets.technicalPlanUrl}
-                  alt={`${activeTypology.name} Structural Dimensions`}
-                  referrerPolicy="no-referrer"
-                  draggable={false}
-                  className="w-full h-full object-contain bg-white"
-                />
-              </motion.div>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('furnished')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                      viewMode === 'furnished'
+                        ? 'bg-brand-gold text-white shadow-sm'
+                        : 'text-white/70 hover:text-white'
+                    }`}
+                  >
+                    3D Furnished
+                  </button>
 
-              {/* Corner Layer Badge */}
-              <div className="absolute top-3 left-3 pointer-events-none px-2.5 py-1 rounded-md bg-brand-navy-deep/85 text-[11px] font-bold text-white border border-white/15">
-                50/50 X-Ray Split View
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('technical')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                      viewMode === 'technical'
+                        ? 'bg-brand-gold text-white shadow-sm'
+                        : 'text-white/70 hover:text-white'
+                    }`}
+                  >
+                    2D Technical
+                  </button>
 
-              {/* Interactive Room Pins */}
-              {showDimensionPins &&
-                activeTypology.rooms.map((room) => {
-                  const isRoomSelected = room.id === activeRoom.id;
-                  return (
-                    <button
-                      key={room.id}
-                      type="button"
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedRoomId(room.id);
-                      }}
-                      style={{ left: `${room.xPct}%`, top: `${room.yPct}%` }}
-                      className={`-translate-x-1/2 -translate-y-1/2 absolute z-20 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-transform duration-150 cursor-pointer flex items-center gap-1.5 shadow-md ${
-                        isRoomSelected
-                          ? 'bg-brand-gold text-white scale-110 ring-2 ring-white'
-                          : 'bg-brand-navy-deep/90 text-white hover:scale-105 border border-white/25'
-                      }`}
-                    >
-                      <span>{room.nameEn.split(' ')[0]}</span>
-                      <span className="font-mono text-[10px] opacity-85 tabular-nums">
-                        {room.areaSqm}m²
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('side-by-side')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 ${
+                      viewMode === 'side-by-side'
+                        ? 'bg-brand-gold text-white shadow-sm'
+                        : 'text-white/70 hover:text-white'
+                    }`}
+                  >
+                    <Columns2 size={13} />
+                    <span>Side-by-Side</span>
+                  </button>
+                </div>
+
+                {/* Hotspot Toggle */}
+                <div className="flex items-center gap-3 text-xs text-white/70">
+                  <button
+                    type="button"
+                    onClick={() => setShowDimensionPins((v) => !v)}
+                    className="hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <Eye size={14} className="text-brand-gold-lt" />
+                    <span>{showDimensionPins ? 'Hide Room Hotspots' : 'Show Room Hotspots'}</span>
+                  </button>
+                  {viewMode === 'split' && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono tabular-nums text-brand-gold-lt">
+                        Split: {splitPct}%
                       </span>
-                    </button>
-                  );
-                })}
-
-              {/* Draggable Vertical Curtain Divider Handle */}
-              <motion.div
-                style={{ left: splitHandleLeft }}
-                className="absolute inset-y-0 z-30 -translate-x-1/2 w-0.5 bg-brand-gold pointer-events-none flex items-center justify-center"
-              >
-                <div className="w-9 h-9 rounded-full bg-brand-gold text-white shadow-lg border-2 border-white flex items-center justify-center">
-                  <MoveHorizontal size={16} />
+                    </>
+                  )}
                 </div>
-              </motion.div>
-            </div>
-
-            {/* Selected Room Architectural Specification Strip */}
-            <div className="p-4 bg-brand-navy-deep/90 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="font-bold text-white">{activeRoom.nameEn}</span>
-                  <span aria-hidden="true" className="text-white/40">
-                    ·
-                  </span>
-                  <span className="font-arabic text-brand-gold-lt">{activeRoom.nameFa}</span>
-                  <span aria-hidden="true" className="text-white/40">
-                    ·
-                  </span>
-                  <span className="font-mono text-white/80 tabular-nums">
-                    {activeRoom.dimensions} ({activeRoom.areaSqm} m²)
-                  </span>
-                </div>
-                <p className="text-xs text-white/65 mt-1">
-                  {activeRoom.finishSpec} · {activeRoom.structuralNote}
-                </p>
               </div>
-              <div className="text-xs text-white/70 shrink-0 font-mono tabular-nums">
-                Orientation: {activeRoom.orientation}
+
+              {/* Canvas Viewports */}
+              {viewMode === 'split' && (
+                <div
+                  ref={splitContainerRef}
+                  onMouseDown={(e) => {
+                    setIsDraggingSplit(true);
+                    updateSplitFromClientX(e.clientX);
+                  }}
+                  onTouchStart={(e) => {
+                    setIsDraggingSplit(true);
+                    if (e.touches[0]) updateSplitFromClientX(e.touches[0].clientX);
+                  }}
+                  className="relative min-h-[420px] sm:min-h-[480px] bg-neutral-900 overflow-hidden select-none cursor-ew-resize"
+                >
+                  {/* Base Layer: 3D Furnished Plan */}
+                  <img
+                    src={activePlans.furnishedPlan}
+                    alt={`${unitTitle} 3D Furnished Plan`}
+                    referrerPolicy="no-referrer"
+                    draggable={false}
+                    className="w-full h-full object-contain bg-white"
+                  />
+
+                  {/* Top Clipped Layer: 2D Technical Blueprint */}
+                  <motion.div
+                    style={{ clipPath: clipPathRight }}
+                    className="absolute inset-0 pointer-events-none"
+                  >
+                    <img
+                      src={activePlans.technicalPlan}
+                      alt={`${unitTitle} 2D Technical Blueprint`}
+                      referrerPolicy="no-referrer"
+                      draggable={false}
+                      className="w-full h-full object-contain bg-white"
+                    />
+                  </motion.div>
+
+                  {/* Floating Badges */}
+                  <div className="absolute top-3 left-3 pointer-events-none px-2.5 py-1 rounded-md bg-brand-navy-deep/90 text-[11px] font-bold text-white border border-white/20 shadow-md">
+                    ← 2D Technical Blueprint (Structural CAD)
+                  </div>
+                  <div className="absolute top-3 right-3 pointer-events-none px-2.5 py-1 rounded-md bg-brand-gold text-[11px] font-bold text-white shadow-md">
+                    3D Furnished Spatial Layout →
+                  </div>
+
+                  {/* Room Pins */}
+                  {showDimensionPins &&
+                    unitRooms.map((room) => {
+                      const isRoomSelected = room.id === activeRoom.id;
+                      return (
+                        <button
+                          key={room.id}
+                          type="button"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRoomId(room.id);
+                          }}
+                          style={{ left: `${room.xPct}%`, top: `${room.yPct}%` }}
+                          className={`-translate-x-1/2 -translate-y-1/2 absolute z-20 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all duration-150 cursor-pointer flex items-center gap-1.5 shadow-md ${
+                            isRoomSelected
+                              ? 'bg-brand-gold text-white scale-110 ring-2 ring-white'
+                              : 'bg-brand-navy-deep/90 text-white hover:scale-105 border border-white/25'
+                          }`}
+                        >
+                          <span>{room.nameEn.split(' ')[0]}</span>
+                          <span className="font-mono text-[10px] opacity-85 tabular-nums">
+                            {room.areaSqm}m²
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                  {/* Draggable Vertical Split Curtain Handle */}
+                  <motion.div
+                    style={{ left: splitHandleLeft }}
+                    className="absolute inset-y-0 z-30 -translate-x-1/2 w-0.5 bg-brand-gold pointer-events-none flex items-center justify-center"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-brand-gold text-white shadow-xl border-2 border-white flex items-center justify-center">
+                      <MoveHorizontal size={16} />
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+
+              {viewMode === 'furnished' && (
+                <div className="relative min-h-[420px] sm:min-h-[480px] bg-neutral-900 overflow-hidden flex items-center justify-center p-2">
+                  <img
+                    src={activePlans.furnishedPlan}
+                    alt={`${unitTitle} 3D Furnished Plan`}
+                    className="max-h-[500px] w-auto object-contain mx-auto bg-white rounded-lg"
+                  />
+                  <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-brand-gold text-[11px] font-bold text-white shadow-md">
+                    3D Furnished Plan View
+                  </div>
+                </div>
+              )}
+
+              {viewMode === 'technical' && (
+                <div className="relative min-h-[420px] sm:min-h-[480px] bg-neutral-900 overflow-hidden flex items-center justify-center p-2">
+                  <img
+                    src={activePlans.technicalPlan}
+                    alt={`${unitTitle} 2D Technical Blueprint`}
+                    className="max-h-[500px] w-auto object-contain mx-auto bg-white rounded-lg"
+                  />
+                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-brand-navy-deep/90 text-[11px] font-bold text-white border border-white/20 shadow-md">
+                    2D Technical Blueprint View (Structural CAD)
+                  </div>
+                </div>
+              )}
+
+              {viewMode === 'side-by-side' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-3 bg-neutral-900 min-h-[400px]">
+                  <div className="relative bg-white rounded-lg p-2 flex flex-col items-center justify-center">
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-brand-navy text-[10px] font-bold text-white">
+                      2D Technical Blueprint
+                    </span>
+                    <img
+                      src={activePlans.technicalPlan}
+                      alt="Technical Blueprint"
+                      className="max-h-72 w-auto object-contain mt-5"
+                    />
+                  </div>
+                  <div className="relative bg-white rounded-lg p-2 flex flex-col items-center justify-center">
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-brand-gold text-[10px] font-bold text-white">
+                      3D Furnished Layout
+                    </span>
+                    <img
+                      src={activePlans.furnishedPlan}
+                      alt="Furnished Layout"
+                      className="max-h-72 w-auto object-contain mt-5"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Room Architectural Specification Strip */}
+              <div className="p-4 bg-brand-navy-deep/90 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-bold text-white">{activeRoom.nameEn}</span>
+                    <span aria-hidden="true" className="text-white/40">·</span>
+                    <span className="font-arabic text-brand-gold-lt">{activeRoom.nameFa}</span>
+                    <span aria-hidden="true" className="text-white/40">·</span>
+                    <span className="font-mono text-white/80 tabular-nums">
+                      {activeRoom.dimensions} ({activeRoom.areaSqm} m²)
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/65 mt-1">
+                    {activeRoom.finishSpec} · {activeRoom.structuralNote}
+                  </p>
+                </div>
+                <div className="text-xs text-white/70 shrink-0 font-mono tabular-nums">
+                  Orientation: {activeRoom.orientation}
+                </div>
+              </div>
+
+              {/* Apartment Action Bar: Schedule Visit + WhatsApp Inquiry */}
+              <div className="p-4 bg-brand-navy border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-white">{unitTitle}</p>
+                  <p className="text-[11px] text-white/60">
+                    Floor {selectedUnit.floor || lockedFloor.floor} · {selectedUnit.beds || 3} Beds · {selectedUnit.baths || 2} Baths · {areaValue} m²
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalUnit(selectedUnit)}
+                    className="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-bold border border-white/20 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <Eye size={13} />
+                    <span>{t('projects.fullSpecifications', 'Full Specifications')}</span>
+                  </button>
+
+                  <a
+                    href={`https://wa.me/93782222279?text=${encodeURIComponent(
+                      `Hello Attaie Properties, I am interested in inquiring about ${projectName}, Floor ${
+                        selectedUnit.floor || lockedFloor.floor
+                      }, ${selectedUnit.unit_number} (${areaValue} m²).`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-sm"
+                  >
+                    <MessageCircle size={13} />
+                    <span>{t('contact.whatsapp', 'WhatsApp Inquire')}</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onRequestVisit) {
+                        onRequestVisit(selectedUnit.unit_number);
+                      } else {
+                        setModalUnit(selectedUnit);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-lg bg-brand-gold hover:bg-brand-gold-dark text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Calendar size={13} />
+                    <span>{t('projects.bookVisit', 'Schedule Viewing')}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal for Full Apartment Breakdown if triggered */}
+      {modalUnit && (
+        <ApartmentFullInfoModal
+          unit={modalUnit}
+          projectName={projectName}
+          onClose={() => setModalUnit(null)}
+        />
+      )}
     </section>
   );
 };
 
+export { DualPaneElevationXRayView } from './DualPaneElevationXRayView';
 export default PremiumProjectExplorer;
