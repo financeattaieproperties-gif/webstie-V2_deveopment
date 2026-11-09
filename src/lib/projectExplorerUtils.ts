@@ -56,7 +56,14 @@ export function resolveUnitPlans(
   const un = (unit?.unit_number || '').toLowerCase();
   const customImg = unit?.image_url;
 
-  let technicalPlan = defaultTechnicalPlanImg;
+  // Check for admin-specified technical plan URL directly or via encoded tag
+  let customTechnicalPlan = unit?.technical_plan_url || undefined;
+  if (!customTechnicalPlan && unit?.description && unit.description.includes('[TECHNICAL_PLAN:')) {
+    const match = unit.description.match(/\[TECHNICAL_PLAN:\s*([^\]]+)\]/);
+    if (match) customTechnicalPlan = match[1].trim();
+  }
+
+  let technicalPlan = customTechnicalPlan || defaultTechnicalPlanImg;
   let furnishedPlan = customImg || defaultFurnishedPlanImg;
   let legendImg: string | undefined = undefined;
   let masterplanImg: string | undefined = project?.masterplan_image || undefined;

@@ -82,6 +82,7 @@ export interface ProjectUnit {
   currency: string;
   status: 'available' | 'reserved' | 'sold' | 'rented';
   image_url: string | null;
+  technical_plan_url?: string | null;
   description: string | null;
 }
 
@@ -154,6 +155,16 @@ export interface ProjectUnitsResponse {
   has_more?: boolean;
 }
 
+function normalizeUnitPlans(unit: ProjectUnit): ProjectUnit {
+  if (unit.description && unit.description.includes('[TECHNICAL_PLAN:')) {
+    const match = unit.description.match(/\[TECHNICAL_PLAN:\s*([^\]]+)\]/);
+    const technical_plan_url = match ? match[1].trim() : null;
+    const cleanDesc = unit.description.replace(/\[TECHNICAL_PLAN:\s*[^\]]+\]\n?/g, '').trim();
+    return { ...unit, technical_plan_url, description: cleanDesc || null };
+  }
+  return unit;
+}
+
 export async function getProjectUnits(projectId: number): Promise<ProjectUnitsResponse> {
   const allItems: ProjectUnit[] = [];
   let page = 1;
@@ -164,7 +175,7 @@ export async function getProjectUnits(projectId: number): Promise<ProjectUnitsRe
     const res = await fetch(`${API}/get-project-units.php?project_id=${projectId}&page=${page}&limit=${limit}`);
     if (!res.ok) throw new Error('Failed to fetch apartments');
     const data = (await res.json()) as ProjectUnitsResponse;
-    const batch = Array.isArray(data.items) ? data.items : [];
+    const batch = Array.isArray(data.items) ? data.items.map(normalizeUnitPlans) : [];
     allItems.push(...batch);
     hasMore = Boolean(data.has_more && batch.length > 0);
     page += 1;
@@ -185,7 +196,7 @@ export async function getAllProjectUnits(status?: string): Promise<ProjectUnitsR
     const res = await fetch(`${API}/get-project-units.php?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch project apartments');
     const data = (await res.json()) as ProjectUnitsResponse;
-    const batch = Array.isArray(data.items) ? data.items : [];
+    const batch = Array.isArray(data.items) ? data.items.map(normalizeUnitPlans) : [];
     allItems.push(...batch);
     hasMore = Boolean(data.has_more && batch.length > 0);
     page += 1;

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-07T16:08:44.074Z",
+  "generated_at": "2026-11-09T10:16:52.654Z",
   "canonical_base_url": "https://www.attaieproperties.com",
   "sitemap_url": "https://www.attaieproperties.com/sitemap.xml",
   "counts": {
@@ -13,7 +13,7 @@
   "urls": [
     {
       "loc": "https://www.attaieproperties.com/",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "daily",
       "priority": "1.0",
       "category": "static",
@@ -22,7 +22,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/properties",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "daily",
       "priority": "0.9",
       "category": "static",
@@ -31,7 +31,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/projects",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "weekly",
       "priority": "0.8",
       "category": "static",
@@ -40,7 +40,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/careers",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "daily",
       "priority": "0.8",
       "category": "static",
@@ -49,7 +49,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "weekly",
       "priority": "0.7",
       "category": "static",
@@ -58,7 +58,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/about",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.6",
       "category": "static",
@@ -67,7 +67,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/contact",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.7",
       "category": "static",
@@ -148,7 +148,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/21",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -157,7 +157,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/24",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -166,7 +166,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/20",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -175,7 +175,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/16",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -184,7 +184,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/7",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -193,7 +193,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/5",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -202,7 +202,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/18",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -211,7 +211,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/15",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -220,7 +220,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/12",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -229,7 +229,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/8",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -238,7 +238,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/22",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -247,7 +247,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/23",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -256,7 +256,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/13",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -265,7 +265,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/9",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -274,7 +274,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/6",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -283,7 +283,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/3",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -292,7 +292,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/2",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -301,7 +301,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/19",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -310,7 +310,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/11",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -319,7 +319,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/10",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -328,7 +328,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/14",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -337,7 +337,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/4",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",
@@ -346,7 +346,7 @@
     },
     {
       "loc": "https://www.attaieproperties.com/agents/17",
-      "lastmod": "2026-11-07",
+      "lastmod": "2026-11-09",
       "changefreq": "monthly",
       "priority": "0.65",
       "category": "agents",

@@ -45,8 +45,11 @@ const blankUnit = (projectId: number): ProjectUnitInput => ({
   currency: 'USD',
   status: 'available',
   image_url: null,
+  technical_plan_url: null,
   description: null,
 });
+
+type StagedUnit = ProjectUnitInput & { _tempId: string };
 
 export default function ProjectForm() {
   const { id }   = useParams<{ id: string }>();
@@ -61,9 +64,10 @@ export default function ProjectForm() {
 
   // Project apartments / units state
   const [units, setUnits]             = useState<ProjectUnit[]>([]);
+  const [stagedUnits, setStagedUnits] = useState<StagedUnit[]>([]);
   const [unitsError, setUnitsError]   = useState<string | null>(null);
   const [unitForm, setUnitForm]       = useState<ProjectUnitInput>(blankUnit(projectId));
-  const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
+  const [editingUnitId, setEditingUnitId] = useState<number | string | null>(null);
   const [unitBusy, setUnitBusy]       = useState(false);
   const [unitToast, setUnitToast]     = useState<{ ok: boolean; msg: string } | null>(null);
 
@@ -116,11 +120,21 @@ export default function ProjectForm() {
     try {
       if (isEdit) {
         await api.updateProject({ ...form, id: projectId });
-        showToast(true, 'Project updated.');
+        showToast(true, 'Project updated successfully.');
       } else {
         const res = await api.createProject(form);
-        showToast(true, 'Project created. You can now add apartments/units below.');
-        setTimeout(() => navigate(`/projects/${res.id}/edit`), 900);
+        const newPid = Number(res.id);
+        
+        // If the admin staged any apartments during creation, save them now
+        if (stagedUnits.length > 0) {
+          showToast(true, `Project created! Saving ${stagedUnits.length} staged apartment(s)…`);
+          for (const u of stagedUnits) {
+            const { _tempId: _discard, ...unitData } = u;
+            await api.createProjectUnit({ ...unitData, project_id: newPid });
+          }
+        }
+        showToast(true, 'Project and apartments created successfully!');
+        setTimeout(() => navigate(`/projects/${newPid}/edit`), 900);
       }
     } catch (err) {
       showToast(false, (err as Error).message || 'Save failed.');
@@ -131,10 +145,33 @@ export default function ProjectForm() {
 
   const saveUnit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!projectId) return;
+    if (!unitForm.unit_number.trim()) {
+      showUnitToast(false, 'Unit number is required.');
+      return;
+    }
+
+    if (!isEdit) {
+      // Staging mode for a brand new project before it is saved
+      if (editingUnitId && typeof editingUnitId === 'string') {
+        setStagedUnits(prev => prev.map(u => u._tempId === editingUnitId ? { ...unitForm, _tempId: editingUnitId } : u));
+        showUnitToast(true, 'Staged apartment updated.');
+      } else {
+        const newStaged: StagedUnit = {
+          ...unitForm,
+          _tempId: `staged_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        };
+        setStagedUnits(prev => [...prev, newStaged]);
+        showUnitToast(true, 'Apartment staged. It will be saved when you click "+ Create Project".');
+      }
+      setEditingUnitId(null);
+      setUnitForm(blankUnit(0));
+      return;
+    }
+
+    // Live mode for an existing project
     setUnitBusy(true);
     try {
-      if (editingUnitId) {
+      if (editingUnitId && typeof editingUnitId === 'number') {
         await api.updateProjectUnit({ ...unitForm, project_id: projectId, id: editingUnitId });
         showUnitToast(true, 'Apartment updated.');
       } else {
@@ -158,11 +195,23 @@ export default function ProjectForm() {
     setUnitForm(rest);
   };
 
+  const startEditStagedUnit = (su: StagedUnit) => {
+    setEditingUnitId(su._tempId);
+    const { _tempId: _discard, ...rest } = su;
+    setUnitForm(rest);
+  };
+
   const removeUnit = async (u: ProjectUnit) => {
     if (!confirm(`Delete apartment "${u.unit_number}"?`)) return;
     await api.deleteProjectUnit(u.id);
     setUnits(prev => prev.filter(x => x.id !== u.id));
   };
+
+  const removeStagedUnit = (tempId: string) => {
+    setStagedUnits(prev => prev.filter(x => x._tempId !== tempId));
+  };
+
+  const totalApartmentsCount = isEdit ? units.length : stagedUnits.length;
 
   if (loading) return <p style={{ padding: '2rem' }}>Loading…</p>;
 
@@ -178,9 +227,12 @@ export default function ProjectForm() {
       <form onSubmit={submit}>
         <div style={S.card}>
 
-          {/* Cover image — first for visual prominence */}
+          {/* Building Exterior Elevation Image — used by Interactive Explorer & Cover */}
           <div style={S.section}>
-            <p style={S.secTitle}>Cover Image</p>
+            <p style={S.secTitle}>Building Exterior Elevation Image (Interactive Explorer & Cover)</p>
+            <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 0, marginBottom: '0.85rem' }}>
+              Upload the building's front elevation photo or architectural 3D render. In the public project explorer, visitors can hover and select floors directly on this image.
+            </p>
             <ImageUpload
               value={form.image_url}
               onChange={url => set('image_url', url)}
@@ -231,12 +283,16 @@ export default function ProjectForm() {
             </div>
           </div>
 
-          {/* Masterplan Image */}
+          {/* Masterplan / Building Floor Plan Image */}
           <div style={{ ...S.section, ...S.divider }}>
-            <p style={S.secTitle}>Master Plan / Floorplan Image</p>
+            <p style={S.secTitle}>Building Floor Plan / Masterplan (Typical Floor Layout)</p>
+            <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 0, marginBottom: '0.85rem' }}>
+              Upload the general floor plate or architectural masterplan. Displayed in the Dual-Pane Blueprint Viewer when inspecting floor levels.
+            </p>
             <ImageUpload
               value={form.masterplan_image}
               onChange={url => set('masterplan_image', url)}
+              purpose="blueprint"
             />
           </div>
 
@@ -255,6 +311,7 @@ export default function ProjectForm() {
                         else imgs.splice(i, 1);
                         set('gallery_images', imgs.filter(Boolean));
                       }}
+                      purpose="gallery"
                     />
                   </div>
                   {url && (
@@ -300,7 +357,7 @@ export default function ProjectForm() {
           {/* Footer */}
           <div style={S.footer}>
             <button type="submit" style={S.save} disabled={busy}>
-              {busy ? 'Saving…' : isEdit ? '✓ Save Changes' : '+ Create Project'}
+              {busy ? 'Saving…' : isEdit ? '✓ Save Changes' : `+ Create Project ${stagedUnits.length > 0 ? `(with ${stagedUnits.length} apartments)` : ''}`}
             </button>
             <button type="button" style={S.cancel} onClick={() => navigate('/projects')}>
               Cancel
@@ -311,231 +368,340 @@ export default function ProjectForm() {
         </div>
       </form>
 
-      {/* Project Apartments / Units Management (shown when editing a saved project) */}
-      {isEdit && (
-        <div style={S.card}>
-          <div style={S.section}>
-            <p style={S.secTitle}>Project Apartments / Units ({units.length})</p>
-            <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 0, marginBottom: '1.25rem' }}>
-              Add individual apartments or units within this project so visitors can browse available floorplans, prices, and book a visit.
+      {/* Project Apartments / Units Management (Available on both new and existing projects) */}
+      <div style={S.card}>
+        <div style={S.section}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <p style={{ ...S.secTitle, margin: 0 }}>
+              Project Apartments / Units ({totalApartmentsCount})
             </p>
+            {!isEdit && stagedUnits.length > 0 && (
+              <span style={{ fontSize: '0.78rem', padding: '0.2rem 0.6rem', borderRadius: 6, background: '#fef3c7', color: '#92400e', fontWeight: 600 }}>
+                {stagedUnits.length} staged to save with project
+              </span>
+            )}
+          </div>
+          <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 0, marginBottom: '1.25rem' }}>
+            Add individual apartments for each floor. For each unit, you can attach both a <strong>2D Furnished Floor Plan</strong> (with furniture and dimensions) and a <strong>2D Technical Blueprint</strong> (architectural/CAD layout) for the public Interactive Explorer.
+          </p>
 
-            {unitsError && (
-              <div style={{
-                padding: '0.75rem 1rem',
-                marginBottom: '1.25rem',
-                borderRadius: 8,
-                background: '#fee2e2',
-                border: '1px solid #fca5a5',
-                color: '#dc2626',
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '0.75rem',
-              }}>
-                <span>Failed to load apartments: {unitsError}</span>
+          {unitsError && (
+            <div style={{
+              padding: '0.75rem 1rem',
+              marginBottom: '1.25rem',
+              borderRadius: 8,
+              background: '#fee2e2',
+              border: '1px solid #fca5a5',
+              color: '#dc2626',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+            }}>
+              <span>Failed to load apartments: {unitsError}</span>
+              <button
+                type="button"
+                onClick={() => loadUnits(projectId)}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  background: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Table of units (live or staged) */}
+          {(isEdit ? units.length > 0 : stagedUnits.length > 0) && (
+            <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', textAlign: 'left', color: '#64748b' }}>
+                    <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Unit #</th>
+                    <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Title</th>
+                    <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Specs</th>
+                    <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Plans</th>
+                    <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Price</th>
+                    <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Status</th>
+                    <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isEdit ? units.map(u => (
+                    <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '0.6rem 0.75rem', fontWeight: 700, color: '#0145F2' }}>{u.unit_number}</td>
+                      <td style={{ padding: '0.6rem 0.75rem' }}>{u.title || '—'}</td>
+                      <td style={{ padding: '0.6rem 0.75rem', color: '#475569' }}>
+                        {[
+                          u.floor !== null ? `Fl ${u.floor}` : null,
+                          u.beds !== null ? `${u.beds} bd` : null,
+                          u.baths !== null ? `${u.baths} ba` : null,
+                          u.area !== null ? `${u.area} m²` : null,
+                        ].filter(Boolean).join(' · ') || '—'}
+                      </td>
+                      <td style={{ padding: '0.6rem 0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: '0.7rem', padding: '0.15rem 0.45rem', borderRadius: 4,
+                            background: u.image_url ? '#dcfce7' : '#f1f5f9',
+                            color: u.image_url ? '#166534' : '#94a3b8',
+                            fontWeight: 600,
+                          }}>
+                            {u.image_url ? '✓ 2D Furnished' : '— Furnished'}
+                          </span>
+                          <span style={{
+                            fontSize: '0.7rem', padding: '0.15rem 0.45rem', borderRadius: 4,
+                            background: u.technical_plan_url ? '#dbeafe' : '#f1f5f9',
+                            color: u.technical_plan_url ? '#1e40af' : '#94a3b8',
+                            fontWeight: 600,
+                          }}>
+                            {u.technical_plan_url ? '✓ 2D Technical' : '— Technical'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600 }}>
+                        {u.price !== null ? `${u.currency} ${Number(u.price).toLocaleString()}` : 'On request'}
+                      </td>
+                      <td style={{ padding: '0.6rem 0.75rem', textTransform: 'capitalize', fontWeight: 600 }}>{u.status}</td>
+                      <td style={{ padding: '0.6rem 0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            style={{ padding: '0.25rem 0.65rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}
+                            onClick={() => startEditUnit(u)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            style={{ padding: '0.25rem 0.65rem', background: 'transparent', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}
+                            onClick={() => removeUnit(u)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )) : stagedUnits.map(su => (
+                    <tr key={su._tempId} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '0.6rem 0.75rem', fontWeight: 700, color: '#0145F2' }}>{su.unit_number}</td>
+                      <td style={{ padding: '0.6rem 0.75rem' }}>{su.title || '—'}</td>
+                      <td style={{ padding: '0.6rem 0.75rem', color: '#475569' }}>
+                        {[
+                          su.floor !== null ? `Fl ${su.floor}` : null,
+                          su.beds !== null ? `${su.beds} bd` : null,
+                          su.baths !== null ? `${su.baths} ba` : null,
+                          su.area !== null ? `${su.area} m²` : null,
+                        ].filter(Boolean).join(' · ') || '—'}
+                      </td>
+                      <td style={{ padding: '0.6rem 0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: '0.7rem', padding: '0.15rem 0.45rem', borderRadius: 4,
+                            background: su.image_url ? '#dcfce7' : '#f1f5f9',
+                            color: su.image_url ? '#166534' : '#94a3b8',
+                            fontWeight: 600,
+                          }}>
+                            {su.image_url ? '✓ 2D Furnished' : '— Furnished'}
+                          </span>
+                          <span style={{
+                            fontSize: '0.7rem', padding: '0.15rem 0.45rem', borderRadius: 4,
+                            background: su.technical_plan_url ? '#dbeafe' : '#f1f5f9',
+                            color: su.technical_plan_url ? '#1e40af' : '#94a3b8',
+                            fontWeight: 600,
+                          }}>
+                            {su.technical_plan_url ? '✓ 2D Technical' : '— Technical'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600 }}>
+                        {su.price !== null ? `${su.currency} ${Number(su.price).toLocaleString()}` : 'On request'}
+                      </td>
+                      <td style={{ padding: '0.6rem 0.75rem', textTransform: 'capitalize', fontWeight: 600 }}>{su.status}</td>
+                      <td style={{ padding: '0.6rem 0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            style={{ padding: '0.25rem 0.65rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}
+                            onClick={() => startEditStagedUnit(su)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            style={{ padding: '0.25rem 0.65rem', background: 'transparent', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}
+                            onClick={() => removeStagedUnit(su._tempId)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Unit Form */}
+          <form onSubmit={saveUnit} style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+            <p style={{ ...S.secTitle, marginBottom: '0.85rem', color: '#334155' }}>
+              {editingUnitId ? 'Edit Apartment / Unit' : '+ Add Apartment / Unit'}
+            </p>
+            <div style={S.grid}>
+              <div>
+                <label style={S.label}>Unit Number *</label>
+                <input
+                  style={S.input}
+                  value={unitForm.unit_number}
+                  onChange={e => setUnitForm(prev => ({ ...prev, unit_number: e.target.value }))}
+                  required
+                  placeholder="e.g. A-302"
+                />
+              </div>
+              <div>
+                <label style={S.label}>Title / Layout Name</label>
+                <input
+                  style={S.input}
+                  value={unitForm.title ?? ''}
+                  onChange={e => setUnitForm(prev => ({ ...prev, title: e.target.value || null }))}
+                  placeholder="e.g. 3-Bedroom Corner Suite"
+                />
+              </div>
+              <div>
+                <label style={S.label}>Status</label>
+                <select
+                  style={S.select}
+                  value={unitForm.status}
+                  onChange={e => setUnitForm(prev => ({ ...prev, status: e.target.value as ProjectUnit['status'] }))}
+                >
+                  <option value="available">Available</option>
+                  <option value="reserved">Reserved</option>
+                  <option value="sold">Sold</option>
+                  <option value="rented">Rented</option>
+                </select>
+              </div>
+              <div>
+                <label style={S.label}>Price (USD)</label>
+                <input
+                  style={S.input}
+                  type="number"
+                  min={0}
+                  value={unitForm.price ?? ''}
+                  onChange={e => setUnitForm(prev => ({ ...prev, price: e.target.value ? Number(e.target.value) : null }))}
+                  placeholder="Leave blank for 'Price on request'"
+                />
+              </div>
+              <div>
+                <label style={S.label}>Floor Number</label>
+                <input
+                  style={S.input}
+                  type="number"
+                  value={unitForm.floor ?? ''}
+                  onChange={e => setUnitForm(prev => ({ ...prev, floor: e.target.value ? Number(e.target.value) : null }))}
+                  placeholder="e.g. 3"
+                />
+              </div>
+              <div>
+                <label style={S.label}>Area (m²)</label>
+                <input
+                  style={S.input}
+                  type="number"
+                  min={0}
+                  value={unitForm.area ?? ''}
+                  onChange={e => setUnitForm(prev => ({ ...prev, area: e.target.value ? Number(e.target.value) : null }))}
+                  placeholder="e.g. 145"
+                />
+              </div>
+              <div>
+                <label style={S.label}>Bedrooms</label>
+                <input
+                  style={S.input}
+                  type="number"
+                  min={0}
+                  value={unitForm.beds ?? ''}
+                  onChange={e => setUnitForm(prev => ({ ...prev, beds: e.target.value ? Number(e.target.value) : null }))}
+                  placeholder="e.g. 3"
+                />
+              </div>
+              <div>
+                <label style={S.label}>Bathrooms</label>
+                <input
+                  style={S.input}
+                  type="number"
+                  min={0}
+                  value={unitForm.baths ?? ''}
+                  onChange={e => setUnitForm(prev => ({ ...prev, baths: e.target.value ? Number(e.target.value) : null }))}
+                  placeholder="e.g. 2"
+                />
+              </div>
+
+              {/* 2D Furnished Plan */}
+              <div>
+                <label style={S.label}>
+                  🎨 2D Furnished Floor Plan (Interactive 3D / Furnished Layout)
+                </label>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 0, marginBottom: '0.4rem' }}>
+                  Colored or furnished 2D/3D floor plan with interior furniture layout.
+                </p>
+                <ImageUpload
+                  value={unitForm.image_url}
+                  onChange={url => setUnitForm(prev => ({ ...prev, image_url: url }))}
+                  purpose="blueprint"
+                />
+              </div>
+
+              {/* 2D Technical Blueprint */}
+              <div>
+                <label style={S.label}>
+                  📐 2D Technical Blueprint (Architectural CAD / Engineering Layout)
+                </label>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 0, marginBottom: '0.4rem' }}>
+                  Architectural line blueprint, CAD, wall dimensions & MEP technical layout.
+                </p>
+                <ImageUpload
+                  value={unitForm.technical_plan_url ?? null}
+                  onChange={url => setUnitForm(prev => ({ ...prev, technical_plan_url: url }))}
+                  purpose="blueprint"
+                />
+              </div>
+
+              <div style={S.full}>
+                <label style={S.label}>Unit Description & Notes</label>
+                <textarea
+                  style={{ ...S.textarea, minHeight: 70 }}
+                  value={unitForm.description ?? ''}
+                  onChange={e => setUnitForm(prev => ({ ...prev, description: e.target.value || null }))}
+                  placeholder="Optional details: balcony view, sunrise/sunset orientation, included finishes…"
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '1rem' }}>
+              <button type="submit" style={S.save} disabled={unitBusy}>
+                {unitBusy ? 'Saving…' : editingUnitId ? '✓ Update Apartment' : '+ Add Apartment'}
+              </button>
+              {editingUnitId && (
                 <button
                   type="button"
-                  onClick={() => loadUnits(projectId)}
-                  style={{
-                    padding: '0.35rem 0.75rem',
-                    background: '#dc2626',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 6,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontSize: '0.78rem',
-                  }}
+                  style={S.cancel}
+                  onClick={() => { setEditingUnitId(null); setUnitForm(blankUnit(isEdit ? projectId : 0)); }}
                 >
-                  Retry
+                  Cancel Edit
                 </button>
-              </div>
-            )}
-
-            {units.length > 0 && (
-              <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ background: '#f8fafc', textAlign: 'left', color: '#64748b' }}>
-                      <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Unit #</th>
-                      <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Title</th>
-                      <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Specs</th>
-                      <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Price</th>
-                      <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                      <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {units.map(u => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '0.6rem 0.75rem', fontWeight: 700, color: '#0145F2' }}>{u.unit_number}</td>
-                        <td style={{ padding: '0.6rem 0.75rem' }}>{u.title || '—'}</td>
-                        <td style={{ padding: '0.6rem 0.75rem', color: '#475569' }}>
-                          {[
-                            u.floor !== null ? `Fl ${u.floor}` : null,
-                            u.beds !== null ? `${u.beds} bd` : null,
-                            u.baths !== null ? `${u.baths} ba` : null,
-                            u.area !== null ? `${u.area} m²` : null,
-                          ].filter(Boolean).join(' · ') || '—'}
-                        </td>
-                        <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600 }}>
-                          {u.price !== null ? `${u.currency} ${Number(u.price).toLocaleString()}` : 'On request'}
-                        </td>
-                        <td style={{ padding: '0.6rem 0.75rem', textTransform: 'capitalize', fontWeight: 600 }}>{u.status}</td>
-                        <td style={{ padding: '0.6rem 0.75rem' }}>
-                          <div style={{ display: 'flex', gap: '0.4rem' }}>
-                            <button
-                              type="button"
-                              style={{ padding: '0.25rem 0.65rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}
-                              onClick={() => startEditUnit(u)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              style={{ padding: '0.25rem 0.65rem', background: 'transparent', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}
-                              onClick={() => removeUnit(u)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <form onSubmit={saveUnit} style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-              <p style={{ ...S.secTitle, marginBottom: '0.85rem', color: '#334155' }}>
-                {editingUnitId ? 'Edit Apartment / Unit' : '+ Add New Apartment / Unit'}
-              </p>
-              <div style={S.grid}>
-                <div>
-                  <label style={S.label}>Unit Number *</label>
-                  <input
-                    style={S.input}
-                    value={unitForm.unit_number}
-                    onChange={e => setUnitForm(prev => ({ ...prev, unit_number: e.target.value }))}
-                    required
-                    placeholder="e.g. A-302"
-                  />
-                </div>
-                <div>
-                  <label style={S.label}>Title / Layout Name</label>
-                  <input
-                    style={S.input}
-                    value={unitForm.title ?? ''}
-                    onChange={e => setUnitForm(prev => ({ ...prev, title: e.target.value || null }))}
-                    placeholder="e.g. 3-Bedroom Corner Suite"
-                  />
-                </div>
-                <div>
-                  <label style={S.label}>Status</label>
-                  <select
-                    style={S.select}
-                    value={unitForm.status}
-                    onChange={e => setUnitForm(prev => ({ ...prev, status: e.target.value as ProjectUnit['status'] }))}
-                  >
-                    <option value="available">Available</option>
-                    <option value="reserved">Reserved</option>
-                    <option value="sold">Sold</option>
-                    <option value="rented">Rented</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={S.label}>Price (USD)</label>
-                  <input
-                    style={S.input}
-                    type="number"
-                    min={0}
-                    value={unitForm.price ?? ''}
-                    onChange={e => setUnitForm(prev => ({ ...prev, price: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="Leave blank for 'Price on request'"
-                  />
-                </div>
-                <div>
-                  <label style={S.label}>Floor</label>
-                  <input
-                    style={S.input}
-                    type="number"
-                    value={unitForm.floor ?? ''}
-                    onChange={e => setUnitForm(prev => ({ ...prev, floor: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="e.g. 3"
-                  />
-                </div>
-                <div>
-                  <label style={S.label}>Area (m²)</label>
-                  <input
-                    style={S.input}
-                    type="number"
-                    min={0}
-                    value={unitForm.area ?? ''}
-                    onChange={e => setUnitForm(prev => ({ ...prev, area: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="e.g. 145"
-                  />
-                </div>
-                <div>
-                  <label style={S.label}>Bedrooms</label>
-                  <input
-                    style={S.input}
-                    type="number"
-                    min={0}
-                    value={unitForm.beds ?? ''}
-                    onChange={e => setUnitForm(prev => ({ ...prev, beds: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="e.g. 3"
-                  />
-                </div>
-                <div>
-                  <label style={S.label}>Bathrooms</label>
-                  <input
-                    style={S.input}
-                    type="number"
-                    min={0}
-                    value={unitForm.baths ?? ''}
-                    onChange={e => setUnitForm(prev => ({ ...prev, baths: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="e.g. 2"
-                  />
-                </div>
-                <div style={S.full}>
-                  <label style={S.label}>Unit Image / Floorplan</label>
-                  <ImageUpload
-                    value={unitForm.image_url}
-                    onChange={url => setUnitForm(prev => ({ ...prev, image_url: url }))}
-                  />
-                </div>
-                <div style={S.full}>
-                  <label style={S.label}>Unit Description</label>
-                  <textarea
-                    style={{ ...S.textarea, minHeight: 75 }}
-                    value={unitForm.description ?? ''}
-                    onChange={e => setUnitForm(prev => ({ ...prev, description: e.target.value || null }))}
-                    placeholder="Optional notes on view, balcony, orientation…"
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '1rem' }}>
-                <button type="submit" style={S.save} disabled={unitBusy}>
-                  {unitBusy ? 'Saving…' : editingUnitId ? '✓ Update Apartment' : '+ Add Apartment'}
-                </button>
-                {editingUnitId && (
-                  <button
-                    type="button"
-                    style={S.cancel}
-                    onClick={() => { setEditingUnitId(null); setUnitForm(blankUnit(projectId)); }}
-                  >
-                    Cancel Edit
-                  </button>
-                )}
-                {unitToast && <span style={S.toast(unitToast.ok)}>{unitToast.msg}</span>}
-              </div>
-            </form>
-          </div>
+              )}
+              {unitToast && <span style={S.toast(unitToast.ok)}>{unitToast.msg}</span>}
+            </div>
+          </form>
         </div>
-      )}
+      </div>
     </div>
   );
 }

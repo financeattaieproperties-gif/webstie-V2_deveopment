@@ -105,12 +105,40 @@ export const api = {
   deleteProject:    (id: number) =>
     request<{ deleted: number }>(`/admin/projects.php?id=${id}`, { method: 'DELETE' }),
 
-  getProjectUnits:   (projectId: number) =>
-    request<ProjectUnit[]>(`/admin/project-units.php?project_id=${projectId}`),
-  createProjectUnit: (data: ProjectUnitInput) =>
-    request<{ id: number }>('/admin/project-units.php', { method: 'POST', body: JSON.stringify(data) }),
-  updateProjectUnit: (data: ProjectUnitInput & { id: number }) =>
-    request<{ updated: number }>('/admin/project-units.php', { method: 'PUT', body: JSON.stringify(data) }),
+  getProjectUnits: async (projectId: number): Promise<ProjectUnit[]> => {
+    const list = await request<ProjectUnit[]>(`/admin/project-units.php?project_id=${projectId}`);
+    return (list || []).map(u => {
+      if (u.description && u.description.includes('[TECHNICAL_PLAN:')) {
+        const match = u.description.match(/\[TECHNICAL_PLAN:\s*([^\]]+)\]/);
+        const technical_plan_url = match ? match[1].trim() : null;
+        const cleanDesc = u.description.replace(/\[TECHNICAL_PLAN:\s*[^\]]+\]\n?/g, '').trim();
+        return { ...u, technical_plan_url, description: cleanDesc || null };
+      }
+      return u;
+    });
+  },
+  createProjectUnit: (data: ProjectUnitInput) => {
+    const { technical_plan_url, description, ...rest } = data;
+    const cleanDesc = description ? description.replace(/\[TECHNICAL_PLAN:\s*[^\]]+\]\n?/g, '').trim() : '';
+    const payloadDesc = technical_plan_url
+      ? `[TECHNICAL_PLAN: ${technical_plan_url.trim()}]${cleanDesc ? `\n${cleanDesc}` : ''}`
+      : (cleanDesc || null);
+    return request<{ id: number }>('/admin/project-units.php', {
+      method: 'POST',
+      body: JSON.stringify({ ...rest, description: payloadDesc }),
+    });
+  },
+  updateProjectUnit: (data: ProjectUnitInput & { id: number }) => {
+    const { technical_plan_url, description, ...rest } = data;
+    const cleanDesc = description ? description.replace(/\[TECHNICAL_PLAN:\s*[^\]]+\]\n?/g, '').trim() : '';
+    const payloadDesc = technical_plan_url
+      ? `[TECHNICAL_PLAN: ${technical_plan_url.trim()}]${cleanDesc ? `\n${cleanDesc}` : ''}`
+      : (cleanDesc || null);
+    return request<{ updated: number }>('/admin/project-units.php', {
+      method: 'PUT',
+      body: JSON.stringify({ ...rest, description: payloadDesc }),
+    });
+  },
   deleteProjectUnit: (id: number) =>
     request<{ deleted: number }>(`/admin/project-units.php?id=${id}`, { method: 'DELETE' }),
 
@@ -943,6 +971,7 @@ export interface ProjectUnit {
   currency: string;
   status: 'available' | 'reserved' | 'sold' | 'rented';
   image_url: string | null;
+  technical_plan_url?: string | null;
   description: string | null;
 }
 
