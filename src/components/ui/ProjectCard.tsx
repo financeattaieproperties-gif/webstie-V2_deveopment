@@ -97,8 +97,8 @@ export const ProjectCard = ({
         {/* Units available overlay */}
         {availableUnits !== undefined && (
           <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1.5 bg-brand-gold/95 text-white text-xs font-bold px-3 py-1 rounded-lg shadow-md backdrop-blur-xs tabular-nums">
-              <Home size={12} />
+            <span className="inline-flex items-center gap-1.5 bg-brand-gold text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-md backdrop-blur-xs tabular-nums border border-white/20">
+              <Home size={14} strokeWidth={2.2} />
               {availableUnits}
               {totalUnits ? ` / ${totalUnits}` : ''} Units Available
             </span>
@@ -115,8 +115,8 @@ export const ProjectCard = ({
           <h3 className="font-heading text-xl font-bold text-brand-navy mb-1.5 group-hover:text-brand-gold transition-colors duration-200 line-clamp-1">
             {name}
           </h3>
-          <div className="flex items-center text-neutral-500 mb-3 text-sm">
-            <MapPin size={14} className="mr-1.5 text-brand-gold shrink-0" />
+          <div className="flex items-center text-neutral-600 mb-3 text-sm font-medium">
+            <MapPin size={15} strokeWidth={2.2} className="mr-1.5 text-brand-gold shrink-0" />
             <span className="line-clamp-1">{location}</span>
           </div>
 
@@ -146,8 +146,8 @@ export const ProjectCard = ({
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
-          <div className="flex items-center gap-2 text-neutral-600 text-xs tabular-nums">
-            <Calendar size={14} className="text-brand-gold shrink-0" />
+          <div className="flex items-center gap-2 text-neutral-700 text-xs tabular-nums">
+            <Calendar size={15} strokeWidth={2.2} className="text-brand-gold shrink-0" />
             <span>
               Delivery:{' '}
               <span className="font-bold text-brand-navy">{deliveryDate || 'Scheduled'}</span>
@@ -156,10 +156,10 @@ export const ProjectCard = ({
           <motion.div
             whileHover={{ scale: 1.12, x: 3 }}
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-gold/10 text-brand-gold group-hover:bg-brand-gold group-hover:text-white text-xs font-bold transition-colors duration-300 shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-gold/12 text-brand-gold border border-brand-gold/25 group-hover:bg-brand-gold group-hover:text-white group-hover:border-brand-gold text-xs font-bold transition-all duration-300 shrink-0 shadow-2xs"
           >
             <span>Explore</span>
-            <ArrowRight size={13} />
+            <ArrowRight size={14} strokeWidth={2.4} />
           </motion.div>
         </div>
       </div>

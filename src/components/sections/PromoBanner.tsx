@@ -183,8 +183,8 @@ export const PromoBanner = ({
             {bullets && bullets.length > 0 && (
               <ul className="flex flex-col gap-2.5 mb-8">
                 {bullets.map((b) => (
-                  <li key={b} className="flex items-center gap-2.5 text-white/95 text-sm font-medium">
-                    <CheckCircle2 size={16} className="text-brand-gold shrink-0" />
+                  <li key={b} className="flex items-center gap-2.5 text-white/95 text-sm font-semibold">
+                    <CheckCircle2 size={18} strokeWidth={2.4} className="text-brand-gold shrink-0" />
                     {b}
                   </li>
                 ))}
@@ -197,7 +197,7 @@ export const PromoBanner = ({
               style={{ background: 'var(--color-brand-gold)', boxShadow: 'var(--gold-glow-md)' }}
             >
               {ctaLabel}
-              <ArrowRight size={16} />
+              <ArrowRight size={17} strokeWidth={2.4} />
             </a>
           </motion.div>
 
@@ -208,9 +208,9 @@ export const PromoBanner = ({
             }`}
           >
             {activeCover.projectName && (
-              <div className="self-start inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-brand-navy/80 backdrop-blur-md border border-white/15 text-white shadow-lg">
-                <div className="w-8 h-8 rounded-xl bg-brand-gold/25 border border-brand-gold/40 flex items-center justify-center text-white shrink-0">
-                  <Building2 size={16} />
+              <div className="self-start inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-brand-navy/85 backdrop-blur-md border border-white/20 text-white shadow-xl">
+                <div className="w-9 h-9 rounded-xl bg-brand-gold/30 border border-brand-gold/50 flex items-center justify-center text-white shrink-0 shadow-xs">
+                  <Building2 size={18} strokeWidth={2.2} />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white leading-tight">

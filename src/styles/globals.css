@@ -170,26 +170,145 @@
     outline-offset: 3px;
     border-radius: 4px;
   }
-  /* Brand-aligned custom scrollbars */
+  /* Brand-aligned custom scrollbars & scrollable box ergonomics */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(1, 69, 242, 0.45) #EDF1F5;
+    scrollbar-color: #0145F2 rgba(2, 14, 58, 0.08);
   }
   *::-webkit-scrollbar {
-    width: 7px;
-    height: 7px;
+    width: 10px;
+    height: 10px;
   }
   *::-webkit-scrollbar-track {
-    background: #EDF1F5;
+    background: rgba(2, 14, 58, 0.04);
     border-radius: 9999px;
   }
   *::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #0145F2 0%, #020E3A 100%);
+    background: linear-gradient(180deg, #0145F2 0%, #0136C5 100%);
     border-radius: 9999px;
-    border: 1.5px solid #EDF1F5;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
   }
   *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #0136C5 0%, #020E3A 100%);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    box-shadow: 0 0 8px rgba(1, 69, 242, 0.45);
+  }
+  *::-webkit-scrollbar-thumb:active {
+    background: #0145F2;
+    border: 1.5px solid transparent;
+    background-clip: padding-box;
+  }
+
+  /* Custom scrollbar utility for scrollable boxes, dropdowns, and drawers */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #0145F2 rgba(2, 14, 58, 0.06);
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(2, 14, 58, 0.04);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #0145F2 0%, #0A1F5C 100%);
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #0145F2;
+    box-shadow: 0 0 6px rgba(1, 69, 242, 0.5);
+  }
+
+  /* Dark scrollable container styling */
+  .custom-scrollbar-dark {
+    scrollbar-width: thin;
+    scrollbar-color: #0145F2 rgba(255, 255, 255, 0.08);
+  }
+  .custom-scrollbar-dark::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar-dark::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar-dark::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #0145F2 0%, #0A1F5C 100%);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar-dark::-webkit-scrollbar-thumb:hover {
     background: #0136C5;
+  }
+
+  /* Swiper Carousel arrow and pagination enhancements on landing page */
+  .swiper-button-prev,
+  .swiper-button-next {
+    width: 44px !important;
+    height: 44px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(2, 14, 58, 0.12) !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 4px 16px rgba(2, 14, 58, 0.12) !important;
+    color: var(--color-brand-navy) !important;
+    backdrop-filter: blur(8px) !important;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  .swiper-button-prev:after,
+  .swiper-button-next:after {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+  }
+  .swiper-button-prev:hover,
+  .swiper-button-next:hover {
+    background: var(--color-brand-gold) !important;
+    color: #ffffff !important;
+    border-color: var(--color-brand-gold) !important;
+    transform: scale(1.08) !important;
+    box-shadow: 0 8px 24px rgba(1, 69, 242, 0.35) !important;
+  }
+  .swiper-button-disabled {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+  }
+  .swiper-pagination-bullet {
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 9999px !important;
+    background: rgba(2, 14, 58, 0.22) !important;
+    opacity: 1 !important;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+  .swiper-pagination-bullet-active {
+    width: 28px !important;
+    border-radius: 9999px !important;
+    background: var(--color-brand-gold) !important;
+    box-shadow: 0 2px 10px rgba(1, 69, 242, 0.4) !important;
+  }
+  .property-card-swiper .swiper-button-prev,
+  .property-card-swiper .swiper-button-next {
+    width: 30px !important;
+    height: 30px !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+  }
+  .property-card-swiper .swiper-button-prev:after,
+  .property-card-swiper .swiper-button-next:after {
+    font-size: 11px !important;
+  }
+  .property-card-swiper .swiper-button-prev:hover,
+  .property-card-swiper .swiper-button-next:hover {
+    background: var(--color-brand-gold) !important;
   }
 
   /* Respect reduced-motion preferences */

@@ -91,13 +91,13 @@ export function HorizontalCarousel<T>({ items, renderItem, cardWidth = 340, gap 
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
             aria-label="Previous"
-            className="w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
             style={{
               borderColor: current === 0 ? 'rgba(2,14,58,0.15)' : 'var(--color-brand-navy)',
               color: 'var(--color-brand-navy)',
             }}
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={20} strokeWidth={2.4} />
           </motion.button>
           <motion.button
             onClick={next}
@@ -105,13 +105,13 @@ export function HorizontalCarousel<T>({ items, renderItem, cardWidth = 340, gap 
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
             aria-label="Next"
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs"
             style={{
               background: current === maxIndex ? 'rgba(2,14,58,0.1)' : 'var(--color-brand-navy)',
               color: '#ffffff',
             }}
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={20} strokeWidth={2.4} />
           </motion.button>
         </div>
       </div>

@@ -66,9 +66,9 @@ export const WhyAttaieSection = () => (
             >
               <motion.div
                 variants={iconVariants}
-                className="w-16 h-16 rounded-2xl bg-brand-gold/15 flex items-center justify-center mb-5 group-hover:bg-brand-gold/25 transition-colors duration-300"
+                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-gold/25 to-brand-gold/10 border border-brand-gold/35 shadow-gold-sm flex items-center justify-center mb-5 group-hover:from-brand-gold/35 group-hover:to-brand-gold/20 transition-all duration-300"
               >
-                <Icon size={28} className="text-brand-gold" />
+                <Icon size={30} strokeWidth={2.2} className="text-brand-gold-lt drop-shadow-xs" />
               </motion.div>
               <h3 className="font-bold text-white text-lg mb-2 group-hover:text-brand-gold transition-colors duration-300">
                 {title}

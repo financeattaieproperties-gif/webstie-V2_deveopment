@@ -83,12 +83,13 @@ export const PopularLocationsSection = () => (
             />
 
             <div className="relative z-10 flex items-center justify-between">
-              <div className="w-11 h-11 rounded-xl bg-black/35 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:bg-brand-gold group-hover:border-brand-gold transition-colors">
-                <MapPin size={20} />
+              <div className="w-12 h-12 rounded-2xl bg-brand-navy/90 backdrop-blur-md border border-white/25 flex items-center justify-center text-brand-gold shadow-md group-hover:bg-brand-gold group-hover:text-white group-hover:border-brand-gold transition-all">
+                <MapPin size={22} strokeWidth={2.2} />
               </div>
-              <span className="w-9 h-9 rounded-full bg-black/30 backdrop-blur-md border border-white/15 flex items-center justify-center text-white/80 group-hover:text-white group-hover:bg-white/20 transition-all">
+              <span className="w-10 h-10 rounded-full bg-black/45 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/90 group-hover:text-white group-hover:bg-brand-gold group-hover:border-brand-gold transition-all shadow-sm">
                 <ArrowUpRight
-                  size={18}
+                  size={19}
+                  strokeWidth={2.2}
                   className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
                 />
               </span>

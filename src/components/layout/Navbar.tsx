@@ -127,21 +127,21 @@ export const KabulHeaderWidgets: React.FC<{ className?: string }> = ({ className
       )}
     >
       <div className="inline-flex items-center gap-1.5">
-        <Calendar size={13} className="text-brand-gold shrink-0" />
+        <Calendar size={14} strokeWidth={2.2} className="text-brand-gold shrink-0" />
         <span>{formattedDate}</span>
       </div>
       <span className="text-white/25" aria-hidden="true">
         ·
       </span>
       <div className="inline-flex items-center gap-1.5">
-        <Clock size={13} className="text-brand-gold shrink-0" />
+        <Clock size={14} strokeWidth={2.2} className="text-brand-gold shrink-0" />
         <span className="font-mono">{formattedTime}</span>
       </div>
       <span className="text-white/25" aria-hidden="true">
         ·
       </span>
       <div className="inline-flex items-center gap-1.5">
-        <WeatherIcon size={14} className="text-brand-gold shrink-0" />
+        <WeatherIcon size={15} strokeWidth={2.2} className="text-brand-gold shrink-0" />
         <span>{weather ? `${weather.tempC}°C` : weatherFailed ? '—' : '…'}</span>
       </div>
     </div>
@@ -239,7 +239,7 @@ const Navbar = () => {
         {/* Desktop actions */}
         <div className="hidden lg:flex items-center gap-3 xl:gap-4 shrink-0">
           <div className="hidden xl:flex items-center gap-2 text-white whitespace-nowrap">
-            <Phone size={15} className="text-brand-gold" />
+            <Phone size={16} strokeWidth={2.2} className="text-brand-gold" />
             <span className="font-bold text-sm tabular-nums">+93 782 222 279</span>
           </div>
           <div className="hidden xl:block h-4 w-[1px] bg-white/20" />
@@ -248,7 +248,7 @@ const Navbar = () => {
             className="flex items-center gap-1.5 p-2 text-sm font-medium text-white/70 transition-colors hover:text-brand-gold whitespace-nowrap"
             aria-label="Switch language"
           >
-            <Globe size={16} />
+            <Globe size={17} strokeWidth={2.2} />
             {t('nav.langToggle')}
           </button>
           <Button

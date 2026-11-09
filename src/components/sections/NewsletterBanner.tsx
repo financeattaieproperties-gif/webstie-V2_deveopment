@@ -41,7 +41,7 @@ export const NewsletterBanner = () => {
 
             {subscribed ? (
               <div className="flex items-center gap-2 text-white font-semibold text-sm">
-                <CheckCircle2 size={18} className="text-brand-gold" />
+                <CheckCircle2 size={20} strokeWidth={2.4} className="text-brand-gold shrink-0" />
                 Subscribed. Watch your inbox for new listings.
               </div>
             ) : (
@@ -63,8 +63,8 @@ export const NewsletterBanner = () => {
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2"
                   style={{ background: 'var(--color-brand-gold)', boxShadow: 'var(--gold-glow-md)' }}
                 >
-                  Subscribe
-                  <Send size={15} />
+                  <span>Subscribe</span>
+                  <Send size={16} strokeWidth={2.2} />
                 </button>
               </form>
             )}

@@ -333,7 +333,7 @@ function HeroCustomSelect({
   value: string;
   options: HeroSelectOption[];
   onChange: (nextVal: string) => void;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
   hasRightDivider?: boolean;
   colSpanClass?: string;
 }) {
@@ -368,19 +368,19 @@ function HeroCustomSelect({
       }`}
     >
       <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${
           open || value
-            ? 'bg-brand-gold text-white shadow-gold-sm'
-            : 'bg-brand-gold/10 text-brand-gold'
+            ? 'bg-brand-gold text-white shadow-gold-sm border border-brand-gold'
+            : 'bg-brand-gold/15 text-brand-gold border border-brand-gold/25 shadow-2xs'
         }`}
       >
-        <Icon size={20} />
+        <Icon size={20} strokeWidth={2.2} />
       </div>
 
       <div className="flex-1 min-w-0">
         <span
           id={`${id}-label`}
-          className="block text-[11px] font-semibold text-neutral-500 select-none"
+          className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider select-none"
         >
           {label}
         </span>
@@ -391,13 +391,14 @@ function HeroCustomSelect({
           aria-expanded={open}
           aria-labelledby={`${id}-label`}
           onClick={() => setOpen((prev) => !prev)}
-          className="w-full flex items-center justify-between gap-2 text-left font-bold text-sm text-brand-navy hover:text-brand-gold focus:outline-none cursor-pointer pt-0.5 transition-colors"
+          className="w-full flex items-center justify-between gap-2 text-left font-bold text-sm text-brand-navy hover:text-brand-gold focus:outline-none cursor-pointer pt-0.5 transition-colors group"
         >
           <span className="truncate">{selectedOption.label}</span>
           <ChevronDown
-            size={15}
-            className={`text-neutral-500 shrink-0 transition-transform duration-200 ${
-              open ? 'rotate-180 text-brand-gold' : ''
+            size={16}
+            strokeWidth={2.4}
+            className={`text-brand-navy/60 shrink-0 transition-all duration-200 ${
+              open ? 'rotate-180 text-brand-gold' : 'group-hover:text-brand-gold'
             }`}
           />
         </button>
@@ -412,7 +413,7 @@ function HeroCustomSelect({
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             role="listbox"
             aria-labelledby={`${id}-label`}
-            className="absolute left-2 right-2 top-[calc(100%+10px)] z-50 rounded-2xl bg-white/98 backdrop-blur-xl border border-brand-navy/12 shadow-brand-xl p-1.5 max-h-56 overflow-y-auto"
+            className="absolute left-2 right-2 top-[calc(100%+10px)] z-50 rounded-2xl bg-white/98 backdrop-blur-xl border border-brand-navy/12 shadow-brand-xl p-1.5 max-h-56 overflow-y-auto custom-scrollbar"
           >
             {options.map((opt) => {
               const isSelected = opt.value === value;
@@ -433,7 +434,7 @@ function HeroCustomSelect({
                   }`}
                 >
                   <span className="truncate">{opt.label}</span>
-                  {isSelected && <Check size={14} className="text-brand-gold-lt shrink-0" />}
+                  {isSelected && <Check size={16} strokeWidth={2.5} className="text-brand-gold-lt shrink-0" />}
                 </button>
               );
             })}
@@ -596,18 +597,18 @@ function FeaturedProjectMotionCarousel({ projects }: { projects: Project[] }) {
                 {currentProject.name}
               </h3>
 
-              <p className="text-xs font-medium text-neutral-600 mt-1 flex items-center gap-1.5 truncate">
-                <MapPin size={12} className="text-brand-gold shrink-0" />
+              <p className="text-xs font-semibold text-neutral-700 mt-1.5 flex items-center gap-1.5 truncate">
+                <MapPin size={14} strokeWidth={2.2} className="text-brand-gold shrink-0" />
                 <span className="truncate">
                   {currentProject.location || 'Residential & Commercial'}
                 </span>
               </p>
 
               {/* Micro specs row */}
-              <div className="flex flex-wrap items-center gap-3 mt-2.5 text-[11px] font-semibold text-brand-navy/75">
+              <div className="flex flex-wrap items-center gap-3 mt-3 text-[11px] font-semibold text-brand-navy">
                 {currentProject.available_units !== undefined && (
-                  <span className="inline-flex items-center gap-1">
-                    <Building2 size={12} className="text-brand-gold" />
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-brand-gold/10 border border-brand-gold/20">
+                    <Building2 size={13} strokeWidth={2.2} className="text-brand-gold shrink-0" />
                     <span className="tabular-nums font-bold text-brand-navy">
                       {currentProject.available_units}
                     </span>{' '}
@@ -615,8 +616,8 @@ function FeaturedProjectMotionCarousel({ projects }: { projects: Project[] }) {
                   </span>
                 )}
                 {currentProject.delivery_date && (
-                  <span className="inline-flex items-center gap-1">
-                    <Calendar size={12} className="text-brand-gold" />
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-brand-navy/5 border border-brand-navy/10">
+                    <Calendar size={13} strokeWidth={2.2} className="text-brand-gold shrink-0" />
                     <span>{currentProject.delivery_date}</span>
                   </span>
                 )}
@@ -629,7 +630,7 @@ function FeaturedProjectMotionCarousel({ projects }: { projects: Project[] }) {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-brand-navy font-bold text-xs shadow-brand-sm border border-brand-navy/10 hover:bg-brand-gold hover:text-white hover:border-brand-gold transition-all"
               >
                 <span>View Apartments</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={15} strokeWidth={2.2} />
               </Link>
             </div>
           </div>
@@ -676,17 +677,17 @@ function FeaturedProjectMotionCarousel({ projects }: { projects: Project[] }) {
               type="button"
               onClick={() => paginate(-1)}
               aria-label="Previous featured project"
-              className="w-7 h-7 rounded-lg bg-white border border-brand-navy/10 text-brand-navy hover:bg-brand-gold hover:text-white hover:border-brand-gold flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+              className="w-8 h-8 rounded-xl bg-white border border-brand-navy/15 text-brand-navy hover:bg-brand-gold hover:text-white hover:border-brand-gold flex items-center justify-center transition-colors cursor-pointer shadow-xs"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={16} strokeWidth={2.4} />
             </button>
             <button
               type="button"
               onClick={() => paginate(1)}
               aria-label="Next featured project"
-              className="w-7 h-7 rounded-lg bg-white border border-brand-navy/10 text-brand-navy hover:bg-brand-gold hover:text-white hover:border-brand-gold flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+              className="w-8 h-8 rounded-xl bg-white border border-brand-navy/15 text-brand-navy hover:bg-brand-gold hover:text-white hover:border-brand-gold flex items-center justify-center transition-colors cursor-pointer shadow-xs"
             >
-              <ChevronRight size={14} />
+              <ChevronRight size={16} strokeWidth={2.4} />
             </button>
           </div>
         </div>
@@ -848,23 +849,23 @@ export const LandingPageContent = () => {
                 Properties.
               </p>
 
-              {/* 3 Trust Pillars */}
+              {/* 3 Trust Pillars with high-visibility icon badges */}
               <div className="flex flex-wrap items-center gap-6 pt-1">
-                <div className="flex items-center gap-2 text-xs md:text-sm font-semibold text-brand-navy">
-                  <span className="w-8 h-8 rounded-lg bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
-                    <ShieldCheck size={17} />
+                <div className="flex items-center gap-2.5 text-xs md:text-sm font-bold text-brand-navy">
+                  <span className="w-10 h-10 rounded-xl bg-white border border-brand-navy/10 shadow-brand-sm text-brand-gold flex items-center justify-center shrink-0">
+                    <ShieldCheck size={20} strokeWidth={2.2} />
                   </span>
                   <span>Trusted Company</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs md:text-sm font-semibold text-brand-navy">
-                  <span className="w-8 h-8 rounded-lg bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
-                    <Building2 size={17} />
+                <div className="flex items-center gap-2.5 text-xs md:text-sm font-bold text-brand-navy">
+                  <span className="w-10 h-10 rounded-xl bg-white border border-brand-navy/10 shadow-brand-sm text-brand-gold flex items-center justify-center shrink-0">
+                    <Building2 size={20} strokeWidth={2.2} />
                   </span>
                   <span>Quality Projects</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs md:text-sm font-semibold text-brand-navy">
-                  <span className="w-8 h-8 rounded-lg bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
-                    <Users size={17} />
+                <div className="flex items-center gap-2.5 text-xs md:text-sm font-bold text-brand-navy">
+                  <span className="w-10 h-10 rounded-xl bg-white border border-brand-navy/10 shadow-brand-sm text-brand-gold flex items-center justify-center shrink-0">
+                    <Users size={20} strokeWidth={2.2} />
                   </span>
                   <span>Professional Agents</span>
                 </div>
@@ -933,9 +934,9 @@ export const LandingPageContent = () => {
               <div className="lg:col-span-2 pl-0 lg:pl-3">
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-5 rounded-xl bg-brand-gold hover:bg-brand-gold-dark text-white font-bold text-sm flex items-center justify-center gap-2 shadow-gold-sm transition-all cursor-pointer whitespace-nowrap"
+                  className="w-full py-3.5 px-5 rounded-xl bg-brand-gold hover:bg-brand-gold-dark text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-gold-sm transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
                 >
-                  <Search size={17} />
+                  <Search size={18} strokeWidth={2.4} />
                   <span>Search Properties</span>
                 </button>
               </div>
@@ -974,9 +975,9 @@ export const LandingPageContent = () => {
                       setSelectedBeds('');
                       setSelectedBudget('');
                     }}
-                    className="inline-flex items-center gap-1 text-white/75 hover:text-white font-semibold cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors cursor-pointer"
                   >
-                    <RotateCcw size={12} />
+                    <RotateCcw size={13} strokeWidth={2.2} />
                     <span>Reset</span>
                   </button>
                 </motion.div>
@@ -1026,13 +1027,13 @@ export const LandingPageContent = () => {
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/45 via-transparent to-transparent" />
                           <span
-                            className={`absolute bottom-2 left-2.5 w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-xs transition-colors ${
+                            className={`absolute bottom-2 left-2.5 w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-md shadow-md border transition-all ${
                               isHighlighted
-                                ? 'bg-brand-gold text-white'
-                                : 'bg-white/90 text-brand-navy group-hover:bg-brand-gold group-hover:text-white'
+                                ? 'bg-brand-gold text-white border-brand-gold shadow-gold-sm'
+                                : 'bg-white/95 text-brand-navy border-white/60 group-hover:bg-brand-gold group-hover:text-white group-hover:border-brand-gold'
                             }`}
                           >
-                            <Icon size={14} />
+                            <Icon size={18} strokeWidth={2.2} />
                           </span>
                         </div>
                         <div className="py-3.5 px-3 text-center bg-white flex items-center justify-center">
@@ -1075,7 +1076,8 @@ export const LandingPageContent = () => {
             >
               <span>View All Properties</span>
               <ArrowRight
-                size={16}
+                size={17}
+                strokeWidth={2.4}
                 className="group-hover:translate-x-1 transition-transform"
               />
             </Link>
@@ -1328,7 +1330,7 @@ export const LandingPageContent = () => {
                 boxShadow: '0 8px 28px rgba(37,211,102,0.35)',
               }}
             >
-              <MessageCircle size={20} aria-hidden="true" /> WhatsApp Us
+              <MessageCircle size={22} strokeWidth={2.4} aria-hidden="true" /> WhatsApp Us
             </motion.a>
             <motion.a
               href="tel:+93782222279"
@@ -1342,7 +1344,7 @@ export const LandingPageContent = () => {
                 boxShadow: '0 8px 28px rgba(1,69,242,0.4)',
               }}
             >
-              <Phone size={20} aria-hidden="true" /> +93 782 222 279
+              <Phone size={21} strokeWidth={2.4} aria-hidden="true" /> +93 782 222 279
             </motion.a>
             <ClickToCallButton className="px-8 py-4 rounded-2xl font-bold text-base" />
           </motion.div>

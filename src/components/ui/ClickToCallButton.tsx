@@ -79,7 +79,7 @@ export const ClickToCallButton = ({ variant = 'button', className = '' }: Props)
         className={`inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-brand-navy text-white font-semibold text-sm hover:bg-brand-navy/90 transition-colors ${className}`}
         aria-label={t('callUs.button')}
       >
-        <Phone size={17} />
+        <Phone size={18} strokeWidth={2.2} />
         {t('callUs.button')}
       </motion.button>
     );
@@ -112,17 +112,17 @@ export const ClickToCallButton = ({ variant = 'button', className = '' }: Props)
               aria-label={t('callUs.title')}
               className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
             >
-              <div className="pointer-events-auto w-full max-w-sm bg-white/85 backdrop-blur-xl rounded-3xl border border-white/60 p-8 shadow-2xl">
+              <div className="pointer-events-auto w-full max-w-sm bg-white/95 backdrop-blur-xl rounded-3xl border border-white/60 p-8 shadow-2xl">
                 <div className="flex items-start justify-between mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-brand-gold/15 flex items-center justify-center">
-                    <PhoneCall size={22} className="text-brand-gold" />
+                  <div className="w-12 h-12 rounded-2xl bg-brand-gold/15 border border-brand-gold/25 flex items-center justify-center shadow-xs">
+                    <PhoneCall size={24} strokeWidth={2.2} className="text-brand-gold" />
                   </div>
                   <button
                     onClick={handleClose}
-                    className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 transition-colors"
+                    className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-neutral-200 transition-colors"
                     aria-label={t('callUs.cancel')}
                   >
-                    <X size={15} />
+                    <X size={16} strokeWidth={2.4} />
                   </button>
                 </div>
 
@@ -195,7 +195,7 @@ export const ClickToCallButton = ({ variant = 'button', className = '' }: Props)
                         whileTap={{ scale: 0.98 }}
                         className="w-full py-3.5 rounded-xl bg-brand-navy text-white font-bold text-sm disabled:opacity-60 flex items-center justify-center gap-2 transition-opacity"
                       >
-                        <Phone size={16} />
+                        <Phone size={17} strokeWidth={2.2} />
                         {status === 'sending' ? t('callUs.connecting') : t('callUs.dial')}
                       </motion.button>
 

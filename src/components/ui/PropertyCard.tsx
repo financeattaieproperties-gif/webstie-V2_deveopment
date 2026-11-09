@@ -125,8 +125,8 @@ export const PropertyCard = ({
                   </SwiperSlide>
                 ))}
               </Swiper>
-              <span className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/55 backdrop-blur-xs text-[11px] font-semibold text-white pointer-events-none tabular-nums">
-                <Images size={11} />
+              <span className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/65 backdrop-blur-sm border border-white/20 text-[11px] font-bold text-white pointer-events-none tabular-nums shadow-sm">
+                <Images size={13} strokeWidth={2.2} />
                 {photoList.length}
               </span>
             </div>
@@ -195,11 +195,12 @@ export const PropertyCard = ({
             }}
             animate={heartAnim ? { scale: [1, 1.4, 1] } : { scale: 1 }}
             transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-            className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform cursor-pointer"
+            className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-white/95 backdrop-blur-md border border-black/5 flex items-center justify-center shadow-md hover:scale-110 transition-transform cursor-pointer"
           >
             <Heart
-              size={15}
-              className={saved ? 'text-red-500 fill-red-500' : 'text-neutral-400'}
+              size={16}
+              strokeWidth={2.2}
+              className={saved ? 'text-red-500 fill-red-500' : 'text-neutral-500'}
             />
           </motion.button>
 
@@ -225,8 +226,8 @@ export const PropertyCard = ({
             <h3 className="font-heading text-lg font-bold text-brand-navy mt-1 mb-1.5 line-clamp-1 group-hover:text-brand-gold transition-colors duration-200">
               {title}
             </h3>
-            <div className="flex items-center text-neutral-500 mb-4 text-sm">
-              <MapPin size={14} className="mr-1.5 text-brand-gold shrink-0" />
+            <div className="flex items-center text-neutral-600 mb-4 text-sm font-medium">
+              <MapPin size={15} strokeWidth={2.2} className="mr-1.5 text-brand-gold shrink-0" />
               <span className="line-clamp-1">{location}</span>
             </div>
           </div>
@@ -239,44 +240,44 @@ export const PropertyCard = ({
             >
               {beds !== undefined && (
                 <div className="flex items-center gap-2" title={`${beds} Bedrooms`}>
-                  <span className="w-7 h-7 rounded-lg bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
-                    <Bed size={15} aria-hidden="true" />
+                  <span className="w-8 h-8 rounded-xl bg-brand-gold/12 border border-brand-gold/25 text-brand-gold flex items-center justify-center shrink-0 shadow-2xs">
+                    <Bed size={16} strokeWidth={2.2} aria-hidden="true" />
                   </span>
                   <div className="leading-tight">
                     <span className="font-bold text-brand-navy">{beds}</span>{' '}
-                    <span className="text-neutral-500">Beds</span>
+                    <span className="text-neutral-500 font-medium">Beds</span>
                   </div>
                 </div>
               )}
               {baths !== undefined && (
                 <div className="flex items-center gap-2" title={`${baths} Bathrooms`}>
-                  <span className="w-7 h-7 rounded-lg bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
-                    <Bath size={15} aria-hidden="true" />
+                  <span className="w-8 h-8 rounded-xl bg-brand-gold/12 border border-brand-gold/25 text-brand-gold flex items-center justify-center shrink-0 shadow-2xs">
+                    <Bath size={16} strokeWidth={2.2} aria-hidden="true" />
                   </span>
                   <div className="leading-tight">
                     <span className="font-bold text-brand-navy">{baths}</span>{' '}
-                    <span className="text-neutral-500">Baths</span>
+                    <span className="text-neutral-500 font-medium">Baths</span>
                   </div>
                 </div>
               )}
               {area !== undefined && (
                 <div className="flex items-center gap-2" title={`Area: ${area} m²`}>
-                  <span className="w-7 h-7 rounded-lg bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
-                    <Maximize2 size={14} aria-hidden="true" />
+                  <span className="w-8 h-8 rounded-xl bg-brand-gold/12 border border-brand-gold/25 text-brand-gold flex items-center justify-center shrink-0 shadow-2xs">
+                    <Maximize2 size={15} strokeWidth={2.2} aria-hidden="true" />
                   </span>
                   <div className="leading-tight">
                     <span className="font-bold text-brand-navy">{area}</span>{' '}
-                    <span className="text-neutral-500">m²</span>
+                    <span className="text-neutral-500 font-medium">m²</span>
                   </div>
                 </div>
               )}
               {floor !== undefined && (
                 <div className="flex items-center gap-2" title={`Floor ${floor}`}>
-                  <span className="w-7 h-7 rounded-lg bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
-                    <Layers size={14} aria-hidden="true" />
+                  <span className="w-8 h-8 rounded-xl bg-brand-gold/12 border border-brand-gold/25 text-brand-gold flex items-center justify-center shrink-0 shadow-2xs">
+                    <Layers size={15} strokeWidth={2.2} aria-hidden="true" />
                   </span>
                   <div className="leading-tight">
-                    <span className="text-neutral-500">Fl.</span>{' '}
+                    <span className="text-neutral-500 font-medium">Fl.</span>{' '}
                     <span className="font-bold text-brand-navy">{floor}</span>
                   </div>
                 </div>

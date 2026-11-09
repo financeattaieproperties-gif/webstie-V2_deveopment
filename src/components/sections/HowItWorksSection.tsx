@@ -52,12 +52,11 @@ export const HowItWorksSection = () => (
             className="relative flex flex-col items-center text-center gap-4"
           >
             <div
-              className="relative z-10 w-16 h-16 rounded-full flex items-center justify-center bg-white"
-              style={{ boxShadow: 'var(--shadow-md)', border: '1.5px solid rgba(1,69,242,0.15)' }}
+              className="relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center bg-white border-2 border-brand-gold/25 shadow-brand-md text-brand-gold group"
             >
-              <Icon size={26} className="text-brand-gold" />
+              <Icon size={28} strokeWidth={2.2} className="text-brand-gold transition-transform group-hover:scale-110" />
               <span
-                className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
+                className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-xs"
                 style={{ background: 'var(--color-brand-navy)' }}
               >
                 {i + 1}
