@@ -185,108 +185,9 @@ function createMockPhpApiPlugin(): Plugin {
     },
   ];
 
-  let projects: any[] = [
-    {
-      id: 1,
-      name: 'The Kabul Heights',
-      location: 'Ansari Boulevard, Shahr-e-Naw, Kabul',
-      delivery_date: 'Q4 2027',
-      status: 'Under Construction',
-      available_units: 2,
-      total_units: 3,
-      image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
-      gallery_images: [
-        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
-      ],
-      video_url: null,
-      masterplan_image: null,
-      description: "Kabul's premiere mixed-use architectural landmark. Combining luxury residences with executive retail, fitness center, underground parking, and smart building automation.",
-      created_at: '2026-01-10T00:00:00.000Z',
-    },
-    {
-      id: 2,
-      name: 'Wazir Luxury Residences',
-      location: 'Street 15, Wazir Akbar Khan, Kabul',
-      delivery_date: 'Ready to Move',
-      status: 'Ready',
-      available_units: 6,
-      total_units: 18,
-      image_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-      gallery_images: [
-        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-      ],
-      video_url: null,
-      masterplan_image: null,
-      description: "A boutique development of ultra-luxury apartments situated in Kabul's most secure diplomatic neighborhood.",
-      created_at: '2026-01-20T00:00:00.000Z',
-    },
-    {
-      id: 3,
-      name: 'Emerald Business Tower',
-      location: 'Kolola Pushta Central, Kabul',
-      delivery_date: 'Q2 2027',
-      status: 'In Progress',
-      available_units: 14,
-      total_units: 32,
-      image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-      gallery_images: [
-        'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-      ],
-      video_url: null,
-      masterplan_image: null,
-      description: 'State-of-the-art office spaces designed for international organizations, tech companies, and corporate headquarters.',
-      created_at: '2026-02-05T00:00:00.000Z',
-    },
-  ];
+  let projects: any[] = [];
 
-  let projectUnits: any[] = [
-    {
-      id: 1,
-      project_id: 1,
-      unit_number: 'KH-402',
-      title: 'Standard 2-Bedroom Suite',
-      beds: 2,
-      baths: 2,
-      area: 130,
-      floor: 4,
-      price: 145000,
-      currency: 'USD',
-      status: 'available',
-      image_url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
-      description: 'Spacious 2-bedroom with west-facing balcony.',
-    },
-    {
-      id: 2,
-      project_id: 1,
-      unit_number: 'KH-701',
-      title: 'Executive 3-Bedroom Corner Suite',
-      beds: 3,
-      baths: 3,
-      area: 185,
-      floor: 7,
-      price: 195000,
-      currency: 'USD',
-      status: 'available',
-      image_url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
-      description: 'Panoramic corner unit with city views.',
-    },
-    {
-      id: 3,
-      project_id: 1,
-      unit_number: 'KH-901',
-      title: 'Sky Penthouse',
-      beds: 4,
-      baths: 4,
-      area: 270,
-      floor: 9,
-      price: 320000,
-      currency: 'USD',
-      status: 'reserved',
-      image_url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80',
-      description: 'Top-floor penthouse with private rooftop terrace.',
-    },
-  ];
+  let projectUnits: any[] = [];
 
   let agents: any[] = [
     {
@@ -733,6 +634,82 @@ function createMockPhpApiPlugin(): Plugin {
         return sendJson(res, item);
       }
 
+      if (
+        (pathname === '/api/search' ||
+          pathname === '/api/search.php' ||
+          pathname === '/api/global-search.php') &&
+        method === 'GET'
+      ) {
+        const rawQuery = (
+          parsedUrl.searchParams.get('q') ??
+          parsedUrl.searchParams.get('query') ??
+          parsedUrl.searchParams.get('search') ??
+          ''
+        ).trim();
+        const normalized = rawQuery.toLowerCase();
+        const purpose = parsedUrl.searchParams.get('purpose')?.toLowerCase();
+        const listingType = parsedUrl.searchParams.get('listing_type')?.toLowerCase();
+        const typeFilter = parsedUrl.searchParams.get('type');
+        const limitParam = Number(parsedUrl.searchParams.get('limit') || 20);
+        const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(100, limitParam) : 20;
+
+        let filtered = [...properties];
+
+        if (purpose === 'rent' || listingType === 'rent') {
+          filtered = filtered.filter((p) => p.listing_type === 'rent');
+        } else if (purpose === 'commercial') {
+          filtered = filtered.filter((p) => p.type === 'Commercial');
+        } else if (listingType === 'sale') {
+          filtered = filtered.filter((p) => p.listing_type === 'sale');
+        }
+
+        if (typeFilter) {
+          filtered = filtered.filter((p) => p.type.toLowerCase() === typeFilter.toLowerCase());
+        }
+
+        if (normalized) {
+          filtered = filtered
+            .filter((p) => {
+              const title = String(p.title || '').toLowerCase();
+              const location = String(p.location || '').toLowerCase();
+              const serial = String(p.serial_number || '').toLowerCase();
+              return (
+                serial.includes(normalized) ||
+                title.includes(normalized) ||
+                location.includes(normalized)
+              );
+            })
+            .sort((a, b) => {
+              const aSerial = String(a.serial_number || '').toLowerCase();
+              const bSerial = String(b.serial_number || '').toLowerCase();
+              const aTitle = String(a.title || '').toLowerCase();
+              const bTitle = String(b.title || '').toLowerCase();
+
+              const aExactSerial = aSerial === normalized ? 1 : 0;
+              const bExactSerial = bSerial === normalized ? 1 : 0;
+              if (aExactSerial !== bExactSerial) return bExactSerial - aExactSerial;
+
+              const aPrefixSerial = aSerial.startsWith(normalized) ? 1 : 0;
+              const bPrefixSerial = bSerial.startsWith(normalized) ? 1 : 0;
+              if (aPrefixSerial !== bPrefixSerial) return bPrefixSerial - aPrefixSerial;
+
+              const aPrefixTitle = aTitle.startsWith(normalized) ? 1 : 0;
+              const bPrefixTitle = bTitle.startsWith(normalized) ? 1 : 0;
+              if (aPrefixTitle !== bPrefixTitle) return bPrefixTitle - aPrefixTitle;
+
+              return 0;
+            });
+        }
+
+        const results = filtered.slice(0, limit);
+        return sendJson(res, {
+          query: rawQuery,
+          total: filtered.length,
+          results,
+          properties: results,
+        });
+      }
+
       if (pathname === '/api/get-projects.php' && method === 'GET') {
         return sendJson(res, projects);
       }
@@ -1156,8 +1133,10 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
       allowedHosts: true,
+      strictPort: true,
       hmr: false,
     },
+    clearScreen: false,
     resolve: {
       alias: { '@': path.resolve(import.meta.dirname, './src') },
     },

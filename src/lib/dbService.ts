@@ -117,6 +117,91 @@ export async function getProperty(id: number): Promise<Property> {
   return res.json();
 }
 
+export interface GlobalSearchResponse {
+  query: string;
+  total: number;
+  results: Property[];
+}
+
+export async function searchProperties(
+  query: string,
+  options?: {
+    purpose?: 'buy' | 'rent' | 'commercial';
+    limit?: number;
+    signal?: AbortSignal;
+  }
+): Promise<GlobalSearchResponse> {
+  const trimmed = query.trim();
+  const params = new URLSearchParams();
+  if (trimmed) params.set('q', trimmed);
+  if (options?.purpose) params.set('purpose', options.purpose);
+  if (options?.limit) params.set('limit', String(options.limit));
+
+  try {
+    const res = await fetch(`${API}/search?${params.toString()}`, {
+      signal: options?.signal,
+      headers: { Accept: 'application/json' },
+    });
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        const items: Property[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.results)
+            ? data.results
+            : Array.isArray(data?.properties)
+              ? data.properties
+              : [];
+        return {
+          query: typeof data?.query === 'string' ? data.query : trimmed,
+          total: typeof data?.total === 'number' ? data.total : items.length,
+          results: items,
+        };
+      }
+    }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw err;
+    }
+    // Fall back to get-properties.php if running against static PHP host without /api/search
+  }
+
+  const all = await getProperties(trimmed ? { search: trimmed } : undefined);
+  const normalized = trimmed.toLowerCase();
+  const limit = options?.limit ?? 20;
+
+  let filtered = all.filter((p) => {
+    if (options?.purpose === 'rent' && p.listing_type !== 'rent') return false;
+    if (options?.purpose === 'commercial' && p.type !== 'Commercial') return false;
+    if (!normalized) return true;
+    const title = (p.title || '').toLowerCase();
+    const location = (p.location || '').toLowerCase();
+    const serial = (p.serial_number || '').toLowerCase();
+    return (
+      serial.includes(normalized) ||
+      title.includes(normalized) ||
+      location.includes(normalized)
+    );
+  });
+
+  if (normalized) {
+    filtered = filtered.sort((a, b) => {
+      const aSerial = (a.serial_number || '').toLowerCase();
+      const bSerial = (b.serial_number || '').toLowerCase();
+      const aExact = aSerial === normalized ? 1 : 0;
+      const bExact = bSerial === normalized ? 1 : 0;
+      return bExact - aExact;
+    });
+  }
+
+  return {
+    query: trimmed,
+    total: filtered.length,
+    results: filtered.slice(0, limit),
+  };
+}
+
 export async function getProjects(): Promise<Project[]> {
   const res = await fetch(`${API}/get-projects.php`);
   if (!res.ok) throw new Error('Failed to fetch projects');

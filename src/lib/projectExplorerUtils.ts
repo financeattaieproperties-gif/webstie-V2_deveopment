@@ -68,148 +68,12 @@ export function resolveUnitPlans(
   let legendImg: string | undefined = undefined;
   let masterplanImg: string | undefined = project?.masterplan_image || undefined;
 
-  // Project 3: Kabul Plaza Burj (Ansari Sq, Shahr-e-Naw)
-  if (pid === 3 || un.includes('burj')) {
-    masterplanImg = '/assets/kabul-plaza-burj/floor_typical_furnished_masterplan.png';
-    if (un.includes('(b)')) {
-      technicalPlan = '/assets/kabul-plaza-burj/apt_burj_b_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-burj/apt_burj_b_furnished.png';
-      legendImg = '/assets/kabul-plaza-burj/apt_burj_b_legend.png';
-    } else if (un.includes('(c)')) {
-      technicalPlan = '/assets/kabul-plaza-burj/apt_burj_c_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-burj/apt_burj_c_furnished.png';
-      legendImg = '/assets/kabul-plaza-burj/apt_burj_c_legend.png';
-    } else if (un.includes('(d)')) {
-      technicalPlan = '/assets/kabul-plaza-burj/apt_burj_d_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-burj/apt_burj_d_furnished.png';
-      legendImg = '/assets/kabul-plaza-burj/apt_burj_d_legend.png';
-    } else if (un.includes('(e)')) {
-      technicalPlan = '/assets/kabul-plaza-burj/apt_burj_e_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-burj/apt_burj_e_furnished.png';
-      legendImg = '/assets/kabul-plaza-burj/apt_burj_e_legend.png';
-    } else if (un.includes('(f)')) {
-      technicalPlan = '/assets/kabul-plaza-burj/apt_burj_f_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-burj/apt_burj_f_furnished.png';
-      legendImg = '/assets/kabul-plaza-burj/apt_burj_f_legend.png';
-    } else {
-      technicalPlan = '/assets/kabul-plaza-burj/apt_burj_a_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-burj/apt_burj_a_furnished.png';
-      legendImg = '/assets/kabul-plaza-burj/apt_burj_a_legend.png';
-    }
-  }
-  // Project 4: Kabul Plaza 12 (Kart-e-Char)
-  else if (pid === 4 || un.includes('kabul plaza 12') || un.includes('kp12')) {
-    masterplanImg = '/assets/kabul-plaza-12/floor_typical_furnished_masterplan.png';
-    if (un.includes('unit b') && (un.includes('4th') || un.includes('9th'))) {
-      technicalPlan = '/assets/kabul-plaza-12/apt_4th_9th_b_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-12/apt_4th_9th_b_furnished.png';
-      legendImg = '/assets/kabul-plaza-12/apt_4th_9th_b_legend.png';
-    } else if (un.includes('unit a') && (un.includes('4th') || un.includes('9th'))) {
-      technicalPlan = '/assets/kabul-plaza-12/apt_4th_9th_a_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-12/apt_4th_9th_a_furnished.png';
-      legendImg = '/assets/kabul-plaza-12/apt_4th_9th_a_legend.png';
-    } else if (un.includes('unit b')) {
-      technicalPlan = '/assets/kabul-plaza-12/apt_typical_b_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-12/apt_typical_b_furnished.png';
-      legendImg = '/assets/kabul-plaza-12/apt_typical_b_legend.png';
-    } else if (un.includes('penthouse') || un.includes('10th')) {
-      technicalPlan = '/assets/kabul-plaza-12/floor_typical_technical_masterplan.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-12/floor_10_penthouse_furnished_masterplan.png';
-      legendImg = '/assets/kabul-plaza-12/floor_04_09_furnished_masterplan.png';
-    } else {
-      technicalPlan = '/assets/kabul-plaza-12/apt_typical_a_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-12/apt_typical_a_furnished.png';
-      legendImg = '/assets/kabul-plaza-12/apt_typical_a_legend.png';
-    }
-  }
-  // Project 5: Kabul Plaza ABC / Kabul Plaza 09
-  else if (pid === 5 || un.includes('abc') || un.includes('09')) {
-    masterplanImg = '/assets/kabul-plaza-abc/floor_typical_furnished_masterplan.png';
-    if (un.includes('duplex') && un.includes('b')) {
-      technicalPlan = '/assets/kabul-plaza-abc/apt_duplex_b_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-abc/apt_duplex_b_furnished.png';
-      legendImg = '/assets/kabul-plaza-abc/apt_duplex_b_legend.png';
-    } else if (un.includes('duplex')) {
-      technicalPlan = '/assets/kabul-plaza-abc/apt_duplex_a_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-abc/apt_duplex_a_furnished.png';
-      legendImg = '/assets/kabul-plaza-abc/apt_duplex_a_legend.png';
-    } else if (un.includes('unit b')) {
-      technicalPlan = '/assets/kabul-plaza-abc/apt_b_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-abc/apt_b_furnished.png';
-      legendImg = '/assets/kabul-plaza-abc/apt_b_legend.png';
-    } else {
-      technicalPlan = '/assets/kabul-plaza-abc/apt_a_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-abc/apt_a_furnished.png';
-      legendImg = '/assets/kabul-plaza-abc/apt_a_legend.png';
-    }
-  }
-  // Project 2: Moon Residency (Kart-e-Char)
-  else if (
-    pid === 2 ||
-    un.includes('moon') ||
-    un.includes('(01)') ||
-    un.includes('(02)') ||
-    un.includes('(03)') ||
-    un.includes('(04)')
-  ) {
-    masterplanImg = '/assets/moon-residency/floor_typical_2_to_10_furnished_masterplan.png';
-    if (un.includes('02')) {
-      technicalPlan = '/assets/moon-residency/apt_02_technical.png';
-      furnishedPlan = customImg || '/assets/moon-residency/apt_02_furnished.png';
-      legendImg = '/assets/moon-residency/apt_02_legend.png';
-    } else if (un.includes('03')) {
-      technicalPlan = '/assets/moon-residency/apt_03_technical.png';
-      furnishedPlan = customImg || '/assets/moon-residency/apt_03_furnished.png';
-      legendImg = '/assets/moon-residency/apt_03_legend.png';
-    } else if (un.includes('04')) {
-      technicalPlan = '/assets/moon-residency/apt_04_technical.png';
-      furnishedPlan = customImg || '/assets/moon-residency/apt_04_furnished.png';
-      legendImg = '/assets/moon-residency/apt_04_legend.png';
-    } else {
-      technicalPlan = '/assets/moon-residency/apt_01_technical.png';
-      furnishedPlan = customImg || '/assets/moon-residency/apt_01_furnished.png';
-      legendImg = '/assets/moon-residency/apt_01_legend.png';
-    }
-  }
-  // Project 1: Kabul Plaza Saljuqi (Shahr-e-Naw)
-  else if (pid === 1 || un.includes('saljuqi') || un.includes('plaza')) {
-    masterplanImg = '/assets/kabul-plaza-saljuqi/floor_typical_2_to_10_furnished_masterplan.png';
-    if (un.includes('1st') || un.includes('commercial')) {
-      technicalPlan = '/assets/kabul-plaza-saljuqi/apt_1st_a_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-saljuqi/apt_1st_a_furnished.png';
-      legendImg = '/assets/kabul-plaza-saljuqi/apt_1st_a_legend.png';
-    } else if (un.includes('11th') && un.includes('b')) {
-      technicalPlan = '/assets/kabul-plaza-saljuqi/apt_11th_vip_b_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-saljuqi/apt_11th_vip_b_furnished.png';
-      legendImg = '/assets/kabul-plaza-saljuqi/apt_11th_vip_b_legend.png';
-    } else if (un.includes('11th')) {
-      technicalPlan = '/assets/kabul-plaza-saljuqi/apt_11th_vip_a_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-saljuqi/apt_11th_vip_a_furnished.png';
-      legendImg = '/assets/kabul-plaza-saljuqi/apt_11th_vip_a_legend.png';
-    } else if (un.includes('unit b') || un.includes('5+1')) {
-      technicalPlan = '/assets/kabul-plaza-saljuqi/apt_typical_b_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-saljuqi/apt_typical_b_furnished.png';
-      legendImg = '/assets/kabul-plaza-saljuqi/apt_typical_b_legend.png';
-    } else if (un.includes('unit c') || un.includes('4+1')) {
-      technicalPlan = '/assets/kabul-plaza-saljuqi/apt_typical_c_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-saljuqi/apt_typical_c_furnished.png';
-      legendImg = '/assets/kabul-plaza-saljuqi/apt_typical_c_legend.png';
-    } else {
-      technicalPlan = '/assets/kabul-plaza-saljuqi/apt_typical_a_technical.png';
-      furnishedPlan = customImg || '/assets/kabul-plaza-saljuqi/apt_typical_a_furnished.png';
-      legendImg = '/assets/kabul-plaza-saljuqi/apt_typical_a_legend.png';
-    }
-  } else {
-    // Generic custom project created by admin
-    if (customImg) {
-      furnishedPlan = customImg;
-    }
-    if (project?.masterplan_image) {
-      technicalPlan = project.masterplan_image;
-    }
-  }
-
-  return { technicalPlan, furnishedPlan, legendImg, masterplanImg };
+  return {
+    technicalPlan: customTechnicalPlan || project?.masterplan_image || defaultTechnicalPlanImg,
+    furnishedPlan: customImg || defaultFurnishedPlanImg,
+    legendImg: undefined,
+    masterplanImg: project?.masterplan_image || undefined,
+  };
 }
 
 /**
@@ -221,8 +85,6 @@ export function buildFloorGroups(
   projectId?: number | string,
   totalUnitsHint?: number
 ): FloorGroup[] {
-  const pid = Number(projectId || 1);
-
   // Collect distinct floor numbers from units
   const floorMap = new Map<number, ProjectUnit[]>();
 
@@ -237,14 +99,10 @@ export function buildFloorGroups(
   // If units have defined floors, use those
   let floorNumbers = Array.from(floorMap.keys()).sort((a, b) => b - a);
 
-  // If no floors found in units, derive standard floors for known projects or fallback
+  // If no floors found in units, derive clean proportional floors
   if (floorNumbers.length === 0) {
-    let topFloor = 8;
-    if (pid === 3) topFloor = 15;
-    else if (pid === 1) topFloor = 11;
-    else if (pid === 2 || pid === 4) topFloor = 10;
-    else if (pid === 5) topFloor = 9;
-    else if (totalUnitsHint && totalUnitsHint > 0) {
+    let topFloor = 5;
+    if (totalUnitsHint && totalUnitsHint > 0) {
       topFloor = Math.max(3, Math.min(20, Math.ceil(totalUnitsHint / 4)));
     }
     floorNumbers = Array.from({ length: topFloor }, (_, i) => topFloor - i);

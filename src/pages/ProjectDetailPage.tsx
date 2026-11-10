@@ -30,6 +30,11 @@ const PremiumProjectExplorer = lazy(() =>
     default: m.PremiumProjectExplorer,
   }))
 );
+const PhotoApartmentExplorer = lazy(() =>
+  import('@/components/project/PhotoApartmentExplorer').then((m) => ({
+    default: m.PhotoApartmentExplorer,
+  }))
+);
 const DualPaneElevationXRayView = lazy(() =>
   import('@/components/project/DualPaneElevationXRayView').then((m) => ({
     default: m.DualPaneElevationXRayView,
@@ -39,28 +44,7 @@ const AttaieGoogleMap = lazy(() =>
   import('@/components/map/AttaieGoogleMap').then((m) => ({ default: m.AttaieGoogleMap }))
 );
 
-const FALLBACK_SHOWCASE_PROJECT: Project = {
-  id: 1,
-  name: 'Kabul Plaza Saljuqi',
-  location: 'Shahr-e-Naw, District 10, Kabul, Afghanistan',
-  delivery_date: 'Q4 2027',
-  status: 'In Progress',
-  available_units: 24,
-  total_units: 31,
-  image_url: '/assets/kabul-plaza-saljuqi/building_exterior_cover.png',
-  gallery_images: [
-    '/assets/kabul-plaza-saljuqi/building_exterior_cover.png',
-    '/assets/kabul-plaza-saljuqi/building_exterior_sunset.png',
-    '/assets/kabul-plaza-saljuqi/floor_typical_2_to_10_furnished_masterplan.png',
-    '/assets/kabul-plaza-saljuqi/floor_11_vip_furnished_masterplan.png',
-    '/assets/kabul-plaza-saljuqi/floor_01_commercial_furnished_masterplan.png',
-  ],
-  video_url: null,
-  masterplan_image: '/assets/kabul-plaza-saljuqi/floor_typical_2_to_10_furnished_masterplan.png',
-  description:
-    'Kabul Plaza Saljuqi offers modern 3, 4, and 5-bedroom luxury apartments with separate guest rooms (Mehmankhana) in the prime commercial and residential heart of Shahr-e-Naw, Kabul. Featuring 11 stories with a 1st floor commercial supermarket, 2nd to 10th typical residential floors (Units A, B, C), and 11th floor VIP penthouse terrace residences. Built with reinforced seismic-resistant concrete, dual elevators, underground car parking ramp, central heating, and 24/7 solar backup.',
-  created_at: '2026-01-01',
-};
+
 
 const PROJECT_FEATURES = [
   'Seismic-resistant concrete structure',
@@ -71,95 +55,7 @@ const PROJECT_FEATURES = [
   'Central heating & acoustic double glazing',
 ];
 
-const FALLBACK_PROJECTS: Record<number, Project> = {
-  1: FALLBACK_SHOWCASE_PROJECT,
-  2: {
-    id: 2,
-    name: 'Moon Residency',
-    location: 'Kart-e-Char, District 3, Kabul, Afghanistan',
-    delivery_date: 'Q3 2027',
-    status: 'Under Construction',
-    available_units: 28,
-    total_units: 36,
-    image_url: '/assets/moon-residency/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/moon-residency/building_exterior_cover.png',
-      '/assets/moon-residency/floor_typical_2_to_10_furnished_masterplan.png',
-      '/assets/moon-residency/floor_01_commercial_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/moon-residency/floor_typical_2_to_10_furnished_masterplan.png',
-    description:
-      'Moon Residency by Kabul Plaza Developments is an architectural residential landmark on the main boulevard of Kart-e-Char, Kabul. Featuring 10 floors with a 1st floor commercial shopping galleria (525 m²) and 2nd to 10th typical residential floors with four distinct apartment typologies (Units 01, 02, 03, 04) per floor. Built with seismic-rated reinforced concrete, dual passenger elevators, underground car parking ramp, central heating, and 24/7 backup power.',
-    created_at: '2026-01-20',
-  },
-  3: {
-    id: 3,
-    name: 'Kabul Plaza Burj',
-    location: 'Ansari Square, Shahr-e-Naw, Kabul, Afghanistan',
-    delivery_date: 'Q2 2028',
-    status: 'Under Construction',
-    available_units: 42,
-    total_units: 60,
-    image_url: '/assets/kabul-plaza-burj/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-burj/building_exterior_cover.png',
-      '/assets/kabul-plaza-burj/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-burj/floor_01_mall_furnished_masterplan.png',
-      '/assets/kabul-plaza-burj/floor_03_studios_furnished_masterplan.png',
-      '/assets/kabul-plaza-burj/floor_05_garden_furnished_masterplan.png',
-      '/assets/kabul-plaza-burj/floor_15_penthouse_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-burj/floor_typical_furnished_masterplan.png',
-    description:
-      'Kabul Plaza Burj is a landmark 15-story tower at Ansari Square in Shahr-e-Naw, Kabul. It integrates a 2-level commercial shopping galleria (Kabul Mall, 63 premier retail shops), 3rd & 4th floor executive studio residences (28 studios), 5th floor private garden terrace, 6th to 14th typical luxury residential floors offering 6 expansive apartments per floor (3+1 and 4+1 layouts from 171.66 m² to 279.46 m²), and 15th-floor grand VIP penthouse suites (1212.7 m²). Engineered with reinforced seismic damping concrete, 3 high-speed elevators, multi-level underground parking, central climate control, and uninterrupted 24/7 backup power.',
-    created_at: '2026-01-25',
-  },
-  4: {
-    id: 4,
-    name: 'Kabul Plaza 12',
-    location: 'Main Boulevard, Kart-e-Char, Kabul, Afghanistan',
-    delivery_date: 'Q1 2028',
-    status: 'Under Construction',
-    available_units: 16,
-    total_units: 24,
-    image_url: '/assets/kabul-plaza-12/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-12/building_exterior_cover.png',
-      '/assets/kabul-plaza-12/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-12/floor_01_commercial_furnished_masterplan.png',
-      '/assets/kabul-plaza-12/floor_04_09_furnished_masterplan.png',
-      '/assets/kabul-plaza-12/floor_10_penthouse_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-12/floor_typical_furnished_masterplan.png',
-    description:
-      'Kabul Plaza 12 is a 10-story mixed-use development situated on the main boulevard of Kart-e-Char, Kabul. Featuring a 1st floor commercial shopping center (310 m²), a 2nd floor business level (316.12 m²), 3rd to 8th typical residential floors with symmetrical 3+1 luxury residences (158.06 m² each with private guest Mehmankhana), 4th & 9th floor terrace apartments (157.25 m²), and a 10th floor exclusive rooftop penthouse residence (179.96 m²). Designed with seismic-resistant frame, dual elevators, underground car park, and solar backup.',
-    created_at: '2026-01-28',
-  },
-  5: {
-    id: 5,
-    name: 'Kabul Plaza 09 (ABC)',
-    location: 'Haj o Awqaf, Shahr-e-Naw, Kabul, Afghanistan',
-    delivery_date: 'Q4 2027',
-    status: 'Under Construction',
-    available_units: 11,
-    total_units: 18,
-    image_url: '/assets/kabul-plaza-abc/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-abc/building_exterior_cover.png',
-      '/assets/kabul-plaza-abc/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-abc/floor_01_commercial_furnished_masterplan.png',
-      '/assets/kabul-plaza-abc/floor_duplex_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-abc/floor_typical_furnished_masterplan.png',
-    description:
-      'Kabul Plaza ABC (Kabul Plaza 09) is an exclusive boutique residential tower located in the prestigious Haj o Awqaf / Shahr-e-Naw district of Kabul. Offering 9 stories including 1st floor commercial retail (170 m²), 2nd to 7th typical floors featuring two spacious 4+1 bedroom residences per floor (175.08 m² and 167.68 m²), and dramatic 8th & 9th floor two-story Duplex Penthouses (346.8 m² and 332.8 m² with private green sky-roof terraces). Built with premium imported finishes, earthquake-engineered structural frame, high-speed elevator, and 24/7 security.',
-    created_at: '2026-02-01',
-  },
-};
+const FALLBACK_PROJECTS: Record<number, Project> = {};
 
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -171,20 +67,23 @@ export function ProjectDetailPage() {
   const isRtl = i18n.language === 'fa';
 
   useEffect(() => {
-    const numericId = Number(id) || 1;
+    const numericId = Number(id);
+    if (!numericId) {
+      setLoading(false);
+      setProject(null);
+      return;
+    }
     setLoading(true);
     getProject(numericId)
       .then((data) => {
         if (data && typeof data === 'object' && 'name' in data) {
           setProject(data);
-        } else if (FALLBACK_PROJECTS[numericId]) {
-          setProject(FALLBACK_PROJECTS[numericId]);
         } else {
           setProject(null);
         }
       })
       .catch(() => {
-        setProject(FALLBACK_PROJECTS[numericId] || null);
+        setProject(null);
       })
       .finally(() => {
         setLoading(false);
@@ -253,60 +152,20 @@ export function ProjectDetailPage() {
             {t('property.backToList', 'Back to Projects')}
           </Link>
 
-          {/* Interactive 50/50 Elevation + X-Ray Split Project Explorer */}
+          {/* Interactive Photo-Based Apartment Explorer with 2D / Furnished Reveal */}
           <Suspense
             fallback={
               <div className="w-full h-[520px] rounded-3xl bg-brand-navy/5 border border-brand-navy/10 animate-pulse my-6 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-10 h-10 rounded-full border-2 border-brand-gold border-t-transparent animate-spin mb-3" />
                 <p className="text-xs font-bold uppercase tracking-wider text-brand-navy">
-                  Loading Interactive Elevation &amp; X-Ray Explorer…
+                  {t('projects.loadingExplorer', 'Loading Photo Apartment Explorer…')}
                 </p>
               </div>
             }
           >
-            <DualPaneElevationXRayView
+            <PhotoApartmentExplorer
               projectId={project.id}
               projectName={name}
-              projectLocation={location}
-              deliveryDate={project.delivery_date}
-              projectStatus={project.status}
-              masterplanImageUrl={project.masterplan_image}
-              onFloorHover={(f) => setSyncedFloor(f)}
-              onSelectUnit={(u) => setSyncedUnit(u)}
-              initialExteriorUrl={
-                project.image_url ||
-                (project.id === 2
-                  ? '/assets/moon-residency/building_exterior_cover.png'
-                  : project.id === 3
-                  ? '/assets/kabul-plaza-burj/building_exterior_cover.png'
-                  : project.id === 4
-                  ? '/assets/kabul-plaza-12/building_exterior_cover.png'
-                  : project.id === 5
-                  ? '/assets/kabul-plaza-abc/building_exterior_cover.png'
-                  : '/assets/kabul-plaza-saljuqi/building_exterior_cover.png')
-              }
-              initialTechnicalPlanUrl={
-                project.id === 2
-                  ? '/assets/moon-residency/apt_01_technical.png'
-                  : project.id === 3
-                  ? '/assets/kabul-plaza-burj/apt_burj_a_technical.png'
-                  : project.id === 4
-                  ? '/assets/kabul-plaza-12/apt_typical_a_technical.png'
-                  : project.id === 5
-                  ? '/assets/kabul-plaza-abc/apt_a_technical.png'
-                  : '/assets/kabul-plaza-saljuqi/apt_typical_a_technical.png'
-              }
-              initialFurnishedPlanUrl={
-                project.id === 2
-                  ? '/assets/moon-residency/apt_01_furnished.png'
-                  : project.id === 3
-                  ? '/assets/kabul-plaza-burj/apt_burj_a_furnished.png'
-                  : project.id === 4
-                  ? '/assets/kabul-plaza-12/apt_typical_a_furnished.png'
-                  : project.id === 5
-                  ? '/assets/kabul-plaza-abc/apt_a_furnished.png'
-                  : '/assets/kabul-plaza-saljuqi/apt_typical_a_furnished.png'
-              }
             />
           </Suspense>
 

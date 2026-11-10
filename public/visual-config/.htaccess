@@ -1,0 +1,7 @@
+# Protect internal data directory
+<FilesMatch "^(published|draft)\.json$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+Options -Indexes

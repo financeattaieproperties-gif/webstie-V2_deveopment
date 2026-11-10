@@ -52,6 +52,7 @@ import stitchVillaImg from '../../assets/images/stitch_villa_exterior.jpg';
 import categoryHousesImg from '../../assets/images/category_houses_villa_1794037428658.jpg';
 import categoryCommercialImg from '../../assets/images/category_commercial_plaza_1794037429778.jpg';
 import categoryProjectsImg from '../../assets/images/category_master_projects_1794037429266.jpg';
+import { LandingHeroBackground } from './LandingHeroBackground';
 
 const WHATSAPP_NUMBER = '93782222279';
 
@@ -124,112 +125,7 @@ const FALLBACK_SHOWCASE_PROPERTIES: Property[] = [
   },
 ];
 
-const FALLBACK_PREVIEW_PROJECTS: Project[] = [
-  {
-    id: 1,
-    name: 'Kabul Plaza Saljuqi',
-    location: 'Ansari Square, Shahr-e-Naw, Kabul',
-    delivery_date: 'Q4 2027',
-    status: 'In Progress',
-    available_units: 24,
-    total_units: 31,
-    image_url: '/assets/kabul-plaza-saljuqi/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-saljuqi/building_exterior_cover.png',
-      '/assets/kabul-plaza-saljuqi/building_exterior_sunset.png',
-      '/assets/kabul-plaza-saljuqi/floor_typical_2_to_10_furnished_masterplan.png',
-      '/assets/kabul-plaza-saljuqi/floor_11_vip_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-saljuqi/floor_typical_2_to_10_furnished_masterplan.png',
-    description:
-      'Premier 11-story residential and commercial development in Shahr-e-Naw featuring 3, 4, and 5-bedroom apartments with guest Mehmankhana suites, private balconies, and 1st-floor supermarket.',
-    created_at: '2026-01-15T08:00:00Z',
-  },
-  {
-    id: 2,
-    name: 'Moon Residency',
-    location: 'Kart-e-Char, District 3, Kabul',
-    delivery_date: 'Q3 2027',
-    status: 'Under Construction',
-    available_units: 28,
-    total_units: 36,
-    image_url: '/assets/moon-residency/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/moon-residency/building_exterior_cover.png',
-      '/assets/moon-residency/floor_typical_2_to_10_furnished_masterplan.png',
-      '/assets/moon-residency/floor_01_commercial_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/moon-residency/floor_typical_2_to_10_furnished_masterplan.png',
-    description:
-      'Moon Residency by Kabul Plaza Developments is an architectural residential landmark in Kart-e-Char offering contemporary 3+1 and 4+1 bedroom residences with commercial ground-floor retail.',
-    created_at: '2026-01-20T08:00:00Z',
-  },
-  {
-    id: 3,
-    name: 'Kabul Plaza Burj',
-    location: 'Ansari Square, Shahr-e-Naw, Kabul',
-    delivery_date: 'Q2 2028',
-    status: 'Under Construction',
-    available_units: 42,
-    total_units: 60,
-    image_url: '/assets/kabul-plaza-burj/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-burj/building_exterior_cover.png',
-      '/assets/kabul-plaza-burj/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-burj/floor_01_mall_furnished_masterplan.png',
-      '/assets/kabul-plaza-burj/floor_15_penthouse_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-burj/floor_typical_furnished_masterplan.png',
-    description:
-      'Prestigious 15-story tower with 2-level Kabul Mall shopping galleria (63 shops), 3rd & 4th floor executive studios, 5th floor sky garden, 6th-14th floor luxury 3+1 & 4+1 apartments, and 15th-floor grand VIP penthouses.',
-    created_at: '2026-01-25T08:00:00Z',
-  },
-  {
-    id: 4,
-    name: 'Kabul Plaza 12',
-    location: 'Kart-e-Char, District 3, Kabul',
-    delivery_date: 'Q1 2028',
-    status: 'Under Construction',
-    available_units: 16,
-    total_units: 24,
-    image_url: '/assets/kabul-plaza-12/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-12/building_exterior_cover.png',
-      '/assets/kabul-plaza-12/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-12/floor_01_commercial_furnished_masterplan.png',
-      '/assets/kabul-plaza-12/floor_10_penthouse_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-12/floor_typical_furnished_masterplan.png',
-    description:
-      'Premier 10-story mixed-use development on main Kart-e-Char boulevard with 1st floor commercial shopping center, 2nd floor business level, 3+1 luxury residences, and 10th floor exclusive rooftop penthouse.',
-    created_at: '2026-01-28T08:00:00Z',
-  },
-  {
-    id: 5,
-    name: 'Kabul Plaza 09 (ABC)',
-    location: 'Haj o Awqaf, Shahr-e-Naw, Kabul',
-    delivery_date: 'Q4 2027',
-    status: 'Under Construction',
-    available_units: 11,
-    total_units: 18,
-    image_url: '/assets/kabul-plaza-abc/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-abc/building_exterior_cover.png',
-      '/assets/kabul-plaza-abc/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-abc/floor_01_commercial_furnished_masterplan.png',
-      '/assets/kabul-plaza-abc/floor_duplex_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-abc/floor_typical_furnished_masterplan.png',
-    description:
-      'Exclusive 9-story boutique residential tower in Shahr-e-Naw Haj o Awqaf with commercial podium, 4+1 bedroom luxury family suites, and dramatic 8th & 9th floor duplex sky penthouses with private green roof terraces.',
-    created_at: '2026-02-01T08:00:00Z',
-  },
-];
+const FALLBACK_PREVIEW_PROJECTS: Project[] = [];
 
 const FEATURED_PROPERTIES_LIMIT = 6;
 const FEATURED_PROJECTS_LIMIT = 8;
@@ -465,6 +361,36 @@ function FeaturedProjectMotionCarousel({ projects }: { projects: Project[] }) {
   const imgY = useTransform(smoothY, [-0.5, 0.5], ['6px', '-6px']);
 
   const total = safeProjects.length;
+
+  if (total === 0) {
+    return (
+      <div className="w-full h-full rounded-2xl overflow-hidden bg-gradient-to-br from-brand-ivory via-white to-brand-gold-lt/30 border border-brand-navy/10 shadow-brand-md p-6 sm:p-8 flex flex-col justify-between min-h-[230px] relative">
+        <div className="absolute inset-0 islamic-pattern-light opacity-30 pointer-events-none" />
+        <div className="relative z-10">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-gold/15 text-brand-gold font-bold text-xs uppercase tracking-wider mb-3">
+            <Building2 size={13} />
+            Master-Planned Developments
+          </span>
+          <h3 className="text-xl font-display font-bold text-brand-navy mb-2">
+            New Flagship Projects Coming Soon
+          </h3>
+          <p className="text-xs text-neutral-600 leading-relaxed max-w-sm">
+            Exclusive multi-unit residential towers and commercial centers across Kabul are currently in development. Connect with our advisory desk for private off-market previews.
+          </p>
+        </div>
+        <div className="relative z-10 pt-4">
+          <Link
+            to="/contact"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-navy hover:bg-brand-gold text-white font-bold text-xs transition-colors shadow-xs"
+          >
+            <span>Inquire for Early Access</span>
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const currentProject = safeProjects[activeIndex % total] || safeProjects[0];
 
   const paginate = useCallback(
@@ -803,28 +729,8 @@ export const LandingPageContent = () => {
       {/* ── 1. STITCH ARCHITECTURAL HERO SECTION + FLOATING SEARCH BAR ── */}
       <section className="relative z-30 pt-24 lg:pt-28 pb-12 bg-brand-cream">
         <div className="relative min-h-[540px] lg:min-h-[600px] flex flex-col justify-between">
-          {/* Single Architectural Hero Background */}
-          <div className="absolute inset-0 z-0 overflow-hidden">
-            <img
-              src={stitchHeroImg}
-              alt="Attaie Properties — Modern Real Estate in Kabul, Afghanistan"
-              className="w-full h-full object-cover object-right-top"
-            />
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background:
-                  'linear-gradient(90deg, rgba(245,247,251,0.96) 0%, rgba(245,247,251,0.88) 38%, rgba(245,247,251,0.28) 68%, rgba(245,247,251,0.05) 100%)',
-              }}
-            />
-            <div
-              className="absolute inset-x-0 bottom-0 h-32"
-              style={{
-                background:
-                  'linear-gradient(to top, var(--color-brand-cream) 10%, rgba(245,247,251,0) 100%)',
-              }}
-            />
-          </div>
+          {/* Single Architectural Hero Background (Dynamic admin-configured or default) */}
+          <LandingHeroBackground />
 
           {/* Left Column Hero Copy */}
           <div className="container-custom relative z-10 pt-10 lg:pt-16 pb-10">

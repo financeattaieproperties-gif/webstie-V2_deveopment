@@ -487,8 +487,8 @@ function PropertiesContent() {
       />
       <Navbar />
 
-      <div className="relative bg-brand-navy pt-32 pb-16 overflow-hidden">
-        <div className="absolute inset-0 islamic-pattern" />
+      <div className="relative bg-brand-navy pt-32 pb-16 z-40">
+        <div className="absolute inset-0 islamic-pattern overflow-hidden pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent" />
         <div ref={heroHeaderRef} className="container-custom relative z-10">
           <Breadcrumbs

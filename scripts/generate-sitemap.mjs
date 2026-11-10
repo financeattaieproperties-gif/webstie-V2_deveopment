@@ -107,37 +107,7 @@ const SEED_PROPERTIES = [
   },
 ];
 
-const SEED_PROJECTS = [
-  {
-    id: 1,
-    name: 'The Kabul Heights',
-    location: 'Ansari Boulevard, Shahr-e-Naw, Kabul',
-    status: 'Under Construction',
-    image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
-    gallery_images: [
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
-    ],
-    created_at: '2026-01-10',
-  },
-  {
-    id: 2,
-    name: 'Wazir Luxury Residences',
-    location: 'Street 15, Wazir Akbar Khan, Kabul',
-    status: 'Ready',
-    image_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-    gallery_images: [],
-    created_at: '2026-01-20',
-  },
-  {
-    id: 3,
-    name: 'Emerald Business Tower',
-    location: 'Kolola Pushta Central, Kabul',
-    status: 'In Progress',
-    image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-    gallery_images: [],
-    created_at: '2026-02-05',
-  },
-];
+const SEED_PROJECTS = [];
 
 const SEED_CAREERS = [
   {

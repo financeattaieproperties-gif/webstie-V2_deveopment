@@ -426,8 +426,10 @@ export const BlueprintViewer: React.FC<BlueprintViewerProps> = ({
                       type="button"
                       onClick={() => handleUnitClick(unit)}
                       className={`group relative flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-xl ${
-                        isSelected || isHovered
-                          ? 'bg-brand-navy-deep text-white scale-110 ring-2 ring-brand-gold border border-brand-gold'
+                        isSelected
+                          ? 'bg-brand-navy-deep text-white scale-110 ring-2 ring-brand-gold border border-brand-gold shadow-[0_0_12px_rgba(1,69,242,0.5)]'
+                          : isHovered
+                          ? 'bg-brand-navy-deep text-white scale-110 ring-2 ring-[#0145F2] border border-[#0145F2] shadow-[0_0_14px_rgba(1,69,242,0.65)]'
                           : 'bg-brand-navy-deep/90 text-white/90 hover:scale-105 border border-white/30 backdrop-blur-md'
                       }`}
                       aria-label={`Select ${unit.unit_number}`}

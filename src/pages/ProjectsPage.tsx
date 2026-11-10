@@ -24,111 +24,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const FILTER_STATUSES = ['All', 'Coming Soon', 'In Progress', 'Sold Out'] as const;
 
-const FALLBACK_PROJECTS: Project[] = [
-  {
-    id: 1,
-    name: 'Kabul Plaza Saljuqi',
-    location: 'Ansari Square, Shahr-e-Naw, Kabul',
-    delivery_date: 'Q4 2027',
-    status: 'In Progress',
-    available_units: 24,
-    total_units: 31,
-    image_url: '/assets/kabul-plaza-saljuqi/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-saljuqi/building_exterior_cover.png',
-      '/assets/kabul-plaza-saljuqi/building_exterior_sunset.png',
-      '/assets/kabul-plaza-saljuqi/floor_typical_2_to_10_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-saljuqi/floor_typical_2_to_10_furnished_masterplan.png',
-    description:
-      'Premier 11-story residential and commercial development in Shahr-e-Naw featuring 3, 4, and 5-bedroom apartments with guest Mehmankhana suites, private balconies, and 1st-floor supermarket.',
-    created_at: '2026-01-15T08:00:00Z',
-  },
-  {
-    id: 2,
-    name: 'Moon Residency',
-    location: 'Kart-e-Char, District 3, Kabul',
-    delivery_date: 'Q3 2027',
-    status: 'Under Construction',
-    available_units: 28,
-    total_units: 36,
-    image_url: '/assets/moon-residency/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/moon-residency/building_exterior_cover.png',
-      '/assets/moon-residency/floor_typical_2_to_10_furnished_masterplan.png',
-      '/assets/moon-residency/floor_01_commercial_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/moon-residency/floor_typical_2_to_10_furnished_masterplan.png',
-    description:
-      'Moon Residency by Kabul Plaza Developments is an architectural residential landmark in Kart-e-Char offering contemporary 3+1 and 4+1 bedroom residences with commercial ground-floor retail.',
-    created_at: '2026-01-20T08:00:00Z',
-  },
-  {
-    id: 3,
-    name: 'Kabul Plaza Burj',
-    location: 'Ansari Square, Shahr-e-Naw, Kabul',
-    delivery_date: 'Q2 2028',
-    status: 'Under Construction',
-    available_units: 42,
-    total_units: 60,
-    image_url: '/assets/kabul-plaza-burj/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-burj/building_exterior_cover.png',
-      '/assets/kabul-plaza-burj/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-burj/floor_01_mall_furnished_masterplan.png',
-      '/assets/kabul-plaza-burj/floor_15_penthouse_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-burj/floor_typical_furnished_masterplan.png',
-    description:
-      'Prestigious 15-story tower with 2-level Kabul Mall shopping galleria (63 shops), 3rd & 4th floor executive studios, 5th floor sky garden, 6th-14th floor luxury 3+1 & 4+1 apartments, and 15th-floor grand VIP penthouses.',
-    created_at: '2026-01-25T08:00:00Z',
-  },
-  {
-    id: 4,
-    name: 'Kabul Plaza 12',
-    location: 'Kart-e-Char, District 3, Kabul',
-    delivery_date: 'Q1 2028',
-    status: 'Under Construction',
-    available_units: 16,
-    total_units: 24,
-    image_url: '/assets/kabul-plaza-12/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-12/building_exterior_cover.png',
-      '/assets/kabul-plaza-12/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-12/floor_01_commercial_furnished_masterplan.png',
-      '/assets/kabul-plaza-12/floor_10_penthouse_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-12/floor_typical_furnished_masterplan.png',
-    description:
-      'Premier 10-story mixed-use development on main Kart-e-Char boulevard with 1st floor commercial shopping center, 2nd floor business level, 3+1 luxury residences, and 10th floor exclusive rooftop penthouse.',
-    created_at: '2026-01-28T08:00:00Z',
-  },
-  {
-    id: 5,
-    name: 'Kabul Plaza 09 (ABC)',
-    location: 'Haj o Awqaf, Shahr-e-Naw, Kabul',
-    delivery_date: 'Q4 2027',
-    status: 'Under Construction',
-    available_units: 11,
-    total_units: 18,
-    image_url: '/assets/kabul-plaza-abc/building_exterior_cover.png',
-    gallery_images: [
-      '/assets/kabul-plaza-abc/building_exterior_cover.png',
-      '/assets/kabul-plaza-abc/floor_typical_furnished_masterplan.png',
-      '/assets/kabul-plaza-abc/floor_01_commercial_furnished_masterplan.png',
-      '/assets/kabul-plaza-abc/floor_duplex_furnished_masterplan.png',
-    ],
-    video_url: null,
-    masterplan_image: '/assets/kabul-plaza-abc/floor_typical_furnished_masterplan.png',
-    description:
-      'Exclusive 9-story boutique residential tower in Shahr-e-Naw Haj o Awqaf with commercial podium, 4+1 bedroom luxury family suites, and dramatic 8th & 9th floor duplex sky penthouses with private green roof terraces.',
-    created_at: '2026-02-01T08:00:00Z',
-  },
-];
+const FALLBACK_PROJECTS: Project[] = [];
 
 export default function ProjectsPage() {
   const { t } = useTranslation();
@@ -141,16 +37,14 @@ export default function ProjectsPage() {
   useEffect(() => {
     getProjects()
       .then((list) => {
-        if (Array.isArray(list) && list.length > 0) {
+        if (Array.isArray(list)) {
           setProjects(list);
-        } else if (Array.isArray(list)) {
-          setProjects([]);
         } else {
-          setProjects(FALLBACK_PROJECTS);
+          setProjects([]);
         }
       })
       .catch(() => {
-        setProjects(FALLBACK_PROJECTS);
+        setProjects([]);
       })
       .finally(() => setLoading(false));
   }, []);

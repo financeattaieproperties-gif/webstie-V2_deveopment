@@ -125,7 +125,21 @@
     "selectApartmentPrompt": "Select an apartment to inspect its 2D Technical Blueprint and 3D Furnished Plan",
     "viewFloorPlate": "Floor Plate Masterplan",
     "fullSpecifications": "Full Specifications",
-    "bookVisit": "Schedule Viewing"
+    "bookVisit": "Schedule Viewing",
+    "revealCompare": "2D Technical vs. 2D Furnished Reveal",
+    "revealShort": "Plan Reveal",
+    "plan2dTechnical": "2D Technical",
+    "planFurnished": "Furnished 3D",
+    "photoElevationHint": "Hover or tap any illuminated floor to explore floorplans",
+    "selectFloorLevel": "Select Floor Level",
+    "levels": "Levels",
+    "loadingExplorer": "Loading Photo Apartment Explorer…",
+    "backToFloor": "Back to Floor Plan",
+    "backToBuilding": "Back to Building Photo",
+    "stageExterior": "1. Illuminated Floor Selection",
+    "stageFloor": "2. Whole Floor Masterplan",
+    "stageUnit": "3. 2D / Furnished Plan Reveal",
+    "viewApartmentPlan": "View Plan"
   },
   "projectsPage": {
     "eyebrow": "Kabul developments",

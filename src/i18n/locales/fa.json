@@ -125,7 +125,21 @@
     "selectApartmentPrompt": "جهت مشاهده پلان ۲بعدی تخنیکی و ۳بعدی مفروش، یک اپارتمان را انتخاب نمایید",
     "viewFloorPlate": "پلان عمومی منزل (مسترپلان)",
     "fullSpecifications": "مشخصات کامل مهندسی",
-    "bookVisit": "درخواست بازدید حضوری"
+    "bookVisit": "درخواست بازدید حضوری",
+    "revealCompare": "تفکیک و مقایسه پلان ۲بعدی تخنیکی و ۳بعدی مفروش",
+    "revealShort": "تفکیک پلان",
+    "plan2dTechnical": "پلان ۲بعدی تخنیکی",
+    "planFurnished": "پلان ۳بعدی مفروش",
+    "photoElevationHint": "جهت مشاهده پلان‌ها، روی هر منزل روشن در نمای بیرونی اشاره یا کلیک کنید",
+    "selectFloorLevel": "انتخاب منزل",
+    "levels": "طبقه",
+    "loadingExplorer": "در حال بارگذاری کاوشگر تصویری اپارتمان‌ها…",
+    "backToFloor": "بازگشت به پلان منزل",
+    "backToBuilding": "بازگشت به نمای بیرونی ساختمان",
+    "stageExterior": "۱. انتخاب منزل از روی عکس",
+    "stageFloor": "۲. پلان کلی و واحدهای منزل",
+    "stageUnit": "۳. تفکیک پلان تخنیکی و مفروش",
+    "viewApartmentPlan": "مشاهده پلان"
   },
   "projectsPage": {
     "eyebrow": "پروژه‌های ساختمانی کابل",

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, type ProjectInput, type ProjectUnit, type ProjectUnitInput } from '../api';
 import ImageUpload from '../components/ImageUpload';
+import ExplorerEditor from '../components/visual/ExplorerEditor';
 
 const S = {
   page:     { maxWidth: 840 } as const,
@@ -702,6 +703,15 @@ export default function ProjectForm() {
           </form>
         </div>
       </div>
+
+      {/* Visual Explorer Calibration (Floors, Lighting & Apartment Polygons) */}
+      {isEdit && (
+        <ExplorerEditor
+          projectId={projectId}
+          projectName={form.name}
+          exteriorImageUrl={form.image_url}
+        />
+      )}
     </div>
   );
 }
