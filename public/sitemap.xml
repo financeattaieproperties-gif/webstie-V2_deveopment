@@ -3,43 +3,43 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://www.attaieproperties.com/</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.attaieproperties.com/properties</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.attaieproperties.com/projects</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.attaieproperties.com/careers</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.attaieproperties.com/about</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.attaieproperties.com/contact</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -203,7 +203,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/21</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -213,19 +213,8 @@
     </image:image>
   </url>
   <url>
-    <loc>https://www.attaieproperties.com/agents/24</loc>
-    <lastmod>2026-11-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.65</priority>
-    <image:image>
-      <image:loc>https://www.attaieproperties.com/uploads/img_6aec19e6729307.82824478.jpg</image:loc>
-      <image:title>Ahmad Maqsood HASAN — MainBranch Deputy Manager</image:title>
-      <image:caption>Ahmad Maqsood HASAN at Attaie Properties</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://www.attaieproperties.com/agents/20</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -236,18 +225,18 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/16</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
       <image:loc>https://www.attaieproperties.com/uploads/img_6aec0f6a57e7d6.13626019.png</image:loc>
-      <image:title>AttahUllah KATAWAL — Customer Care Officer</image:title>
-      <image:caption>AttahUllah KATAWAL at Attaie Properties</image:caption>
+      <image:title>AttaUllah HADAWAL — Customer Care Officer</image:title>
+      <image:caption>AttaUllah HADAWAL at Attaie Properties</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/7</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -258,7 +247,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/5</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -269,7 +258,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/18</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -280,7 +269,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/15</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -291,7 +280,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/12</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -302,7 +291,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/8</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -313,7 +302,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/22</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -324,7 +313,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/23</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -335,7 +324,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/13</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -346,7 +335,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/9</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -357,7 +346,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/6</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -368,7 +357,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/3</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -379,7 +368,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/2</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -390,7 +379,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/19</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -401,7 +390,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/11</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -412,7 +401,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/10</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -423,7 +412,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/14</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -434,7 +423,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/4</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -445,7 +434,7 @@
   </url>
   <url>
     <loc>https://www.attaieproperties.com/agents/17</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>

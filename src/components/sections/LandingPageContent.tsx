@@ -31,10 +31,7 @@ import {
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import { PromoBanner } from './PromoBanner';
-import { WhyAttaieSection } from './WhyAttaieSection';
 import { PopularLocationsSection } from './PopularLocationsSection';
-import { HowItWorksSection } from './HowItWorksSection';
-import { TrustBlock } from './TrustBlock';
 import { ServicesSection } from './ServicesSection';
 import { HotDealsSection } from './HotDealsSection';
 import { NewsletterBanner } from './NewsletterBanner';
@@ -1085,13 +1082,7 @@ export const LandingPageContent = () => {
           }))}
       />
 
-      <WhyAttaieSection />
-
       <PopularLocationsSection />
-
-      <HowItWorksSection />
-
-      <TrustBlock />
 
       <ServicesSection />
 
