@@ -1,0 +1,163 @@
+﻿{
+    "baselineCommit":  "3baf781d0f256ed1180c4d648589d68fe93f6ddb",
+    "recordedAt":  "2026-11-09T21:49:39.5118709-08:00",
+    "note":  "Hashes only. No PHP execution, database connections, or server calls. Local baseline is not a deployed V1 snapshot.",
+    "files":  [
+                  {
+                      "path":  "public/api/admin/agents.php",
+                      "sha256":  "4a23a165411ca8e64cbf9b156be7fce31fd6552ba2ba14909f8ba9aa9be0b564"
+                  },
+                  {
+                      "path":  "public/api/admin/branches.php",
+                      "sha256":  "e61f4c598c31aa74ec7d7d61a688bad1f4ca40b46af3f9775ee4e835f4aa4e4a"
+                  },
+                  {
+                      "path":  "public/api/admin/career-applications.php",
+                      "sha256":  "ce3bb949e74b8b01c94e9d49ed23c7bf38b19cfcd29455423bc797702691dfae"
+                  },
+                  {
+                      "path":  "public/api/admin/career-file.php",
+                      "sha256":  "32446b17b97b391fedf7541ea16b2ad95c28ffd834564f3915b7fc771da0fa0b"
+                  },
+                  {
+                      "path":  "public/api/admin/careers.php",
+                      "sha256":  "e83e48c1d8a86270dd836a6469963fa13533c75b322962135bdd829a04333122"
+                  },
+                  {
+                      "path":  "public/api/admin/csrf.php",
+                      "sha256":  "59cd7015aa193ea65a94f3348bc758d97f7b972b29e6591cee4be5097a259835"
+                  },
+                  {
+                      "path":  "public/api/admin/leads.php",
+                      "sha256":  "0131cb8620ac30628eb2dcbea7794c4418c562c99b9c7f2c70dbb3f861d1fc7d"
+                  },
+                  {
+                      "path":  "public/api/admin/projects.php",
+                      "sha256":  "e56ff3851d085c23e384a27bb359ed362f437befabcf12cd73812453b4867eae"
+                  },
+                  {
+                      "path":  "public/api/admin/project-units.php",
+                      "sha256":  "ca4e303d9287073c404b409f20d52322e9b9d424a9382dca4b45d814f683814a"
+                  },
+                  {
+                      "path":  "public/api/admin/properties.php",
+                      "sha256":  "ae9a2bbd86bec8cee264cc287e71ea116cb03900b602b4bb3fed7367983830e6"
+                  },
+                  {
+                      "path":  "public/api/admin/seo-settings.php",
+                      "sha256":  "99a5a71ce574d01ab20512a63e29fafeddec97a2d442b3e07fdf0b5f5cd0ed8a"
+                  },
+                  {
+                      "path":  "public/api/admin/sitemap.php",
+                      "sha256":  "2795eb43afdd1377ee766442931d42fc0403d42c79e833333ac01ad587e90d5e"
+                  },
+                  {
+                      "path":  "public/api/admin/upload.php",
+                      "sha256":  "25abe4f18bed42a239cd63dab45681bccc78a3fdc3aff0324c65e8b690a77de4"
+                  },
+                  {
+                      "path":  "public/api/admin/visit-requests.php",
+                      "sha256":  "64ff143769df9dd5939a20fbd843e7f7987acfda58c4f85d4d424a098def6f89"
+                  },
+                  {
+                      "path":  "public/api/admin-login.php",
+                      "sha256":  "48201422991d108728a56f333048f9c3835012bb0c00578ad7ba43a357dfa1ed"
+                  },
+                  {
+                      "path":  "public/api/admin-logout.php",
+                      "sha256":  "e2ad45f2a9018fa6a9bff783abdabd4d4b2572ce758001ed6f3484834acefe13"
+                  },
+                  {
+                      "path":  "public/api/bootstrap.php",
+                      "sha256":  "9a9fc5588b48e586ad868885e6314bb90a7c3ab88860470759cefab8b2dc501e"
+                  },
+                  {
+                      "path":  "public/api/ctc/callback.php",
+                      "sha256":  "76fab9738bfc7a559e62d9100922469808948dfa3df190474666ad2de82a8fe9"
+                  },
+                  {
+                      "path":  "public/api/ctc/ctc_auth.php",
+                      "sha256":  "cfc93207d66e978ad3c29f2003a3337b813cebc68c5c0fa45c6da9ad5301115f"
+                  },
+                  {
+                      "path":  "public/api/ctc-webhook.php",
+                      "sha256":  "b42c29c9e1af0eedfbe71d8b21925ff191ca53d7b408bef2ba780f22a33d9a4e"
+                  },
+                  {
+                      "path":  "public/api/db.example.php",
+                      "sha256":  "61529459ad65a9ddeee0472c26893689c78002e8e0372a20954702d96a6c9a3f"
+                  },
+                  {
+                      "path":  "public/api/get-agent.php",
+                      "sha256":  "c95c9d774da40c4bfa391bcd24d46f6feb68e0088c64ce3c14e461828a143af2"
+                  },
+                  {
+                      "path":  "public/api/get-agents.php",
+                      "sha256":  "c6b9237cedb0fd17199acf4be60d1c69cd126878d52b41fca821326a63230991"
+                  },
+                  {
+                      "path":  "public/api/get-branches.php",
+                      "sha256":  "45ec57b7fc66df158682318e435d0d260d4c1bf374116448f4dd21a2ed997b51"
+                  },
+                  {
+                      "path":  "public/api/get-career.php",
+                      "sha256":  "1da603e935c6549ac416b51756001f46693ad52675042dee7f18004f35762c28"
+                  },
+                  {
+                      "path":  "public/api/get-careers.php",
+                      "sha256":  "4781048a3cc173693492b58994ee7000f7871549043a9fcb1ebe35f4a5364dbf"
+                  },
+                  {
+                      "path":  "public/api/get-project.php",
+                      "sha256":  "e65aa40e21b7c5b8acaa43001d47b9f096b91dd91003b2ffe4fdc9d99b9a1f92"
+                  },
+                  {
+                      "path":  "public/api/get-projects.php",
+                      "sha256":  "4f7ee451e91313892a1a4956ead5e13154cb055750f5ed21fa3d6fab72ee9d29"
+                  },
+                  {
+                      "path":  "public/api/get-project-units.php",
+                      "sha256":  "c2664d736f4e148d1f551c29cb2be399df82b4942e181cefda629a4d5b490c03"
+                  },
+                  {
+                      "path":  "public/api/get-properties.php",
+                      "sha256":  "6f15591ea80249ad4a151504f7552b40a34be0b813c28621a64ec444ed240972"
+                  },
+                  {
+                      "path":  "public/api/get-property.php",
+                      "sha256":  "c05780e35bf501725149e171fa6911320d5d060eeab73734a7e7231e56af556e"
+                  },
+                  {
+                      "path":  "public/api/get-seo-settings.php",
+                      "sha256":  "c55d6774123d863050732015cd8d9ee9f615fe7b6357d19ca64c9ec91fe8c937"
+                  },
+                  {
+                      "path":  "public/api/initiate-call.php",
+                      "sha256":  "bfeba461bbe795e313b3893aaa91b749a2941265289a303d14bef1657095bf7b"
+                  },
+                  {
+                      "path":  "public/api/migrate-gallery.php",
+                      "sha256":  "4f932f17bf3b45711f087fc228e8009954ac5c0ca553054c2387d90c31edc73e"
+                  },
+                  {
+                      "path":  "public/api/migrate-visits.php",
+                      "sha256":  "ca4844ededbf17f3ef2422610707e7d32ad3766d0017311f304c5534fc20cdba"
+                  },
+                  {
+                      "path":  "public/api/sitemap-helper.php",
+                      "sha256":  "14490b576b59f10083f6b112e566ba389a671d3bd56b880257949b8d2707f5e1"
+                  },
+                  {
+                      "path":  "public/api/submit-career-application.php",
+                      "sha256":  "34954bfc93e6e584d39d0390e2c356a7ba1e24bd470e6ae3f4564afed425d12b"
+                  },
+                  {
+                      "path":  "public/api/submit-lead.php",
+                      "sha256":  "4658f218d61e2b40df3c1981e7926c7ba4cb217c0ae44c0982529d1493a17825"
+                  },
+                  {
+                      "path":  "public/api/submit-visit-request.php",
+                      "sha256":  "9d4764a9d76f3784ad901fc3a7872bc8e8678e32436775217ceab9a2b25a8cd7"
+                  }
+              ]
+}

@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {pathToFileURL} from 'node:url';
+const {chromium}=await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE));
+const browser=await chromium.launch({headless:true});
+try {
+ const page=await browser.newPage({viewport:{width:1440,height:1000}});
+ await page.addInitScript(()=>localStorage.setItem('staff-language','fa'));
+ await page.goto('http://127.0.0.1:5175/callcenter/?preview=1');
+ await page.getByRole('heading',{name:'Overview',exact:true}).waitFor({timeout:5000});
+ assert.equal(await page.locator('html').getAttribute('lang'),'en');
+ assert.equal(await page.locator('html').getAttribute('dir'),'ltr');
+ assert.equal(await page.locator('.language-toggle').count(),0);
+ assert.equal(await page.locator('html').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(248, 255, 254)');
+ assert.equal(await page.locator('.nav-item.selected').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(153, 246, 228)');
+ await page.getByRole('button',{name:'New entry',exact:true}).click();
+ assert.equal(await page.getByRole('button',{name:'Save entry',exact:true}).evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(11, 61, 59)');
+ await page.getByRole('button',{name:'Close',exact:true}).click();
+ await page.locator('dialog').waitFor({state:'detached'});
+ fs.mkdirSync('test-results/staff',{recursive:true});
+ await page.screenshot({path:'test-results/staff/callcenter-teal-desktop.png',fullPage:true});
+ await page.setViewportSize({width:390,height:844});
+ await page.waitForFunction(()=>document.documentElement.scrollWidth<=innerWidth,{},{timeout:5000});
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ await page.locator('.sidebar').evaluate(e=>Promise.all(e.getAnimations().map(animation=>animation.finished)));
+ await page.screenshot({path:'test-results/staff/callcenter-teal-mobile.png',fullPage:true});
+ await page.goto('http://127.0.0.1:5175/management/?preview=1');
+ await page.locator('.language-toggle').waitFor();
+ assert.equal(await page.locator('html').getAttribute('dir'),'rtl');
+ assert.equal(await page.locator('.language-toggle').count(),1);
+ assert.equal(await page.locator('html').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(247, 248, 250)');
+ console.log('Callcenter English-only, teal palette, mobile layout, and unchanged management language/theme passed.');
+} finally {await browser.close();}

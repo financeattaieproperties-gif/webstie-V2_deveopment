@@ -375,4 +375,7 @@ function attaie_ensure_schema(): void {
     @file_put_contents($tempMarker, gmdate('c'));
 }
 
-attaie_ensure_schema();
+// Fresh V2 manual installs import all SQL through phpMyAdmin; requests must not migrate them.
+if (!defined('ATTAIE_MANUAL_SCHEMA') || ATTAIE_MANUAL_SCHEMA !== true) {
+    attaie_ensure_schema();
+}

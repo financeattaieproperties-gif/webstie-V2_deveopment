@@ -1,0 +1,6 @@
+{
+  "name": "attaie-staff", "private": true, "version": "0.1.0", "type": "module",
+  "scripts": { "dev": "vite --host 127.0.0.1 --port 5175", "typecheck": "tsc --noEmit", "test": "node --test ../../tests/staff/domain/*.test.mjs" },
+  "dependencies": { "react": "^19.2.5", "react-dom": "^19.2.5", "lucide-react": "^1.14.0" },
+  "devDependencies": { "@types/react": "^19.2.14", "@types/react-dom": "^19.2.3", "@types/node": "^25.6.0", "typescript": "^6.0.3", "vite": "^8.3.5", "@vitejs/plugin-react": "^6.2.1" }
+}

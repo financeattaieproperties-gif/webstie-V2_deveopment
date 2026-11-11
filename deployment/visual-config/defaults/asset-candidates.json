@@ -1,0 +1,1033 @@
+﻿{
+    "kind":  "unpublished-asset-audit",
+    "schemaVersion":  0,
+    "projects":  [
+                     {
+                         "projectId":  1,
+                         "assetDirectory":  "kabul-plaza-saljuqi",
+                         "publicationStatus":  "blocked-pending-review",
+                         "exterior":  {
+                                          "path":  "public/assets/kabul-plaza-saljuqi/building_exterior_cover.png",
+                                          "width":  647,
+                                          "height":  900,
+                                          "bytes":  267224,
+                                          "sha256":  "13d54c26cfd6345a3443301cc3039e0bc83093c6ae39e57e4cb1a7c088d82ca3",
+                                          "visualReview":  "pending",
+                                          "provenance":  "existing repository asset; original source not verified"
+                                      },
+                         "candidateAssets":  [
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_11th_vip_a_furnished.png",
+                                                     "width":  900,
+                                                     "height":  877,
+                                                     "bytes":  309601,
+                                                     "sha256":  "d7c9803ddb8958d1750f642b964242a78e4c2813ef91159c5ffc0d8dbd6580cd",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_11th_vip_a_legend.png",
+                                                     "width":  360,
+                                                     "height":  480,
+                                                     "bytes":  7055,
+                                                     "sha256":  "c8152de96074f885d5e9e439bbcca3df7c786910655b79f678cbc3a700dc4c3f",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_11th_vip_a_technical.png",
+                                                     "width":  1950,
+                                                     "height":  1900,
+                                                     "bytes":  12664,
+                                                     "sha256":  "393b2090ac542d9c8a4f2ea79be4ef37f6bb69450c444db1394c9e0cb1e3be5b",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_11th_vip_b_furnished.png",
+                                                     "width":  747,
+                                                     "height":  900,
+                                                     "bytes":  342990,
+                                                     "sha256":  "d16537cc0450a9724c796d5c4bd085342c72c00844d801084bec06700e397f32",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_11th_vip_b_legend.png",
+                                                     "width":  360,
+                                                     "height":  480,
+                                                     "bytes":  6999,
+                                                     "sha256":  "479aa645aaedad73df5503a89b0796423277874e93dc25180db25bb1f85ee1b8",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_11th_vip_b_technical.png",
+                                                     "width":  1700,
+                                                     "height":  2050,
+                                                     "bytes":  13210,
+                                                     "sha256":  "05b6a272976c8e53d65bc7b8b01ada0e70eed49c170485aee534da71a918fc52",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_1st_a_furnished.png",
+                                                     "width":  900,
+                                                     "height":  568,
+                                                     "bytes":  237820,
+                                                     "sha256":  "195638a4be1ff8d3357a097c13599326fe24d0487e6057d6efa480c7b4ea24b7",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_1st_a_legend.png",
+                                                     "width":  320,
+                                                     "height":  540,
+                                                     "bytes":  4771,
+                                                     "sha256":  "35a5c8055cdb00a24560c601f7a6e5b68af669c9fc96ef27b668c77c7c357dfa",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_1st_a_technical.png",
+                                                     "width":  1900,
+                                                     "height":  1200,
+                                                     "bytes":  11734,
+                                                     "sha256":  "1e80e096111a75bdcc5d2d1572dac912836611b0c328ba2ce28297e07b4a41f5",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_a_furnished.png",
+                                                     "width":  900,
+                                                     "height":  568,
+                                                     "bytes":  239169,
+                                                     "sha256":  "b8d1c41366f7135894919e74b4edc8dcea13deb3157106a4f49ad4fd08c9ff74",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_a_legend.png",
+                                                     "width":  320,
+                                                     "height":  460,
+                                                     "bytes":  7110,
+                                                     "sha256":  "949384604bcb3c3a071e697b7e24e5c0d687b6cea914dedb565cecdd63f1f7cc",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_a_technical.png",
+                                                     "width":  1900,
+                                                     "height":  1200,
+                                                     "bytes":  11238,
+                                                     "sha256":  "976c1a93ae56125f3487d6ce813d1fa3e59b272d2c47662f5eb2961a82f5cc50",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_b_furnished.png",
+                                                     "width":  329,
+                                                     "height":  900,
+                                                     "bytes":  163943,
+                                                     "sha256":  "ec934ccf263c6c993afdfe8483b7e18f9e647d7139d8dff072488ae034c28d4f",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_b_legend.png",
+                                                     "width":  320,
+                                                     "height":  460,
+                                                     "bytes":  7160,
+                                                     "sha256":  "1ffddc3bf49a492e82f0d3dd6600b79028663b1b8ce2f551983af9220072bb20",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_b_technical.png",
+                                                     "width":  950,
+                                                     "height":  2600,
+                                                     "bytes":  14392,
+                                                     "sha256":  "229eac4002ded3c31880db133d740b46ccf457d91909a86d97eab334148412f8",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_c_furnished.png",
+                                                     "width":  403,
+                                                     "height":  900,
+                                                     "bytes":  190063,
+                                                     "sha256":  "b363f58071957cc617129c37aa1c380fa1f6bd13478f16e169f73d515d8e6ecf",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_c_legend.png",
+                                                     "width":  320,
+                                                     "height":  460,
+                                                     "bytes":  7128,
+                                                     "sha256":  "31a32267d9382d99942fef41d7079bf19e9a9312d05f5dfcb37ee102335a3a4d",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/apt_typical_c_technical.png",
+                                                     "width":  1050,
+                                                     "height":  2350,
+                                                     "bytes":  13092,
+                                                     "sha256":  "52c3af71047e42e038de76811025e8290697d36daae97c12ae2fb8d491ad61f5",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/building_exterior_cover.png",
+                                                     "width":  647,
+                                                     "height":  900,
+                                                     "bytes":  267224,
+                                                     "sha256":  "13d54c26cfd6345a3443301cc3039e0bc83093c6ae39e57e4cb1a7c088d82ca3",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/building_exterior_sunset.png",
+                                                     "width":  732,
+                                                     "height":  900,
+                                                     "bytes":  292357,
+                                                     "sha256":  "60b2029007e6c9640c889ccbd1ce4fc413da5213492a795f58481d901d704ae7",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/floor_01_commercial_furnished_masterplan.png",
+                                                     "width":  485,
+                                                     "height":  900,
+                                                     "bytes":  134553,
+                                                     "sha256":  "a117c383393e3a7d222314b920858564bac73961ac866090b02096c381bc3943",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/floor_11_vip_furnished_masterplan.png",
+                                                     "width":  467,
+                                                     "height":  900,
+                                                     "bytes":  239257,
+                                                     "sha256":  "26f9492eb5c3e3189ee221894c1ac0ed9e131e811688ddfaceffcb032a898848",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-saljuqi/floor_typical_2_to_10_furnished_masterplan.png",
+                                                     "width":  467,
+                                                     "height":  900,
+                                                     "bytes":  230121,
+                                                     "sha256":  "e34a99d725c4dd9c5f79025f11ef27e267e1d8761e64c99d521a2ea3c710fb1f",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 }
+                                             ],
+                         "floors":  [
+
+                                    ],
+                         "inventoryBindings":  [
+
+                                               ],
+                         "blockers":  [
+                                          "Owner design approval pending",
+                                          "Physical floor labels and layout assignments unverified",
+                                          "Exterior window masks and hit polygons not calibrated",
+                                          "Floor and apartment plan registration not approved"
+                                      ],
+                         "note":  "Audit candidate only, not a publishable VisualConfig. Empty floors deliberately prevent inferred inventory."
+                     },
+                     {
+                         "projectId":  2,
+                         "assetDirectory":  "moon-residency",
+                         "publicationStatus":  "blocked-pending-review",
+                         "exterior":  {
+                                          "path":  "public/assets/moon-residency/building_exterior_cover.png",
+                                          "width":  874,
+                                          "height":  900,
+                                          "bytes":  419329,
+                                          "sha256":  "dfcd596cf50fcff0602c93f1606200bd477b66b288985a87964648b01e4c1ce4",
+                                          "visualReview":  "pending",
+                                          "provenance":  "existing repository asset; original source not verified"
+                                      },
+                         "candidateAssets":  [
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_01_furnished.png",
+                                                     "width":  763,
+                                                     "height":  900,
+                                                     "bytes":  298129,
+                                                     "sha256":  "5203332733c4ce6bcda2e69b8d4c3d6f09d1520471b2a5e8b26e8f9390fb727c",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_01_legend.png",
+                                                     "width":  360,
+                                                     "height":  360,
+                                                     "bytes":  93788,
+                                                     "sha256":  "432869eb20e18419986bece229b1962daabc8f4b5250bea3abe0a1a4bf560697",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_01_technical.png",
+                                                     "width":  1120,
+                                                     "height":  1320,
+                                                     "bytes":  92825,
+                                                     "sha256":  "a036838ca64be6587a032829583ff5c3b72352157bb6ead4690b11899c533c4d",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_02_furnished.png",
+                                                     "width":  741,
+                                                     "height":  900,
+                                                     "bytes":  340819,
+                                                     "sha256":  "9f5d1e663557504b1e8549554cc71fed90545a4cc844a8b9722b4bdb9b3baca2",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_02_legend.png",
+                                                     "width":  360,
+                                                     "height":  360,
+                                                     "bytes":  99999,
+                                                     "sha256":  "96dfa62bb4d0a662d5eacacee27c83c3854d967daca7fa02025761398440fae5",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_02_technical.png",
+                                                     "width":  1120,
+                                                     "height":  1360,
+                                                     "bytes":  87607,
+                                                     "sha256":  "4f752bc456dba756287b470c266db766114fcb88139f8166aaa21a0929573695",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_03_furnished.png",
+                                                     "width":  763,
+                                                     "height":  900,
+                                                     "bytes":  293005,
+                                                     "sha256":  "544ae03fb2afd1b8a9191526427e4ecb3cf950b785a93cc3678e8f702742e11e",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_03_legend.png",
+                                                     "width":  360,
+                                                     "height":  360,
+                                                     "bytes":  93950,
+                                                     "sha256":  "616e8511204496d6f7e52460edeadf5c3cd6229d193e2380b6e700d4bb54c363",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_03_technical.png",
+                                                     "width":  916,
+                                                     "height":  1080,
+                                                     "bytes":  53871,
+                                                     "sha256":  "89be3a9408b325257d1230fd421704ead934e44c38be00dc35f4329a43f3302e",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_04_furnished.png",
+                                                     "width":  741,
+                                                     "height":  900,
+                                                     "bytes":  347284,
+                                                     "sha256":  "b992e62f31a8cfe4c3535e0801b9f28dc3efd3adfd29fe937d54be3c36976ea8",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_04_legend.png",
+                                                     "width":  360,
+                                                     "height":  360,
+                                                     "bytes":  102644,
+                                                     "sha256":  "7b9d4cfde91c5e555b344ad23f8fda508b111b26271ad0d0b4472f23a8c7166a",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/apt_04_technical.png",
+                                                     "width":  741,
+                                                     "height":  900,
+                                                     "bytes":  49096,
+                                                     "sha256":  "eb06a375b39d84a88b50bc5e0b007aa7de715915af88083ac8e45464291b3fd3",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/building_exterior_cover.png",
+                                                     "width":  874,
+                                                     "height":  900,
+                                                     "bytes":  419329,
+                                                     "sha256":  "dfcd596cf50fcff0602c93f1606200bd477b66b288985a87964648b01e4c1ce4",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/floor_01_commercial_furnished_masterplan.png",
+                                                     "width":  614,
+                                                     "height":  900,
+                                                     "bytes":  207640,
+                                                     "sha256":  "fca94be42a2bf6ba0ac650e49e087b2aeec6d76d79f344eeeeae1b0ce535497c",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/moon-residency/floor_typical_2_to_10_furnished_masterplan.png",
+                                                     "width":  614,
+                                                     "height":  900,
+                                                     "bytes":  233535,
+                                                     "sha256":  "402bf51336a5a70b5e043e9f1268908c01f22e094f67f71d1c1d5579c66426f0",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 }
+                                             ],
+                         "floors":  [
+
+                                    ],
+                         "inventoryBindings":  [
+
+                                               ],
+                         "blockers":  [
+                                          "Owner design approval pending",
+                                          "Physical floor labels and layout assignments unverified",
+                                          "Exterior window masks and hit polygons not calibrated",
+                                          "Floor and apartment plan registration not approved"
+                                      ],
+                         "note":  "Audit candidate only, not a publishable VisualConfig. Empty floors deliberately prevent inferred inventory."
+                     },
+                     {
+                         "projectId":  3,
+                         "assetDirectory":  "kabul-plaza-burj",
+                         "publicationStatus":  "blocked-pending-review",
+                         "exterior":  {
+                                          "path":  "public/assets/kabul-plaza-burj/building_exterior_cover.png",
+                                          "width":  900,
+                                          "height":  900,
+                                          "bytes":  441167,
+                                          "sha256":  "6a037964e5a8e49c858efae65718012a543ef352fd258d73464326dbc07af787",
+                                          "visualReview":  "pending",
+                                          "provenance":  "existing repository asset; original source not verified"
+                                      },
+                         "candidateAssets":  [
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_a_furnished.png",
+                                                     "width":  779,
+                                                     "height":  900,
+                                                     "bytes":  341040,
+                                                     "sha256":  "b99fcb3cfa74b369c24780103305e7824681ababf0218ec68f574ffd22fe45d7",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_a_legend.png",
+                                                     "width":  420,
+                                                     "height":  380,
+                                                     "bytes":  100501,
+                                                     "sha256":  "301a568520ff55ba87a46fc9c566f2216e73259f464cc8f7f7d4bc2fffe1d5a7",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_a_technical.png",
+                                                     "width":  935,
+                                                     "height":  1080,
+                                                     "bytes":  51675,
+                                                     "sha256":  "238fbd1164f285a78e4b7b10a5f5d634eab3c4b8a24e4afea5bb023a3aa69fbd",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_b_furnished.png",
+                                                     "width":  779,
+                                                     "height":  900,
+                                                     "bytes":  237141,
+                                                     "sha256":  "bd42add9a82a9cace6775df5ea6aa4ac18043618f60c6a159a3f31d2eb74c34b",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_b_legend.png",
+                                                     "width":  420,
+                                                     "height":  380,
+                                                     "bytes":  106004,
+                                                     "sha256":  "92c1fff67449b2aa1d9d3ff97841afd6418fc941c062ae93282de5eb40155b21",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_b_technical.png",
+                                                     "width":  1160,
+                                                     "height":  1340,
+                                                     "bytes":  150857,
+                                                     "sha256":  "5e754dbde639dc035927e801c658a1bf3fbadb5c6573ff7eabe08e88119a6fa0",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_c_furnished.png",
+                                                     "width":  779,
+                                                     "height":  900,
+                                                     "bytes":  175565,
+                                                     "sha256":  "a9c0e1867076751dc3de7b31a274155ff8fcc19dba22c2fc6fdfd75b7f040997",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_c_legend.png",
+                                                     "width":  420,
+                                                     "height":  380,
+                                                     "bytes":  111131,
+                                                     "sha256":  "d55e7353f87ba85c759a4902a3511b0986c05a9e1e4888e9c98f6697f6589c6f",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_c_technical.png",
+                                                     "width":  779,
+                                                     "height":  900,
+                                                     "bytes":  41323,
+                                                     "sha256":  "0831a4c509ccbcd61a8a47e89f0df2e72f2f50cbcf70532e36eff7c023d338cf",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_d_furnished.png",
+                                                     "width":  779,
+                                                     "height":  900,
+                                                     "bytes":  330514,
+                                                     "sha256":  "3eddcb92ebabd65945f99b74a54b954bcf1838707e98d4ebb7d1df33e5396815",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_d_legend.png",
+                                                     "width":  420,
+                                                     "height":  380,
+                                                     "bytes":  99538,
+                                                     "sha256":  "c80574839f7f53d0f4f4a7208b1bcdf8cad25fbd4f6597590cd4fcf5435c48ea",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_d_technical.png",
+                                                     "width":  935,
+                                                     "height":  1080,
+                                                     "bytes":  54145,
+                                                     "sha256":  "39e3308900d79e8ec8b37a827e9064749946a8f79c39c5093acd178240d9b6e0",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_e_furnished.png",
+                                                     "width":  779,
+                                                     "height":  900,
+                                                     "bytes":  246398,
+                                                     "sha256":  "6b15b5e48076fce2d15d22ccc75d5c5004a1d8041b5c3addcd3871bf9b8d403c",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_e_legend.png",
+                                                     "width":  420,
+                                                     "height":  380,
+                                                     "bytes":  103323,
+                                                     "sha256":  "127cf06fffc704d94c453ae048d4e88ba2da814057da98a417e675c7d080b4a1",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_e_technical.png",
+                                                     "width":  1160,
+                                                     "height":  1340,
+                                                     "bytes":  162461,
+                                                     "sha256":  "6675a86f26048f3e085ceaf29be61dfd1c31224289e639454935878c9871c24a",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_f_furnished.png",
+                                                     "width":  779,
+                                                     "height":  900,
+                                                     "bytes":  154779,
+                                                     "sha256":  "f31279246ec51f13df2e9c3a43567c458ebd4a6a0d78dc34766a39414308079f",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_f_legend.png",
+                                                     "width":  420,
+                                                     "height":  380,
+                                                     "bytes":  110287,
+                                                     "sha256":  "0dc014799bf7a24c21be10d245ed78617c1faa22df5662e6c02029458e77a9f0",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/apt_burj_f_technical.png",
+                                                     "width":  935,
+                                                     "height":  1080,
+                                                     "bytes":  65543,
+                                                     "sha256":  "567e9ce6c787aa1c2d8e1397239c630b093bc2e45d93cbfa027ebb4bc4a4d086",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/building_exterior_cover.png",
+                                                     "width":  900,
+                                                     "height":  900,
+                                                     "bytes":  441167,
+                                                     "sha256":  "6a037964e5a8e49c858efae65718012a543ef352fd258d73464326dbc07af787",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/floor_01_mall_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  305077,
+                                                     "sha256":  "87aedfd11fb3d6bce0a487fa04b2c74c62f5f9af7f0d04aefa8f49394ed6f3ce",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/floor_03_studios_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  314195,
+                                                     "sha256":  "03226c622d84ef0f31caa11ef6656779173238d9b583316ae8ad42100b9598a5",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/floor_05_garden_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  279890,
+                                                     "sha256":  "e45e3ec6c09b4c3af644ee1e6153d4585b8aa9ce83171f67bc86b4e458a890a0",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/floor_15_penthouse_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  245064,
+                                                     "sha256":  "5bbbeb5a9af12af4d45bd63a9d9de95426fc320b2b51f34f4ff524de54f81633",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/floor_typical_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  263436,
+                                                     "sha256":  "0d01eae1a05691fceabcae95bd3b71c8c0d681808b33d826e4c0c83a4870e794",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-burj/floor_typical_technical_masterplan.png",
+                                                     "width":  849,
+                                                     "height":  1080,
+                                                     "bytes":  106864,
+                                                     "sha256":  "05f6c5c0f19363bd82db02fd2e1813c9cacdb76dbcf5356f284b2e27fc430e85",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 }
+                                             ],
+                         "floors":  [
+
+                                    ],
+                         "inventoryBindings":  [
+
+                                               ],
+                         "blockers":  [
+                                          "Owner design approval pending",
+                                          "Physical floor labels and layout assignments unverified",
+                                          "Exterior window masks and hit polygons not calibrated",
+                                          "Floor and apartment plan registration not approved"
+                                      ],
+                         "note":  "Audit candidate only, not a publishable VisualConfig. Empty floors deliberately prevent inferred inventory."
+                     },
+                     {
+                         "projectId":  4,
+                         "assetDirectory":  "kabul-plaza-12",
+                         "publicationStatus":  "blocked-pending-review",
+                         "exterior":  {
+                                          "path":  "public/assets/kabul-plaza-12/building_exterior_cover.png",
+                                          "width":  900,
+                                          "height":  876,
+                                          "bytes":  423191,
+                                          "sha256":  "c1075860fc4da2c96503d90af07141d81201b4f261c3e00a3cfafe72e6dc894f",
+                                          "visualReview":  "pending",
+                                          "provenance":  "existing repository asset; original source not verified"
+                                      },
+                         "candidateAssets":  [
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_4th_9th_a_furnished.png",
+                                                     "width":  693,
+                                                     "height":  900,
+                                                     "bytes":  327451,
+                                                     "sha256":  "aec220ad73e80447207cd4df8dd9a0ac5e9d8a32416e7436ba6fbc0452fedb54",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_4th_9th_a_legend.png",
+                                                     "width":  420,
+                                                     "height":  260,
+                                                     "bytes":  89916,
+                                                     "sha256":  "04a6a46690388c6ebf82e640b0bfd8046f927ba16d1789b64d99ddd1fe970a5f",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_4th_9th_a_technical.png",
+                                                     "width":  832,
+                                                     "height":  1080,
+                                                     "bytes":  102072,
+                                                     "sha256":  "a171a1955a6f09dcbcd95c317b596da7b9010275edd7062acefd5cd09516e54d",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_4th_9th_b_furnished.png",
+                                                     "width":  693,
+                                                     "height":  900,
+                                                     "bytes":  341912,
+                                                     "sha256":  "1d267b5e02755e563173e0e99e28a47e45f6b01f4fcca6448e3c54edf676ea92",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_4th_9th_b_legend.png",
+                                                     "width":  420,
+                                                     "height":  260,
+                                                     "bytes":  73772,
+                                                     "sha256":  "ba6ed70daa064c12a9de1e4a63049e0ca5c4bd64679a57d62bf73c70b9db58a5",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_4th_9th_b_technical.png",
+                                                     "width":  832,
+                                                     "height":  1080,
+                                                     "bytes":  105441,
+                                                     "sha256":  "d06f058e89ae27bffe4930cc2934dfcec300e5f10304f3149e5fe18b7ac15e82",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_typical_a_furnished.png",
+                                                     "width":  693,
+                                                     "height":  900,
+                                                     "bytes":  317416,
+                                                     "sha256":  "d47c0f48b66fb5f19678b8c71240eeb2164d396ff2783faca3ec3bc723e1f30d",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_typical_a_legend.png",
+                                                     "width":  420,
+                                                     "height":  260,
+                                                     "bytes":  83367,
+                                                     "sha256":  "1cd2ca85aa72d7bd43bfe05e6ce0c9a4301dd5be25c8183bb91cdbb9d8cc54c9",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_typical_a_technical.png",
+                                                     "width":  832,
+                                                     "height":  1080,
+                                                     "bytes":  96174,
+                                                     "sha256":  "b93d141e84035672cfb583acf9580a3cd4bbad5a88774e5a8536b1d3e873e15d",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_typical_b_furnished.png",
+                                                     "width":  693,
+                                                     "height":  900,
+                                                     "bytes":  331323,
+                                                     "sha256":  "eb101ee2d14233dcdd07988ca1f0b24822b122b17dc86a1a26baa0352bd2326d",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_typical_b_legend.png",
+                                                     "width":  420,
+                                                     "height":  260,
+                                                     "bytes":  82008,
+                                                     "sha256":  "565a1d847e6cf4a93c919183c44e0414eadf97b1b84235d5b22e8cb1204667ab",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/apt_typical_b_technical.png",
+                                                     "width":  832,
+                                                     "height":  1080,
+                                                     "bytes":  101775,
+                                                     "sha256":  "3c6ef3eeb4d8ed4e998407fdf47dcd6ac5a79a55cc6574b8ff4d09c2054dee23",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/building_exterior_cover.png",
+                                                     "width":  900,
+                                                     "height":  876,
+                                                     "bytes":  423191,
+                                                     "sha256":  "c1075860fc4da2c96503d90af07141d81201b4f261c3e00a3cfafe72e6dc894f",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/floor_01_commercial_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  216056,
+                                                     "sha256":  "83ed2523fe98f2f0dd1639b45c99d87f61f34f5a94010b5cfb382f6a95a6b613",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/floor_04_09_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  190656,
+                                                     "sha256":  "cbbd8d56359a05ff2aa2871e909e297a708d6345ab80ad9efe25e5626d2a415c",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/floor_10_penthouse_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  186484,
+                                                     "sha256":  "91c3ea41d33fde1ccb844130305c9d30ea15a90747cd41cd3ae2f1d5dfc22d3f",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/floor_typical_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  188320,
+                                                     "sha256":  "eeafc4a69783debcd49904999cc8397191c83f5cb6c5b004979a2734cfea88f4",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-12/floor_typical_technical_masterplan.png",
+                                                     "width":  850,
+                                                     "height":  1080,
+                                                     "bytes":  72050,
+                                                     "sha256":  "ada7c609267415dbd9e30b58a0c4fb1b2bf5191b0e72ab54481de61383ce80e9",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 }
+                                             ],
+                         "floors":  [
+
+                                    ],
+                         "inventoryBindings":  [
+
+                                               ],
+                         "blockers":  [
+                                          "Owner design approval pending",
+                                          "Physical floor labels and layout assignments unverified",
+                                          "Exterior window masks and hit polygons not calibrated",
+                                          "Floor and apartment plan registration not approved"
+                                      ],
+                         "note":  "Audit candidate only, not a publishable VisualConfig. Empty floors deliberately prevent inferred inventory."
+                     },
+                     {
+                         "projectId":  5,
+                         "assetDirectory":  "kabul-plaza-abc",
+                         "publicationStatus":  "blocked-pending-review",
+                         "exterior":  {
+                                          "path":  "public/assets/kabul-plaza-abc/building_exterior_cover.png",
+                                          "width":  875,
+                                          "height":  900,
+                                          "bytes":  377969,
+                                          "sha256":  "f5fe0825730aa9cbf5df5c7320a3cfae65bf5d64151f10f405d5918f16ca52d0",
+                                          "visualReview":  "pending",
+                                          "provenance":  "existing repository asset; original source not verified"
+                                      },
+                         "candidateAssets":  [
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_a_furnished.png",
+                                                     "width":  547,
+                                                     "height":  900,
+                                                     "bytes":  218244,
+                                                     "sha256":  "3e7debb937451bfa08367d69d65ab88347141966fefaac162968332e4a117ca7",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_a_legend.png",
+                                                     "width":  460,
+                                                     "height":  360,
+                                                     "bytes":  108081,
+                                                     "sha256":  "5f5c6805b4c76fddc9ef05121cce408b47fe6ee66a2beb017a3befe270d27c75",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_a_technical.png",
+                                                     "width":  656,
+                                                     "height":  1080,
+                                                     "bytes":  67175,
+                                                     "sha256":  "df2b08319b962ea97ec81ea0bfe3d9f208557617c7a52a934384b812e6265f1b",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_b_furnished.png",
+                                                     "width":  547,
+                                                     "height":  900,
+                                                     "bytes":  214152,
+                                                     "sha256":  "f72a416d115acda601e9b9235d1a839d28b7faeeedaa8dd03f010e4653ea3717",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_b_legend.png",
+                                                     "width":  460,
+                                                     "height":  360,
+                                                     "bytes":  103894,
+                                                     "sha256":  "04b6005f34ddee80fdf78f7c325de7e6cd8dd7ca325908cc1b1ffce7a1582f0e",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_b_technical.png",
+                                                     "width":  656,
+                                                     "height":  1080,
+                                                     "bytes":  71901,
+                                                     "sha256":  "cfd867dc41822b56e4f89642938e1151991178202ac6d17449f8b44231e76f5a",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_duplex_a_furnished.png",
+                                                     "width":  668,
+                                                     "height":  900,
+                                                     "bytes":  237259,
+                                                     "sha256":  "25d9bf5fdcf2a679dbf0561a12d7dc14713401dcc5a209a9a160dccbc67b5b7c",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_duplex_a_legend.png",
+                                                     "width":  460,
+                                                     "height":  360,
+                                                     "bytes":  1321,
+                                                     "sha256":  "5860678f3b00c1b59005c92a3eb6329c8f96c9f6ae438b0988a6921c2a83241a",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_duplex_a_technical.png",
+                                                     "width":  802,
+                                                     "height":  1080,
+                                                     "bytes":  98584,
+                                                     "sha256":  "580745df87ea9e31af052a3ce2db0ab22dba5e7b94a46c6c8fce18531992e486",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_duplex_b_furnished.png",
+                                                     "width":  668,
+                                                     "height":  900,
+                                                     "bytes":  230934,
+                                                     "sha256":  "54106fb4dbf88e96f536cc7ae33b20b26d1a49eefc818c7a0639d9400334f6de",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_duplex_b_legend.png",
+                                                     "width":  460,
+                                                     "height":  360,
+                                                     "bytes":  76835,
+                                                     "sha256":  "6459b567d530936bc6fc1544cb8e282b564afdba32d54eb7bb8885a236108987",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/apt_duplex_b_technical.png",
+                                                     "width":  802,
+                                                     "height":  1080,
+                                                     "bytes":  67742,
+                                                     "sha256":  "9126594296816db71a2d0d60c8df40cc80f89f76fe48b57a3116df45545a01a2",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/building_exterior_cover.png",
+                                                     "width":  875,
+                                                     "height":  900,
+                                                     "bytes":  377969,
+                                                     "sha256":  "f5fe0825730aa9cbf5df5c7320a3cfae65bf5d64151f10f405d5918f16ca52d0",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/floor_01_commercial_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  393994,
+                                                     "sha256":  "686e01a59d9ab2dcb8f60305cb09d872985c1eb9c14a8106a37ce1c8127943ed",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/floor_duplex_furnished_masterplan.png",
+                                                     "width":  708,
+                                                     "height":  900,
+                                                     "bytes":  255140,
+                                                     "sha256":  "c45efcf6b7fec69dbc8a02c4c105c4dfd4cddf4c9dc9a83dd36af903b28ecc07",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/floor_typical_furnished_masterplan.png",
+                                                     "width":  850,
+                                                     "height":  1080,
+                                                     "bytes":  87512,
+                                                     "sha256":  "c7d0400c67d6ce39c978d71d9c5f46abb6866cc6ea6460a0cef21c177563f061",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 },
+                                                 {
+                                                     "path":  "public/assets/kabul-plaza-abc/floor_typical_technical_masterplan.png",
+                                                     "width":  850,
+                                                     "height":  1080,
+                                                     "bytes":  64646,
+                                                     "sha256":  "518f4d5a2baba4cb1a77e8b915015dfcf138b9473292ded46de9bbc80e1dfa3c",
+                                                     "visualReview":  "pending",
+                                                     "provenance":  "existing repository asset; original source not verified"
+                                                 }
+                                             ],
+                         "floors":  [
+
+                                    ],
+                         "inventoryBindings":  [
+
+                                               ],
+                         "blockers":  [
+                                          "Owner design approval pending",
+                                          "Physical floor labels and layout assignments unverified",
+                                          "Exterior window masks and hit polygons not calibrated",
+                                          "Floor and apartment plan registration not approved"
+                                      ],
+                         "note":  "Audit candidate only, not a publishable VisualConfig. Empty floors deliberately prevent inferred inventory."
+                     }
+                 ]
+}

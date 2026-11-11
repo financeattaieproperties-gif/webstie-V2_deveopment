@@ -19,6 +19,7 @@ admin-panel/release/
 public/api/db.php
 
 # Package archives
+releases/
 *.zip
 *.tar.gz
 
@@ -28,6 +29,7 @@ verify-*.png
 screenshot-*.png
 
 # Cache and build tool outputs
+debug.log
 .gmp_cache/
 *.tsbuildinfo
 .aistudio/

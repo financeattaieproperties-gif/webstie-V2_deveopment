@@ -1,0 +1,105 @@
+/* Owner's teal palette applies to the call-center workspace and its login only. */
+html[data-staff-role="callcenter"] {
+  --primary: #0B3D3B;
+  --accent: #14B8A6;
+  --secondary: #99F6E4;
+  --surface: #E6FFFB;
+  --background: #F8FFFE;
+  --navy: var(--primary);
+  --gold: var(--primary);
+  --gold-light: var(--secondary);
+  --muted: #376663;
+  --line: #b9e8df;
+  color: var(--primary);
+  background: var(--background);
+  font-family: StaffSans, system-ui, sans-serif;
+}
+html[data-staff-role="callcenter"] :is(.sidebar, .topbar, .workspace-tag, .help-card, .login-card, .modal, .modal-heading, .detail dl, th) {
+  background: var(--surface);
+  border-color: var(--line);
+}
+html[data-staff-role="callcenter"] :is(.account, .panel, .stat-card, .customer-card, .task-row, .task-footer, .login-screen, .field input, .field textarea, .field select, .button.secondary, .heading-actions > .icon-button) {
+  background: var(--background);
+  border-color: var(--line);
+}
+html[data-staff-role="callcenter"] :is(.avatar, .avatar.gold, .workspace-icon, .login-icon, .stat-icon.gold, .stat-icon.blue, .stat-icon.purple, .empty > span, .customer-footer strong) {
+  background: var(--secondary);
+  color: var(--primary);
+}
+html[data-staff-role="callcenter"] :is(.nav-item.selected, .filter-bar button.active) {
+  background: var(--secondary);
+  color: var(--primary);
+}
+html[data-staff-role="callcenter"] :is(.nav-item:hover, .button.secondary:hover, .icon-button:hover, .task-mini:hover, .task-footer:hover, .field input:read-only) {
+  background: var(--surface);
+  color: var(--primary);
+}
+html[data-staff-role="callcenter"] .button:not(.secondary) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--background);
+}
+html[data-staff-role="callcenter"] .button:not(.secondary):hover {
+  background: #105650;
+  border-color: #105650;
+}
+html[data-staff-role="callcenter"] :is(button, a, input, textarea, select):focus-visible {
+  outline-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--secondary);
+}
+html[data-staff-role="callcenter"] :is(.stat-card:hover, .customer-card:hover) {
+  border-color: var(--accent);
+  box-shadow: 0 3px 14px #0b3d3b0d;
+}
+html[data-staff-role="callcenter"] :is(.brand > span, .workspace-tag small, .nav-caption, .nav-item, .help-card, .help-card p, .help-card small, .breadcrumbs, .breadcrumbs strong, .timezone, .eyebrow, .icon-button, .stat-top, .stat-note, .panel-heading p, .panel-heading > svg, th, td, td strong, .task-mini strong, .task-mini small, .task-footer, .page-footer, .list-note, .filter-bar button, .empty, .empty h3, .pagination, .pagination-note, .customer-top, .customer-card .phone, .customer-requirements small, .customer-requirements p, .customer-footer, .task-row-title strong, .task-row-title small, .profile-card p, .field > label, .form-description, .form-note, .detail p, .detail dt, .detail dd, .timeline small, .timeline p, .login-brand > span, .login-card > p, .login-private, .login-screen footer, .muted) {
+  color: var(--muted);
+}
+html[data-staff-role="callcenter"] :is(.eyebrow, .breadcrumbs strong, td strong, .task-mini strong, .text-button, .preview-link, .customer-footer strong, .task-row-title strong, .field > label) {
+  color: var(--primary);
+}
+html[data-staff-role="callcenter"] :is(td small, .serial) {
+  color: var(--muted) !important;
+}
+html[data-staff-role="callcenter"] :is(.field input, .field textarea)::placeholder {
+  color: var(--muted);
+}
+html[data-staff-role="callcenter"] :is(th, td, .customer-footer) {
+  border-color: var(--line);
+}
+html[data-staff-role="callcenter"] :is(.integration-note, .preview-banner) {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--primary);
+}
+html[data-staff-role="callcenter"] .integration-note strong {
+  color: var(--primary);
+}
+html[data-staff-role="callcenter"] :is(.status-dot, .timeline-dot) {
+  background: var(--accent);
+}
+html[data-staff-role="callcenter"] .brand > span::before {
+  background: var(--accent);
+}
+html[data-staff-role="callcenter"] .timeline > div {
+  border-color: var(--line);
+}
+html[data-staff-role="callcenter"] :is(.badge.due, .badge.active, .badge.in_progress, .badge.completed, .badge.closed) {
+  background: var(--secondary);
+  color: var(--primary);
+}
+html[data-staff-role="callcenter"] :is(.badge.upcoming, .badge.normal, .badge.low, .badge.todo, .badge.draft, .badge.high) {
+  background: var(--surface);
+  color: var(--primary);
+}
+/* Keep warning/error colors distinct so urgency is not lost in the brand palette. */
+html[data-staff-role="callcenter"] .modal::backdrop {
+  background: #0b3d3b66;
+}
+html[data-staff-role="callcenter"] .spinner {
+  border-color: var(--secondary);
+  border-top-color: var(--primary);
+}
+/* Keep visually hidden table headings inside the horizontal scroll container. */
+html[data-staff-role="callcenter"] .table-scroll {
+  position: relative;
+}
