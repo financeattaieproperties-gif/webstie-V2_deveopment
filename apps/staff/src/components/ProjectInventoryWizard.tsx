@@ -34,35 +34,31 @@ export function ProjectInventoryWizard({
   const [editingId, setEditingId] = useState<number | undefined>(undefined);
 
   // Step 1: Project Identity
-  const [code, setCode] = useState('MR01');
-  const [name, setName] = useState('Moon Residency');
-  const [location, setLocation] = useState('Street 10, Wazir Akbar Khan, Kabul');
-  const [description, setDescription] = useState(
-    'Pre-sale luxury residential project with seismic-grade frame, central heating, and underground parking.'
-  );
+  const [code, setCode] = useState('');
+  const [name, setName] = useState('');
+  const [location, setLocation] = useState('');
+  const [description, setDescription] = useState('');
   const [floors, setFloors] = useState(10);
 
   // Step 2: Multiple Sellers & Construction Company
   const [sellers, setSellers] = useState<ProjectSeller[]>([
     {
-      name: 'Haji Abdul Qadir Attaie',
-      fatherName: 'Haji Ghulam Sakhi',
-      grandfatherName: 'Mohammad Kabir',
-      tazkiraNumber: '1398-0102-44912',
-      phone: '+93782222279',
-      address: 'Street 13, Wazir Akbar Khan, Kabul',
+      name: '',
+      fatherName: '',
+      grandfatherName: '',
+      tazkiraNumber: '',
+      phone: '',
+      address: '',
       sharePercentage: 100,
     },
   ]);
-  const [companyName, setCompanyName] = useState(
-    'Attaie High-Rise Development & Construction Co.'
-  );
-  const [licenseNumber, setLicenseNumber] = useState('D-44891-KBL');
-  const [representativeName, setRepresentativeName] = useState('Eng. Khalid Mansoori');
-  const [representativeFatherName, setRepresentativeFatherName] = useState('Mohammad Zahir');
-  const [representativeTazkira, setRepresentativeTazkira] = useState('1400-0201-88120');
-  const [companyPhone, setCompanyPhone] = useState('+93782222280');
-  const [companyAddress, setCompanyAddress] = useState('Street 13, Wazir Akbar Khan, Kabul');
+  const [companyName, setCompanyName] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [representativeName, setRepresentativeName] = useState('');
+  const [representativeFatherName, setRepresentativeFatherName] = useState('');
+  const [representativeTazkira, setRepresentativeTazkira] = useState('');
+  const [companyPhone, setCompanyPhone] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
 
   // Step 3: Apartments & Floor Batch Generator
   const [batchFloor, setBatchFloor] = useState(2);
@@ -78,28 +74,30 @@ export function ProjectInventoryWizard({
   const [apartments, setApartments] = useState<InventoryApartment[]>([]);
 
   // Step 4: Sales Team Leader & Sales Agents Assignment
-  const [assignedTeamLeaderId, setAssignedTeamLeaderId] = useState<number | null>(4);
-  const [assignedSalesAgentIds, setAssignedSalesAgentIds] = useState<number[]>([2]);
+  const [assignedTeamLeaderId, setAssignedTeamLeaderId] = useState<number | null>(null);
+  const [assignedSalesAgentIds, setAssignedSalesAgentIds] = useState<number[]>([]);
 
   const teamLeaders = staffUsers.filter((u) => u.role === 'sales_leader');
   const salesAgents = staffUsers.filter((u) => u.role === 'sales');
 
   const startNewProject = () => {
     setEditingId(undefined);
-    setCode('MR01');
-    setName('Moon Residency');
-    setLocation('Street 10, Wazir Akbar Khan, Kabul');
+    setCode('');
+    setName('');
+    setLocation('');
+    setDescription('');
     setFloors(10);
-    const defaultBatch = generateFloorApartmentBatch({
-      projectId: 99,
-      projectCode: 'MR01',
-      floor: 1,
-      unitsCount: 2,
-      rooms: 3,
-      areaSqm: 140,
-      pricePerSqm: 800,
-    });
-    setApartments(defaultBatch);
+    setSellers([{name: '', fatherName: '', grandfatherName: '', tazkiraNumber: '', phone: '', address: '', sharePercentage: 100}]);
+    setCompanyName('');
+    setLicenseNumber('');
+    setRepresentativeName('');
+    setRepresentativeFatherName('');
+    setRepresentativeTazkira('');
+    setCompanyPhone('');
+    setCompanyAddress('');
+    setAssignedTeamLeaderId(null);
+    setAssignedSalesAgentIds([]);
+    setApartments([]);
     setStep(1);
     setShowWizard(true);
   };
@@ -227,11 +225,11 @@ export function ProjectInventoryWizard({
           {step === 1 && (
             <div className="form-grid" data-testid="wizard-step-1">
               <div className="field">
-                <label>Project Code (e.g. KP12, MR01)</label>
+                <label>Project Code</label>
                 <input
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="MR01"
+                  placeholder="Project code"
                 />
               </div>
               <div className="field">
@@ -239,7 +237,7 @@ export function ProjectInventoryWizard({
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Moon Residency"
+                  placeholder="Project name"
                 />
               </div>
               <div className="field">

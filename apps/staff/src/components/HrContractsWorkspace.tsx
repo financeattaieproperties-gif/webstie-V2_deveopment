@@ -164,7 +164,7 @@ export function HrContractsWorkspace({
               {closedDeals
                 .map(
                   (d) =>
-                    `${d.deal?.dealSerial || d.serial} • ${d.customerName} (${d.projectName || 'KP12'} ${d.apartmentNumber || 'F4-A1'})`
+                    `${d.deal?.dealSerial || d.serial} • ${d.customerName} (${d.projectName || ''} ${d.apartmentNumber || 'F4-A1'})`
                 )
                 .join(' | ')}
             </p>

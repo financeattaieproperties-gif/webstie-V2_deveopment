@@ -33,7 +33,7 @@ const FALLBACK_AGENTS: Agent[] = [
     name: 'Farhad Saljuqi',
     role: 'Head of Residential Developments & Off-Plan Sales',
     background:
-      'Specializes in multi-unit residential towers, Qabala Sharaee title verification, and structured installment plans for Kabul Plaza Saljuqi and Signature Towers.',
+      'Specializes in multi-unit residential towers, Qabala Sharaee title verification, and structured installment plans for residential developments.',
     portrait_url: stitchInteriorImg,
     phone: '+93 782 222 279',
     email: 'sales@attaieproperties.com',

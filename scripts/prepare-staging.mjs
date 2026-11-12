@@ -31,12 +31,8 @@ function readConstants(relative, wanted, context = {}) {
   return context;
 }
 
-const projectData = readConstants('src/pages/ProjectDetailPage.tsx', ['FALLBACK_SHOWCASE_PROJECT', 'FALLBACK_PROJECTS']);
-const projects = Object.values(projectData.FALLBACK_PROJECTS);
-const unitNames = ['FALLBACK_UNITS', 'MOON_RESIDENCY_UNITS', 'KABUL_PLAZA_BURJ_UNITS', 'KABUL_PLAZA_12_UNITS', 'KABUL_PLAZA_ABC_UNITS'];
-const unitData = readConstants('src/components/project/ProjectUnitsSection.tsx', unitNames);
-const units = unitNames.flatMap(name => unitData[name]);
-if (projects.length !== 5 || units.length !== 25) throw new Error('Unexpected showcase catalog size; review source before packaging.');
+const { projects, units } = JSON.parse(fs.readFileSync(path.join(root, 'deployment/v2/project-showcase.json'), 'utf8'));
+if (projects.length || units.length) throw new Error('Project seeds are disabled.');
 const images = new Set();
 for (const record of [...projects, ...units]) {
   for (const image of [record.image_url, record.masterplan_image, ...(record.gallery_images || [])]) {
@@ -46,7 +42,7 @@ for (const record of [...projects, ...units]) {
 for (const image of images) {
   if (!image.startsWith('/assets/') || !fs.existsSync(path.join(root, 'public', image.slice(1)))) throw new Error(`Missing local showcase asset: ${image}`);
 }
-fs.writeFileSync(path.join(setup, 'catalog.json'), JSON.stringify({ projects, units, note: 'Existing showcase layouts and sample prices, not a verified complete inventory.' }, null, 2));
+fs.writeFileSync(path.join(setup, 'catalog.json'), JSON.stringify({ projects, units, note: 'Empty project catalog. Add project data through the application.' }, null, 2));
 
 function sqlValue(value) {
   if (value == null) return 'NULL';
@@ -58,12 +54,13 @@ function sqlValue(value) {
   return text === '' ? "''" : `CONVERT(0x${Buffer.from(text, 'utf8').toString('hex')} USING utf8mb4)`;
 }
 function insert(table, columns, records) {
+  if (!records.length) return '';
   return `INSERT INTO ${table} (${columns.map(c => '`' + c + '`').join(', ')}) VALUES\n` + records.map(record => '(' + columns.map(c => sqlValue(record[c])).join(', ') + ')').join(',\n') + ';\n';
 }
 const projectColumns = ['id', 'name', 'location', 'delivery_date', 'status', 'available_units', 'total_units', 'image_url', 'gallery_images', 'video_url', 'masterplan_image', 'description', 'created_at'];
 const unitColumns = ['id', 'project_id', 'unit_number', 'title', 'beds', 'baths', 'area', 'floor', 'price', 'currency', 'status', 'image_url', 'description'];
-const seed = '-- NEW EMPTY TEST DATABASE ONLY. Fixed IDs preserve explorer artwork mapping.\n' +
-  '-- Exact existing showcase layout records; not a verified complete floor-by-floor inventory.\n' +
+const seed = '-- NEW EMPTY TEST DATABASE ONLY. Project catalog starts empty.\n' +
+  '-- No project or apartment seeds are included.\n' +
   'SET NAMES utf8mb4;\nSTART TRANSACTION;\n' + insert('projects', projectColumns, projects) + insert('project_units', unitColumns, units) +
   "UPDATE seo_settings SET canonical_base_url = 'https://website.attaieproperties.com', robots_index = 0 WHERE id = 1;\nCOMMIT;\n";
 fs.writeFileSync(path.join(setup, '02-five-projects.sql'), seed);

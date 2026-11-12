@@ -24,8 +24,8 @@ try {
   for(const file of ['/index.html','/admin/','/callcenter/','/management/']) check((await fetch(base+file)).status,200);
   const projects = await (await fetch(base+'/api/get-projects.php')).json();
   const rows = Array.isArray(projects) ? projects : projects.projects ?? projects.data;
-  check(rows.length,5);
-  for(const id of [1,2,3,4,5]) check((await fetch(base+'/api/get-project.php?id='+id)).status,200);
+  check(rows.length,0);
+  for(const id of [1,2,3,4,5]) check((await fetch(base+'/api/get-project.php?id='+id)).status,404);
   check((await fetch(base+'/api/admin/properties.php')).status,401);
   check((await fetch(base+'/staff-api/v1/dashboard')).status,401);
   const loginText=fs.readFileSync(path.join(release,'private-setup/WEBSITE-ADMIN-LOGIN-PRIVATE.txt'),'utf8');
@@ -42,6 +42,6 @@ try {
   const data=await session.json();
   check(Boolean(data.data.csrfToken),true);
   console.log(`Packaged local V2 checks passed: ${checks}; NEW fictional database ${fixture.database}.`);
-  console.log('Verified SQL imports, CEO mapping, matching private admin password, five projects, static shells, API access and admin/staff session isolation.');
+  console.log('Verified SQL imports, CEO mapping, matching private admin password, empty project catalog, static shells, API access and admin/staff session isolation.');
   console.log('Local PHP server stopped; fixture database retained. Apache/Firebase/hosting checks remain manual.');
 } finally {server.kill();}

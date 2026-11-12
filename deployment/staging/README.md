@@ -2,7 +2,9 @@
 
 Target: **https://website.attaieproperties.com** only. This kit is not a V1 upgrade package.
 
-The site bundle includes the previously verified frontend, web admin, and unchanged PHP endpoint source. Setup creates **19 tables**, **five projects**, **25 existing showcase apartment/layout records**, and **one bcrypt admin account**. The layout records and prices come directly from the frontend's current showcase data. They do not represent a verified full building inventory. Project IDs 1-5 must stay unchanged because the explorer maps artwork by those IDs.
+The site bundle includes the frontend, web admin, and PHP endpoint source. Setup creates **19 tables**, **empty project and project-unit catalogs**, and **one bcrypt admin account**. No project artwork or sample inventory is bundled. Add new projects through the application.
+
+This is a legacy installer guide. For the owner's current manual phpMyAdmin workflow, use [the V2 setup guide](../v2/START-HERE.md).
 
 ## 1. Create the isolated subdomain
 
@@ -55,7 +57,7 @@ Copy `setup/config.example.php` to `setup/config.php`. Edit these fields in cPan
 
 Keep `site_url` set to `https://website.attaieproperties.com`. Do not put your admin password in this config.
 
-## 5. Create tables, projects, and the first admin
+## 5. Create tables and the first admin
 
 Open **cPanel > Terminal**. Run these commands after replacing the account prefix and paths:
 
@@ -71,7 +73,7 @@ The password prompt hides input and avoids putting the password in shell history
 
 If `php` uses the wrong version, your host may provide a versioned binary such as `/opt/cpanel/ea-php83/root/usr/bin/php`. Confirm that path with your provider. If Terminal is disabled, ask your host to run the command with you or request a separate phpMyAdmin procedure. Do not upload the installer into a public folder to run it through a browser; HTTP execution is deliberately disabled.
 
-On success, the installer reports 19 tables, five projects, 25 showcase layouts, and one bcrypt admin. It creates a new staging `api/db.php` with **blank legacy ADMIN_USER/ADMIN_PASS constants**, so the admin login uses the hashed database account. The admin password itself is not saved in a file. The existing login endpoint verifies its hash using `password_verify()`.
+On success, the installer reports 19 tables, an empty project catalog, and one bcrypt admin. It creates a new staging `api/db.php` with **blank legacy ADMIN_USER/ADMIN_PASS constants**, so the admin login uses the hashed database account. The admin password itself is not saved in a file. The existing login endpoint verifies its hash using `password_verify()`.
 
 If setup fails after starting SQL, it may leave partial tables in this new database because MySQL DDL is not transactional. Do not rerun SQL blindly. Check the error phase and host settings, then recreate **only the new test database**, remove only this failed staging installation's generated config/private folder if present, and retry. Never reset V1.
 
@@ -83,14 +85,10 @@ Open:
 https://website.attaieproperties.com/
 https://website.attaieproperties.com/admin
 https://website.attaieproperties.com/api/get-projects.php
-https://website.attaieproperties.com/projects/1
-https://website.attaieproperties.com/projects/2
-https://website.attaieproperties.com/projects/3
-https://website.attaieproperties.com/projects/4
-https://website.attaieproperties.com/projects/5
+https://website.attaieproperties.com/projects
 ```
 
-Sign in at `/admin` with your configured username and the password entered in Terminal. Check project listings, individual plans, unit selection, English/Dari, RTL, mobile layouts, and test submissions. Existing sample project overview totals are preserved, while list endpoints may compute counts from the 25 imported layout records. Do not interpret those counts as actual remaining inventory.
+Sign in at `/admin` with your configured username and the password entered in Terminal. The projects API initially returns an empty array. After adding fictional project records and uploading artwork, check listings, plans, unit selection, English/Dari, RTL, mobile layouts, and test submissions.
 
 Run these read-only checks in phpMyAdmin with **the test database selected**:
 
@@ -102,7 +100,7 @@ FROM project_units GROUP BY project_id ORDER BY project_id;
 SELECT username, LEFT(password_hash, 4) AS hash_prefix FROM admin_users;
 ```
 
-Expected layout counts: project 1 = 6, project 2 = 4, project 3 = 6, project 4 = 5, project 5 = 4. The bcrypt hash prefix should be `$2y$`.
+Expected: no projects or project-unit rows before adding new records. The bcrypt hash prefix should be `$2y$`.
 
 The kit sets `robots.txt` to disallow crawling, sends an `X-Robots-Tag: noindex` header when Apache mod_headers is available, and sets the database's indexing flag off. Some frozen SEO code normalizes this staging hostname to the main production canonical URL; no SEO endpoint changes were made. Use cPanel Directory Privacy if you need access restriction; noindex directives are not authentication.
 

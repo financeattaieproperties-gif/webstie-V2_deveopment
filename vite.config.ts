@@ -290,7 +290,7 @@ function createMockPhpApiPlugin(): Plugin {
       name: 'Eng. Maryam Sadat',
       email: 'maryam.sadat@kabulengineering.af',
       phone: '+93 70 445 8821',
-      message: 'Requesting floor plan and installment terms for Kabul Plaza 12.',
+      message: 'Requesting floor plan and installment terms for an apartment.',
       property_id: '2',
       property_name: 'Contemporary High-Rise Apartment in Shahr-e-Naw',
       stage: 'Follow-Up',

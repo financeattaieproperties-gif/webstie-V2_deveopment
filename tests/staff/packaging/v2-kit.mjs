@@ -20,11 +20,13 @@ assert.ok(exists('private/app/src/FirebaseAuth.php'));
 assert.ok(exists('private/config.php'));
 assert.ok(exists('private-setup/WEBSITE-ADMIN-LOGIN-PRIVATE.txt'));
 const catalog=JSON.parse(fs.readFileSync(path.join(root,'private-setup/project-showcase.json'),'utf8'));
-assert.deepEqual(catalog.projects.map(p=>p.id),[1,2,3,4,5]);assert.equal(catalog.units.length,25);
-for(const record of [...catalog.projects,...catalog.units])for(const url of [record.image_url,record.masterplan_image,...(record.gallery_images||[])].filter(Boolean))assert.ok(exists('dist'+url),url);
+assert.deepEqual(catalog.projects, []);
+assert.deepEqual(catalog.units, []);
 const art=['kabul-plaza-saljuqi','moon-residency','kabul-plaza-burj','kabul-plaza-12','kabul-plaza-abc'];
-let assets=0;for(const folder of art)assets+=walk(path.join(root,'dist/assets',folder)).length;assert.ok(assets>=98,`Artwork count ${assets}`);
+for(const folder of art)assert.ok(!exists('dist/assets/'+folder),`Removed project artwork returned: ${folder}`);
+const seed=fs.readFileSync(path.join(root,'database/02-five-project-showcase.sql'),'utf8');
+assert.ok(!/INSERT INTO (?:projects|project_units)\b/i.test(seed));
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8'));
 for(const row of manifest){const digest=crypto.createHash('sha256').update(fs.readFileSync(path.join(root,row.path))).digest('hex');assert.equal(digest,row.sha256,row.path);}
 assert.equal(fs.readdirSync(path.join(root,'dist/callcenter/assets')).filter(n=>/^fa-.*\.js$/.test(n)).length,0);
-console.log(`Full V2 kit verified: ${manifest.length} manifest files, ${assets} five-project artwork files, 5 projects/25 sample layouts, separate SQL/private setup, English callcenter.`);
+console.log(`Full V2 kit verified: ${manifest.length} manifest files, empty project catalog, separate SQL/private setup, English callcenter.`);

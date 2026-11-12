@@ -27,11 +27,6 @@ export interface PromoBannerProps {
 
 const DEFAULT_PROJECT_COVERS: PromoProjectCover[] = [
   {
-    imageUrl: defaultExteriorImg,
-    projectName: 'Kabul Plaza Saljuqi',
-    projectLocation: 'Shahr-e-Naw, Kabul',
-  },
-  {
     imageUrl: categoryProjectsImg,
     projectName: 'Attaie Signature Towers',
     projectLocation: 'Wazir Akbar Khan, Kabul',
@@ -50,7 +45,7 @@ const DEFAULT_PROJECT_COVERS: PromoProjectCover[] = [
     imageUrl: stitchHeroImg,
     projectName: 'Attaie Skyline Development',
     projectLocation: 'Central Kabul',
-  },
+  }
 ];
 
 const STORAGE_INDEX_KEY = 'attaie_promo_cover_rotation_idx';

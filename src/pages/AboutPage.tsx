@@ -93,7 +93,7 @@ const MILESTONE_SLIDES = [
   },
   {
     year: '2026 — Signature Towers',
-    title: 'Kabul Plaza Saljuqi & Multi-Tower Developments',
+    title: 'Residential & Multi-Tower Developments',
     caption: 'Seismic-grade modern apartment living with 24/7 solar-hybrid microgrids.',
     image: defaultExteriorImg,
   },

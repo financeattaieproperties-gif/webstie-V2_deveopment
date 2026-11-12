@@ -64,10 +64,10 @@ MANUAL TESTING DEPLOYMENT: website.attaieproperties.com
    Do NOT upload this SQL file into the document root.
 6. Open ADMIN-LOGIN-PRIVATE.txt locally for your generated admin login.
    Do NOT upload that credentials file. Save the password in your manager.
-7. Visit /admin and sign in. Check /api/get-projects.php and /projects/1
-   through /projects/5. There should be 19 tables, five projects and 25
-   showcase layout records. Data is the existing showcase, not verified
-   complete floor-by-floor inventory. No live database has been contacted.
+7. Visit /admin and sign in. Check /api/get-projects.php returns an empty
+   array. There should be 19 tables with no project or project-unit records.
+   Add new projects and upload their artwork through the application.
+   No live database has been contacted.
 
 Use this NEW dist folder. The repository-root dist is an older build.
 Do not upload README.txt, database-test-only.sql, ADMIN-LOGIN-PRIVATE.txt,

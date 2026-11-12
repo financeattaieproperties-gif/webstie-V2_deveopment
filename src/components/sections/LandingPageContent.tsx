@@ -77,28 +77,6 @@ const FALLBACK_SHOWCASE_PROPERTIES: Property[] = [
     created_at: '2026-02-01T08:00:00Z',
   },
   {
-    id: 102,
-    serial_number: 'ATP-102',
-    title: 'Kabul Plaza Saljuqi — Corner Suite',
-    price: 142000,
-    location: 'Ansari Square, Shahr-e-Naw, Kabul',
-    beds: 3,
-    baths: 2,
-    area: 175,
-    floor: 4,
-    status: 'available',
-    type: 'Apartment',
-    listing_type: 'sale',
-    image_url: stitchHeroImg,
-    gallery_images: [stitchHeroImg],
-    video_url: null,
-    floor_plan_url: null,
-    three_d_plan_url: null,
-    description:
-      'Modern corner apartment in Shahr-e-Naw with glass wrap-around balconies, underground parking, and dedicated security.',
-    created_at: '2026-02-03T08:00:00Z',
-  },
-  {
     id: 103,
     serial_number: 'ATP-103',
     title: 'Karte Parwan Panoramic Hillside Villa',
@@ -119,7 +97,7 @@ const FALLBACK_SHOWCASE_PROPERTIES: Property[] = [
     description:
       'Executive residence with private landscaped courtyard, formal Mehmankhana reception hall, and diplomatic-grade security.',
     created_at: '2026-02-05T08:00:00Z',
-  },
+  }
 ];
 
 const FALLBACK_PREVIEW_PROJECTS: Project[] = [];

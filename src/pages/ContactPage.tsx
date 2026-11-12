@@ -464,7 +464,7 @@ export default function ContactPage() {
                       <input
                         id="propertyName"
                         {...register('propertyName')}
-                        placeholder="e.g. Kabul Plaza Saljuqi, Wazir Akbar Khan Villa…"
+                        placeholder="e.g. project name, property serial, or location…"
                         className={fieldClass(false)}
                       />
                     </div>

@@ -9,10 +9,10 @@ No cPanel Terminal, Composer, Node, Python, or automatic installer is needed on 
 - Fresh public website and property-admin build, latest English-only teal `/callcenter/`, and `/management/`.
 - PHP website/API files and a private staff service using Firebase Authentication.
 - **39 tables in one NEW V2 database:** 19 website tables, 12 shared `core_` tables, and 8 `cc_` call-center tables. Future dashboard modules add their own tables and permission/registry rows without changing these tables.
-- Five preserved projects, their 98 artwork files, and 25 existing **sample** layout records. Prices, dates, availability, and layout counts are showcase data, not verified live inventory.
+- Empty project and apartment catalogs. Add new project records, photos, and plans through the application.
 - A generated website-admin password kept in a private local file. Staff users use Firebase passwords instead; no staff passwords are stored in MySQL.
 
-The photo explorer's current calibration/default configuration is unfinished; artwork is included, but this kit does not invent floor/apartment polygons or claim the interactive photo explorer is configured. Automatic Etisalat capture, outbound click-to-call, and AI chat are disabled/unconnected for this test installation. The manual call-center workflow is available. Ordinary telephone/WhatsApp links still point to the company's numbers.
+The photo explorer's current calibration/default configuration is unfinished; no project artwork is bundled, and this kit does not invent floor/apartment polygons or claim the interactive photo explorer is configured. Automatic Etisalat capture, outbound click-to-call, and AI chat are disabled/unconnected for this test installation. The manual call-center workflow is available. Ordinary telephone/WhatsApp links still point to the company's numbers.
 
 ## 1. Identify the files
 
@@ -47,12 +47,12 @@ Host interfaces vary. If the subdomain shares the main site's directory, correct
 
 Both the website and staff service use this same V2 database in this kit. `leads` belongs to website inquiries; `cc_leads` belongs to the call-center module. Do not rename or merge them manually.
 
-## 4. Import the tables and sample projects
+## 4. Import the tables and testing settings
 
 In cPanel open **phpMyAdmin**. Click the NEW V2 database in the left sidebar. Verify its complete name and that it contains no tables. Use the **Import** tab in this order:
 
 1. `database/01-new-v2-schema.sql` — creates all 39 tables, eight department groups, known roles/permissions, and module registrations.
-2. `database/02-five-project-showcase.sql` — adds projects with fixed IDs 1-5, 25 sample layouts, and the testing SEO settings.
+2. `database/02-five-project-showcase.sql` — applies testing SEO settings only. The legacy filename is retained for import compatibility; it contains no project data.
 3. `database/03-website-admin.sql` — adds the website catalog administrator with a bcrypt password hash.
 
 Do not import the CEO template yet; fill it in during step 6. `VERIFY-TEST-DATABASE.sql` is a read-only checklist, not another creation script.
@@ -180,11 +180,11 @@ The agent can complete or lose a lead through permitted outcomes. Only the assig
 
 ## 11. Verify the server and database
 
-Open `database/VERIFY-TEST-DATABASE.sql` in phpMyAdmin's SQL tab with the V2 database selected. Expected: 39 tables, projects 1-5, sample layout counts 6/4/6/5/4, eight department rows, module versions `core=1` and `callcenter=1`, and the provisioned staff profiles.
+Open `database/VERIFY-TEST-DATABASE.sql` in phpMyAdmin's SQL tab with the V2 database selected. Expected: 39 tables, empty projects and project_units tables, eight department rows, module versions `core=1` and `callcenter=1`, and the provisioned staff profiles.
 
 Check these browser URLs:
 
-- `/api/get-projects.php` returns five project records, and `/projects/1` through `/projects/5` load project content/artwork.
+- `/api/get-projects.php` returns an empty array until projects are added. Removed project detail URLs show the existing missing-project state.
 - `/admin/` signs in with the private generated website-admin login. Property CRUD, uploads, inquiries, career applications, and visit requests need their own fictional V2 workflow checks before relying on them.
 - `/staff-api/v1/session` returns JSON with `user: null` when signed out. A configured anonymous session is not a server error.
 - `/staff-api/v1/dashboard` denies signed-out access. A customer or unrelated department account must not read call-center records.

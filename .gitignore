@@ -8,6 +8,9 @@ build/
 out/
 .next/
 public/admin/
+public/callcenter/
+public/management/
+public/dashboard/
 admin-panel/dist/
 admin-panel/out/
 admin-panel/release/

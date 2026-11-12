@@ -40,7 +40,7 @@ export function EngineeringWorkspace({
   ].includes(actorRole);
 
   const [uploadingId, setUploadingId] = useState<number | null>(null);
-  const [fileName, setFileName] = useState('KP12-Floor-Plan-Revision.pdf');
+  const [fileName, setFileName] = useState('');
   const [fileUrl, setFileUrl] = useState('/logo.png');
   const [format, setFormat] = useState('2D Floor Plan (CAD/PDF)');
   const [notes, setNotes] = useState(

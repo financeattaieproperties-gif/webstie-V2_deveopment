@@ -3,9 +3,9 @@ SELECT DATABASE() AS selected_v2_database;
 SELECT COUNT(*) AS table_count FROM information_schema.tables WHERE table_schema=DATABASE();
 -- Fresh kit: 39 tables (19 website + 12 shared core + 8 call-center).
 SELECT id,name FROM projects ORDER BY id;
--- IDs 1-5: Saljuqi, Moon Residency, Burj, Kabul Plaza 12, Kabul Plaza 09 (ABC).
+-- Fresh packages contain no projects.
 SELECT project_id,COUNT(*) AS sample_layouts FROM project_units GROUP BY project_id ORDER BY project_id;
--- Expected sample counts: 6, 4, 6, 5, 4.
+-- Fresh packages contain no project-unit records.
 SELECT canonical_base_url,robots_index FROM seo_settings WHERE id=1;
 -- Expected: https://website.attaieproperties.com and 0.
 SELECT username,LEFT(password_hash,4) AS hash_prefix FROM admin_users;

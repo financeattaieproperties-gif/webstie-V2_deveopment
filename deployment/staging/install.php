@@ -61,7 +61,7 @@ try {
     $connection->set_charset('utf8mb4');
     if ($connection->query('SHOW TABLES')->num_rows !== 0) stop('Refusing installation: the target database is not empty. No tables were changed.');
     $catalog = json_decode((string) file_get_contents(__DIR__ . '/catalog.json'), true, 512, JSON_THROW_ON_ERROR);
-    if (count($catalog['projects']) !== 5 || count($catalog['units']) !== 25) stop('Unexpected catalog size.');
+    if (count($catalog['projects']) !== 0 || count($catalog['units']) !== 0) stop('Project seeds are disabled.');
     // Validate the template and every artifact before running any DDL.
     $template = file_get_contents(__DIR__ . '/db.template.php');
     if ($template === false) throw new RuntimeException('Missing database template.');
@@ -101,7 +101,7 @@ try {
     $statement->execute();
     $row = $connection->query('SELECT password_hash FROM admin_users LIMIT 1')->fetch_assoc();
     if (!hash_equals($passwordHash, $row['password_hash'])) throw new RuntimeException('Stored password hash mismatch.');
-    if ((int) $connection->query('SELECT COUNT(*) AS n FROM projects')->fetch_assoc()['n'] !== 5 || (int) $connection->query('SELECT COUNT(*) AS n FROM project_units')->fetch_assoc()['n'] !== 25) throw new RuntimeException('Catalog row verification failed.');
+    if ((int) $connection->query('SELECT COUNT(*) AS n FROM projects')->fetch_assoc()['n'] !== 0 || (int) $connection->query('SELECT COUNT(*) AS n FROM project_units')->fetch_assoc()['n'] !== 0) throw new RuntimeException('Expected empty project tables.');
     $tableCount = $connection->query('SHOW TABLES')->num_rows;
     if ($tableCount !== 19) throw new RuntimeException('Expected 19 tables.');
     // This new config disables the legacy plaintext admin constant login.
@@ -113,7 +113,7 @@ try {
     if (!is_dir($documentRoot . '/uploads/chat_store') && !mkdir($documentRoot . '/uploads/chat_store', 0700, true)) throw new RuntimeException('Cannot create private test chat storage.');
     writeNewFile($documentRoot . '/uploads/chat_store/.htaccess', "Require all denied\n");
     $connection->close();
-    echo "Created 19 tables, five projects, 25 showcase layouts, and one bcrypt admin.\n";
+    echo "Created 19 tables, an empty project catalog, and one bcrypt admin.\n";
     echo "Admin: https://website.attaieproperties.com/admin\n";
     echo "Username: " . $config['admin_username'] . "\nPassword: the value you entered; never stored as plaintext.\n";
     echo "Outbound calls and AI endpoints remain blocked in this testing kit.\n";
