@@ -4,6 +4,7 @@ SET NAMES utf8mb4;
 
 CREATE TABLE mkt_production_entries (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT UNSIGNED NOT NULL,
   customer_name VARCHAR(160) NOT NULL,
   address VARCHAR(255) NOT NULL,
   property_type ENUM('Villa','Block','Building','Apartment') NOT NULL,
@@ -23,9 +24,10 @@ CREATE TABLE mkt_production_entries (
   submission_post_id INT UNSIGNED NULL,
   version INT NOT NULL DEFAULT 1,
   FOREIGN KEY (submitted_by_id) REFERENCES core_users(id),
+  FOREIGN KEY (branch_id) REFERENCES core_branches(id),
   FOREIGN KEY (videographer_id) REFERENCES core_users(id),
   FOREIGN KEY (editor_id) REFERENCES core_users(id),
-  INDEX (stage, submitted_at)
+  INDEX (branch_id, stage, submitted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO core_modules VALUES ('marketing','Marketing and Media Production Workflow',UTC_TIMESTAMP());
@@ -39,6 +41,5 @@ INSERT INTO core_role_permissions VALUES
   ('sales','marketing.submit_property'),('sales_leader','marketing.submit_property'),('callcenter','marketing.submit_property'),
   ('manager','marketing.submit_property'),('ceo','marketing.submit_property'),
   ('marketing_manager','marketing.submit_property'),('marketing_manager','marketing.schedule_filming'),('marketing_manager','marketing.complete_filming'),
-  ('production_manager','marketing.submit_property'),('production_manager','marketing.schedule_filming'),('production_manager','marketing.complete_filming'),
-  ('videographer','marketing.complete_filming'),('photographer','marketing.complete_filming'),
+  ('videographer','marketing.complete_filming'),
   ('editor','marketing.edit_and_post');

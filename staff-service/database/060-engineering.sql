@@ -50,6 +50,4 @@ INSERT INTO core_role_permissions VALUES
   ('architect','engineering.deliverables.submit'),
   ('graphic_designer','engineering.deliverables.submit'),
   ('visual_designer_3d','engineering.deliverables.submit'),
-  ('manager','engineering.deliverables.review'),
-  ('ceo','engineering.deliverables.review'),
-  ('branch_manager','engineering.deliverables.review');
+  ('ceo','engineering.deliverables.review');

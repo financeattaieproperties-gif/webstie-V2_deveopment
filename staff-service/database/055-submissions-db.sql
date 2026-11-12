@@ -5,6 +5,7 @@ SET NAMES utf8mb4;
 
 CREATE TABLE sub_posts (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  origin_branch_id INT UNSIGNED NOT NULL,
   marketing_entry_id INT UNSIGNED NOT NULL UNIQUE,
   serial_number VARCHAR(80) NOT NULL UNIQUE,
   customer_name VARCHAR(160) NOT NULL,
@@ -20,7 +21,7 @@ CREATE TABLE sub_posts (
   published_at DATETIME NULL,
   website_property_id INT UNSIGNED NULL,
   version INT NOT NULL DEFAULT 1,
-  INDEX (publish_status, submitted_at),
+  INDEX (origin_branch_id, publish_status, submitted_at),
   INDEX (serial_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

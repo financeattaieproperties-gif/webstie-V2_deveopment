@@ -4,6 +4,7 @@ SET NAMES utf8mb4;
 
 CREATE TABLE inv_projects (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT UNSIGNED NOT NULL,
   code VARCHAR(40) NOT NULL UNIQUE,
   name VARCHAR(160) NOT NULL,
   location VARCHAR(255) NOT NULL,
@@ -16,6 +17,8 @@ CREATE TABLE inv_projects (
   version INT NOT NULL DEFAULT 1,
   FOREIGN KEY (assigned_team_leader_id) REFERENCES core_users(id),
   FOREIGN KEY (created_by) REFERENCES core_users(id),
+  FOREIGN KEY (branch_id) REFERENCES core_branches(id),
+  INDEX (branch_id, id),
   INDEX (code),
   INDEX (assigned_team_leader_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -87,10 +90,8 @@ INSERT INTO core_permissions VALUES
   ('inventory.read','inventory','Read pre-sale project and apartment inventory'),
   ('inventory.manage','inventory','Create and update pre-sale projects, sellers, and apartments');
 INSERT INTO core_role_permissions VALUES
-  ('manager','inventory.read'),('manager','inventory.manage'),
+  ('manager','inventory.read'),
   ('ceo','inventory.read'),('ceo','inventory.manage'),
-  ('branch_manager','inventory.read'),('branch_manager','inventory.manage'),
-  ('hr_manager','inventory.read'),
   ('sales_leader','inventory.read'),('sales','inventory.read'),('callcenter','inventory.read'),
   ('finance_manager','inventory.read'),
   ('architect','inventory.read'),('graphic_designer','inventory.read'),('visual_designer_3d','inventory.read');

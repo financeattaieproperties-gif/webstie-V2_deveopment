@@ -84,6 +84,4 @@ INSERT INTO core_permissions VALUES
 INSERT INTO core_role_permissions VALUES
   ('sales','sales.access'),('sales_leader','sales.access'),('sales_leader','sales.team_manage'),
   ('manager','sales.access'),('manager','sales.team_manage'),('manager','customers.review_duplicates'),
-  ('ceo','sales.access'),('ceo','sales.team_manage'),('ceo','customers.review_duplicates'),
-  ('branch_manager','sales.access'),('branch_manager','customers.review_duplicates'),
-  ('hr_manager','sales.access');
+  ('ceo','sales.access'),('ceo','sales.team_manage'),('ceo','customers.review_duplicates');

@@ -14,9 +14,8 @@ CREATE TABLE mkt_submission_outbox (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, 
 CREATE TABLE crm_phone_registry (phone VARCHAR(20) PRIMARY KEY, customer_id INT UNSIGNED NULL, FOREIGN KEY(customer_id) REFERENCES cc_customers(id)) ENGINE=InnoDB;
 INSERT INTO crm_phone_registry(phone,customer_id) SELECT phone,MIN(id) FROM cc_customers GROUP BY phone;
 ALTER TABLE cc_leads ADD project_id INT UNSIGNED NULL, ADD apartment_id INT UNSIGNED NULL, ADD stage_code VARCHAR(2) NOT NULL DEFAULT 'L';
-DELETE FROM core_role_permissions WHERE permission_code='inventory.manage' AND role_code<>'manager';
-DELETE FROM core_role_permissions WHERE permission_code='finance.read' AND role_code='hr_manager';
-DELETE FROM core_role_permissions WHERE permission_code IN ('core.staff.manage','core.departments.manage') AND role_code NOT IN ('manager');
+DELETE FROM core_role_permissions WHERE permission_code='inventory.manage' AND role_code<>'ceo';
+DELETE FROM core_role_permissions WHERE permission_code IN ('core.staff.manage','core.departments.manage') AND role_code<>'ceo';
 INSERT IGNORE INTO core_permissions VALUES ('hr.preparation.manage','hr_finance','Prepare sellers and apartment boundaries');
-INSERT IGNORE INTO core_role_permissions VALUES ('hr_manager','hr.preparation.manage');
-INSERT INTO core_module_versions VALUES ('core',2,UTC_TIMESTAMP());
+INSERT IGNORE INTO core_role_permissions VALUES ('manager','hr.preparation.manage');
+INSERT IGNORE INTO core_module_versions VALUES ('core',2,UTC_TIMESTAMP());

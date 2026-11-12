@@ -417,8 +417,13 @@ CREATE TABLE IF NOT EXISTS core_role_permissions (
 -- 26. Core Branches
 CREATE TABLE IF NOT EXISTS core_branches (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(40) NOT NULL UNIQUE,
   name VARCHAR(160) NOT NULL,
-  active TINYINT NOT NULL DEFAULT 1
+  address VARCHAR(255) NOT NULL DEFAULT '',
+  phone VARCHAR(40) NOT NULL DEFAULT '',
+  email VARCHAR(254) NOT NULL DEFAULT '',
+  active TINYINT NOT NULL DEFAULT 1,
+  version INT NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 27. Core Users (Firebase-mapped staff accounts; no passwords stored here)
@@ -437,7 +442,18 @@ CREATE TABLE IF NOT EXISTS core_users (
   INDEX idx_core_users_role_active (role, active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 28. Core Login Limits
+-- 28. Canonical Branch Manager Assignment
+CREATE TABLE IF NOT EXISTS core_branch_managers (
+  branch_id INT UNSIGNED PRIMARY KEY,
+  manager_user_id INT UNSIGNED NOT NULL UNIQUE,
+  assigned_by INT UNSIGNED NOT NULL,
+  assigned_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (branch_id) REFERENCES core_branches(id),
+  FOREIGN KEY (manager_user_id) REFERENCES core_users(id),
+  FOREIGN KEY (assigned_by) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 29. Core Login Limits
 CREATE TABLE IF NOT EXISTS core_login_limits (
   bucket CHAR(64) PRIMARY KEY,
   attempts INT NOT NULL,
@@ -447,6 +463,7 @@ CREATE TABLE IF NOT EXISTS core_login_limits (
 -- 29. Core Management Tasks
 CREATE TABLE IF NOT EXISTS core_management_tasks (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT UNSIGNED NOT NULL,
   title VARCHAR(200) NOT NULL,
   instructions TEXT NOT NULL,
   priority ENUM('low','normal','high','urgent') NOT NULL,
@@ -456,8 +473,10 @@ CREATE TABLE IF NOT EXISTS core_management_tasks (
   status ENUM('todo','in_progress','completed','cancelled') NOT NULL DEFAULT 'todo',
   completed_at DATETIME NULL,
   version INT NOT NULL DEFAULT 1,
+  FOREIGN KEY (branch_id) REFERENCES core_branches(id),
   FOREIGN KEY (assignee_id) REFERENCES core_users(id),
   FOREIGN KEY (assigned_by) REFERENCES core_users(id),
+  INDEX idx_core_tasks_branch_status (branch_id, status, deadline_at, id),
   INDEX idx_core_tasks_assignee_status (assignee_id, status, deadline_at, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -487,40 +506,29 @@ CREATE TABLE IF NOT EXISTS core_idempotency_keys (
 
 -- Seed Core RBAC Metadata
 INSERT IGNORE INTO core_modules VALUES ('core','Shared application core',UTC_TIMESTAMP());
-INSERT IGNORE INTO core_module_versions VALUES ('core',1,UTC_TIMESTAMP());
+INSERT IGNORE INTO core_module_versions VALUES ('core',3,UTC_TIMESTAMP());
 
 INSERT IGNORE INTO core_departments VALUES
-  ('administration','Administration'),
   ('management','Management'),
-  ('hr','Human Resources'),
   ('callcenter','Call Center'),
   ('sales','Sales Department'),
   ('production','Marketing and Production'),
-  ('branches','Branch Management'),
   ('finance','Finance'),
-  ('engineering','Engineering and Graphic Department'),
-  ('customers','Customers');
+  ('engineering','Engineering and Graphic Department');
 
 INSERT IGNORE INTO core_roles VALUES
-  ('ceo','administration','Admin (CEO)'),
-  ('admin','administration','Administrator'),
+  ('ceo','management','CEO'),
   ('manager','management','Manager'),
-  ('hr_manager','hr','HR Manager'),
   ('callcenter','callcenter','Call Center Agent'),
   ('sales_leader','sales','Sales Team Leader'),
   ('sales','sales','Sales Agent'),
   ('marketing_manager','production','Marketing Manager'),
-  ('production_manager','production','Production Manager'),
   ('editor','production','Editor'),
   ('videographer','production','Videographer'),
-  ('photographer','production','Photographer'),
-  ('branch_manager','branches','Manager'),
-  ('assistant_manager','branches','Assistant Manager'),
   ('finance_manager','finance','Finance Manager'),
   ('architect','engineering','Architect'),
   ('graphic_designer','engineering','Graphic Designer'),
-  ('visual_designer_3d','engineering','3D Visual Designer'),
-  ('customer','customers','Customer');
+  ('visual_designer_3d','engineering','3D Visual Designer');
 
 INSERT IGNORE INTO core_permissions VALUES
   ('core.tasks.read_own','core','Read and complete assigned management tasks'),
@@ -530,21 +538,18 @@ INSERT IGNORE INTO core_permissions VALUES
   ('core.submissions.read','core','Read website publishing submission status');
 
 INSERT IGNORE INTO core_role_permissions
-  SELECT code, 'core.tasks.read_own' FROM core_roles WHERE code NOT IN ('customer','admin');
+  SELECT code, 'core.tasks.read_own' FROM core_roles;
 
 INSERT IGNORE INTO core_role_permissions VALUES
   ('manager','core.tasks.assign'),
   ('ceo','core.tasks.assign'),
-  ('branch_manager','core.tasks.assign'),
   ('sales_leader','core.tasks.assign'),
   ('marketing_manager','core.tasks.assign'),
-  ('production_manager','core.tasks.assign'),
   ('finance_manager','core.tasks.assign'),
-  ('manager','core.staff.manage'),
   ('ceo','core.staff.manage'),
-  ('branch_manager','core.staff.manage'),
-  ('manager','core.departments.manage'),
-  ('ceo','core.departments.manage');
+  ('ceo','core.departments.manage'),
+  ('manager','core.submissions.read'),
+  ('ceo','core.submissions.read');
 
 
 -- ==============================================================================
@@ -561,16 +566,19 @@ CREATE TABLE IF NOT EXISTS cc_serial_counters (
 -- 33. Call Center Customers
 CREATE TABLE IF NOT EXISTS cc_customers (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT UNSIGNED NOT NULL,
   name VARCHAR(160) NOT NULL,
   phone VARCHAR(20) NOT NULL,
   created_at DATETIME NOT NULL,
-  INDEX idx_cc_customers_phone (phone),
-  INDEX idx_cc_customers_name (name)
+  FOREIGN KEY (branch_id) REFERENCES core_branches(id),
+  INDEX idx_cc_customers_phone (branch_id, phone),
+  INDEX idx_cc_customers_name (branch_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 34. Call Center Leads
 CREATE TABLE IF NOT EXISTS cc_leads (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT UNSIGNED NOT NULL,
   serial VARCHAR(80) NOT NULL UNIQUE,
   customer_id INT UNSIGNED NULL,
   customer_name VARCHAR(160) NOT NULL DEFAULT '',
@@ -584,9 +592,11 @@ CREATE TABLE IF NOT EXISTS cc_leads (
   provider_call_id VARCHAR(180) NULL UNIQUE,
   version INT NOT NULL DEFAULT 1,
   current_task_id INT UNSIGNED NULL,
+  FOREIGN KEY (branch_id) REFERENCES core_branches(id),
   FOREIGN KEY (customer_id) REFERENCES cc_customers(id),
   FOREIGN KEY (origin_agent_id) REFERENCES core_users(id),
   FOREIGN KEY (assignee_id) REFERENCES core_users(id),
+  INDEX idx_cc_leads_branch (branch_id, status, id),
   INDEX idx_cc_leads_origin (origin_agent_id, status, id),
   INDEX idx_cc_leads_assignee (assignee_id, status, id),
   INDEX idx_cc_leads_customer (customer_id)
@@ -689,6 +699,7 @@ INSERT IGNORE INTO core_role_permissions VALUES
 -- 40. Pre-Sale Projects (Manager Inventory)
 CREATE TABLE IF NOT EXISTS inv_projects (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT UNSIGNED NOT NULL,
   code VARCHAR(40) NOT NULL UNIQUE,
   name VARCHAR(160) NOT NULL,
   location VARCHAR(255) NOT NULL,
@@ -699,6 +710,7 @@ CREATE TABLE IF NOT EXISTS inv_projects (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   version INT NOT NULL DEFAULT 1,
+  FOREIGN KEY (branch_id) REFERENCES core_branches(id),
   FOREIGN KEY (assigned_team_leader_id) REFERENCES core_users(id),
   FOREIGN KEY (created_by) REFERENCES core_users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -890,6 +902,7 @@ CREATE TABLE IF NOT EXISTS fin_deposits (
 -- 51. Marketing & Media Production Entries
 CREATE TABLE IF NOT EXISTS mkt_production_entries (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT UNSIGNED NOT NULL,
   customer_name VARCHAR(160) NOT NULL,
   address VARCHAR(255) NOT NULL,
   property_type ENUM('Villa','Block','Building','Apartment') NOT NULL,
@@ -908,6 +921,7 @@ CREATE TABLE IF NOT EXISTS mkt_production_entries (
   stage ENUM('submitted','filming_scheduled','filming_completed','editing_scheduled','ready_for_post','posted') NOT NULL DEFAULT 'submitted',
   submission_post_id INT UNSIGNED NULL,
   version INT NOT NULL DEFAULT 1,
+  FOREIGN KEY (branch_id) REFERENCES core_branches(id),
   FOREIGN KEY (submitted_by_id) REFERENCES core_users(id),
   FOREIGN KEY (videographer_id) REFERENCES core_users(id),
   FOREIGN KEY (editor_id) REFERENCES core_users(id)
@@ -961,6 +975,7 @@ CREATE TABLE IF NOT EXISTS eng_deliverable_versions (
 -- 53. Submitted Posts for Website Publishing
 CREATE TABLE IF NOT EXISTS sub_posts (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  origin_branch_id INT UNSIGNED NOT NULL,
   marketing_entry_id INT UNSIGNED NOT NULL UNIQUE,
   serial_number VARCHAR(80) NOT NULL UNIQUE,
   customer_name VARCHAR(160) NOT NULL,
@@ -976,7 +991,7 @@ CREATE TABLE IF NOT EXISTS sub_posts (
   published_at DATETIME NULL,
   website_property_id INT UNSIGNED NULL,
   version INT NOT NULL DEFAULT 1,
-  INDEX idx_sub_posts_status (publish_status, submitted_at)
+  INDEX idx_sub_posts_status (origin_branch_id, publish_status, submitted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 54. Submitted Post Five Photos
@@ -1002,4 +1017,3 @@ CREATE TABLE IF NOT EXISTS sub_publish_events (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;
-

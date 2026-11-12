@@ -4,18 +4,18 @@ CREATE TABLE cc_serial_counters (
  agent_id INT UNSIGNED PRIMARY KEY, next_number INT UNSIGNED NOT NULL, FOREIGN KEY(agent_id) REFERENCES core_users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TABLE cc_customers (
- id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(160) NOT NULL, phone VARCHAR(20) NOT NULL,
- created_at DATETIME NOT NULL, INDEX(phone), INDEX(name)
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, branch_id INT UNSIGNED NOT NULL, name VARCHAR(160) NOT NULL, phone VARCHAR(20) NOT NULL,
+ created_at DATETIME NOT NULL, FOREIGN KEY(branch_id) REFERENCES core_branches(id), INDEX(branch_id,name), INDEX(branch_id,phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TABLE cc_leads (
- id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, serial VARCHAR(80) NOT NULL UNIQUE,
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, branch_id INT UNSIGNED NOT NULL, serial VARCHAR(80) NOT NULL UNIQUE,
  customer_id INT UNSIGNED NULL, customer_name VARCHAR(160) NOT NULL DEFAULT '', phone VARCHAR(20) NOT NULL,
  requirements TEXT NOT NULL, origin_agent_id INT UNSIGNED NOT NULL, assignee_id INT UNSIGNED NOT NULL,
  status ENUM('draft','active','closed','lost') NOT NULL DEFAULT 'draft', call_at DATETIME NOT NULL,
  source ENUM('manual','provider') NOT NULL, provider_call_id VARCHAR(180) NULL UNIQUE,
  version INT NOT NULL DEFAULT 1, current_task_id INT UNSIGNED NULL,
- FOREIGN KEY(customer_id) REFERENCES cc_customers(id), FOREIGN KEY(origin_agent_id) REFERENCES core_users(id),
- FOREIGN KEY(assignee_id) REFERENCES core_users(id), INDEX(origin_agent_id,status,id), INDEX(assignee_id,status,id), INDEX(customer_id)
+ FOREIGN KEY(branch_id) REFERENCES core_branches(id), FOREIGN KEY(customer_id) REFERENCES cc_customers(id), FOREIGN KEY(origin_agent_id) REFERENCES core_users(id),
+ FOREIGN KEY(assignee_id) REFERENCES core_users(id), INDEX(branch_id,status,id), INDEX(origin_agent_id,status,id), INDEX(assignee_id,status,id), INDEX(customer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- current_task_id is maintained transactionally by the service, avoiding a cyclic table dependency.
 CREATE TABLE cc_followup_tasks (
@@ -55,5 +55,4 @@ INSERT INTO core_permissions VALUES
 INSERT INTO core_role_permissions VALUES
  ('callcenter','callcenter.access'),('sales','callcenter.access'),('sales_leader','callcenter.access'),
  ('manager','callcenter.access'),('manager','callcenter.manage'),
- ('ceo','callcenter.access'),('admin','callcenter.access'),('ceo','callcenter.manage'),('admin','callcenter.manage');
-
+ ('ceo','callcenter.access'),('ceo','callcenter.manage');
