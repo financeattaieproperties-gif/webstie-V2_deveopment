@@ -94,6 +94,5 @@ INSERT INTO core_permissions VALUES
   ('finance.deposit.approve','hr_finance','Approve, post, return, and reverse customer deposits');
 INSERT INTO core_role_permissions VALUES
   ('hr_manager','hr.contracts.manage'),('hr_manager','finance.read'),
-  ('finance_assistant','finance.read'),('finance_assistant','finance.deposit.draft'),
   ('finance_manager','finance.read'),('finance_manager','finance.deposit.draft'),('finance_manager','finance.deposit.approve'),
   ('manager','finance.read'),('ceo','finance.read'),('branch_manager','finance.read');

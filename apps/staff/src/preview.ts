@@ -1,4 +1,8 @@
+import { validateInventoryLayout } from "../../../packages/staff-contracts/inventory.mjs";
 import type {
+  ContractIssueInput,
+  ContractAmendInput,
+  ProjectPreparationInput,
   Customer,
   CustomerReviewRequest,
   DashboardData,
@@ -7,6 +11,7 @@ import type {
   Feedback,
   FinanceDeposit,
   HrContract,
+  InventoryApartment,
   InventoryProject,
   Lead,
   MarketingProductionEntry,
@@ -19,10 +24,8 @@ import {
   advanceMarketingProduction,
   canAssignTask,
   canViewLead,
-  createDealClosedSerial,
   createLeadStageSerial,
   formatDateSuffix,
-  generateFloorApartmentBatch,
   isManagerRole,
   issueContractSnapshot,
   normalizePhone,
@@ -33,12 +36,12 @@ import {
   validateDealClosedSubmission,
   validateFeedback,
   validateMarketingEntryCreation,
-  validateProjectInventory,
 } from "../../../packages/staff-contracts/workflow.mjs";
 
 const iso = (hours: number) =>
   new Date(Date.now() + hours * 3600000).toISOString();
 let next = 200;
+const contractAmendmentHistory = new Map<number, HrContract[]>();
 
 export const INITIAL_DEPARTMENTS: Department[] = [
   { code: "management", name: "Management" },
@@ -51,137 +54,30 @@ export const INITIAL_DEPARTMENTS: Department[] = [
 ];
 
 export const INITIAL_STAFF_USERS: StaffUser[] = [
-  { id: 1, name: "Farid Ahmadi", username: "farid.cc@attaieproperties.com", role: "callcenter", departmentCode: "callcenter", active: true },
-  { id: 2, name: "Sara Karimi", username: "sara.sales@attaieproperties.com", role: "sales", departmentCode: "sales", teamLeaderId: 4, active: true },
-  { id: 3, name: "Attaie Management", username: "manager@attaieproperties.com", role: "manager", departmentCode: "management", active: true },
-  { id: 4, name: "Bilal Hotak", username: "bilal.stl@attaieproperties.com", role: "sales_leader", departmentCode: "sales", active: true },
-  { id: 5, name: "Nadia Wardak", username: "nadia.hr@attaieproperties.com", role: "hr_manager", departmentCode: "hr", active: true },
-  { id: 6, name: "Tariq Mansoor", username: "tariq.mkt@attaieproperties.com", role: "marketing_manager", departmentCode: "production", active: true },
-  { id: 7, name: "Ramin Safi", username: "ramin.edit@attaieproperties.com", role: "editor", departmentCode: "production", active: true },
-  { id: 8, name: "Jawad Noori", username: "jawad.video@attaieproperties.com", role: "videographer", departmentCode: "production", active: true },
-  { id: 9, name: "Hasibullah Zafar", username: "hasib.fin@attaieproperties.com", role: "finance_manager", departmentCode: "finance", active: true },
-  { id: 10, name: "Mursal Habibi", username: "mursal.fa@attaieproperties.com", role: "finance_assistant", departmentCode: "finance", active: true },
-  { id: 11, name: "Eng. Omar Farooq", username: "omar.arch@attaieproperties.com", role: "architect", departmentCode: "engineering", active: true },
-  { id: 12, name: "Laila Popal", username: "laila.design@attaieproperties.com", role: "graphic_designer", departmentCode: "engineering", active: true },
-  { id: 13, name: "Zaki Stanikzai", username: "zaki.3d@attaieproperties.com", role: "visual_designer_3d", departmentCode: "engineering", active: true },
-  { id: 14, name: "Samiullah Stanikzai", username: "sami.sales@attaieproperties.com", role: "sales", departmentCode: "sales", teamLeaderId: 4, active: true },
+  { id: 1, name: "Fictional 7 Staff", username: "sample7@example.invalid", role: "callcenter", departmentCode: "callcenter", active: true },
+  { id: 2, name: "Fictional 9 Staff", username: "sample9@example.invalid", role: "sales", departmentCode: "sales", teamLeaderId: 4, active: true },
+  { id: 3, name: "Fictional 11 Staff", username: "sample11@example.invalid", role: "manager", departmentCode: "management", active: true },
+  { id: 4, name: "Fictional 13 Staff", username: "sample13@example.invalid", role: "sales_leader", departmentCode: "sales", active: true },
+  { id: 5, name: "Fictional 15 Staff", username: "sample15@example.invalid", role: "hr_manager", departmentCode: "hr", active: true },
+  { id: 6, name: "Fictional 17 Staff", username: "sample17@example.invalid", role: "marketing_manager", departmentCode: "production", active: true },
+  { id: 7, name: "Fictional 19 Staff", username: "sample19@example.invalid", role: "editor", departmentCode: "production", active: true },
+  { id: 8, name: "Fictional 21 Staff", username: "sample21@example.invalid", role: "videographer", departmentCode: "production", active: true },
+  { id: 9, name: "Fictional 23 Staff", username: "sample23@example.invalid", role: "finance_manager", departmentCode: "finance", active: true },
+  { id: 11, name: "Fictional 25 Staff", username: "sample25@example.invalid", role: "architect", departmentCode: "engineering", active: true },
+  { id: 12, name: "Fictional 27 Staff", username: "sample27@example.invalid", role: "graphic_designer", departmentCode: "engineering", active: true },
+  { id: 13, name: "Fictional 29 Staff", username: "sample29@example.invalid", role: "visual_designer_3d", departmentCode: "engineering", active: true },
+  { id: 14, name: "Fictional 31 Staff", username: "sample31@example.invalid", role: "sales", departmentCode: "sales", teamLeaderId: 4, active: true },
 ];
 
 const INITIAL_PROJECTS: InventoryProject[] = [];
 const INITIAL_CONTRACTS: HrContract[] = [];
 const INITIAL_DEPOSITS: FinanceDeposit[] = [];
 
-const INITIAL_MARKETING: MarketingProductionEntry[] = [
-  {
-    id: 1,
-    customerName: "Haji Bismillah",
-    address: "Street 14, Wazir Akbar Khan, Kabul",
-    propertyType: "Villa",
-    submittedByRole: "sales",
-    submittedByName: "Sara Karimi",
-    submittedAt: iso(-72),
-    filmingDate: "2026-11-09",
-    videographerId: 8,
-    videographerName: "Jawad Noori",
-    filmingCompletedAt: iso(-48),
-    editingDeadlineAt: "2026-11-11",
-    editorId: 7,
-    editorName: "Ramin Safi",
-    contentType: "Ad Video",
-    serialNumber: "AP - 1765",
-    propertyInfoNote: "6-Bedroom Diplomatic Villa in Wazir Akbar Khan with landscaped garden, security guardhouse, and solar backup.",
-    photos: [
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
-    ],
-    platform: "Instagram",
-    stage: "posted",
-    submissionId: 1,
-    version: 4,
-  },
-  {
-    id: 2,
-    customerName: "Eng. Dawood",
-    address: "Ansari Square, Shahr-e-Naw, Kabul",
-    propertyType: "Apartment",
-    submittedByRole: "callcenter",
-    submittedByName: "Farid Ahmadi",
-    submittedAt: iso(-28),
-    filmingDate: "2026-11-11",
-    videographerId: 8,
-    videographerName: "Jawad Noori",
-    filmingCompletedAt: iso(-6),
-    editingDeadlineAt: "2026-11-13",
-    editorId: 7,
-    editorName: "Ramin Safi",
-    contentType: "Reel",
-    serialNumber: null,
-    propertyInfoNote: null,
-    photos: [],
-    platform: null,
-    stage: "ready_for_post",
-    submissionId: null,
-    version: 3,
-  },
-  {
-    id: 3,
-    customerName: "Sardar Mohammad",
-    address: "Kolola Pushta Main Boulevard, Kabul",
-    propertyType: "Building",
-    submittedByRole: "sales_leader",
-    submittedByName: "Bilal Hotak",
-    submittedAt: iso(-12),
-    filmingDate: "2026-11-14",
-    videographerId: 8,
-    videographerName: "Jawad Noori",
-    filmingCompletedAt: null,
-    editingDeadlineAt: null,
-    editorId: 7,
-    editorName: "Ramin Safi",
-    contentType: null,
-    serialNumber: null,
-    propertyInfoNote: null,
-    photos: [],
-    platform: null,
-    stage: "filming_scheduled",
-    submissionId: null,
-    version: 1,
-  },
-];
-
-const INITIAL_SUBMISSIONS: SubmissionPost[] = [
-  {
-    id: 1,
-    marketingEntryId: 1,
-    serialNumber: "AP - 1765",
-    customerName: "Haji Bismillah",
-    address: "Street 14, Wazir Akbar Khan, Kabul",
-    propertyType: "Villa",
-    propertyInfoNote: "6-Bedroom Diplomatic Villa in Wazir Akbar Khan with landscaped garden, security guardhouse, and solar backup.",
-    photos: INITIAL_MARKETING[0].photos,
-    socialPlatform: "Instagram",
-    publishStatus: "Submitted",
-    submittedBy: "Ramin Safi (Editor)",
-    submittedAt: iso(-18),
-    reviewedAt: null,
-    publishedAt: null,
-    websitePropertyId: null,
-    version: 1,
-  },
-];
-
+const INITIAL_MARKETING: MarketingProductionEntry[] = [];
+const INITIAL_SUBMISSIONS: SubmissionPost[] = [];
 const INITIAL_DELIVERABLES: EngineeringDeliverable[] = [];
 
-const names = [
-  "Ahmad Rahimi",
-  "Maryam Noori",
-  "Omar Sadiqi",
-  "Zahra Azizi",
-  "Hamid Karimi",
-];
+const names = ["Fictional Customer One", "Fictional Customer Two", "Fictional Customer Three", "Fictional Customer Four", "Fictional Customer Five"];
 
 const phones = [
   "+93700000000",
@@ -214,8 +110,8 @@ const initialReviewRequests: CustomerReviewRequest[] = [
     customerId: 2,
     phone: "+93700112233",
     requestingAgentId: 2,
-    requestingAgentName: "Sara Karimi",
-    submittedName: "Maryam Noori",
+    requestingAgentName: "Fictional Sales Agent",
+    submittedName: "Fictional Customer Two",
     submittedRequirements: "Customer walked into Sales office asking about available properties.",
     status: "pending_review",
     createdAt: iso(-5),
@@ -297,6 +193,9 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       }
       return activeUser;
     },
+    async login(_username: string, _password: string): Promise<Session> {
+      throw new Error("Preview does not accept credentials. Use the preview role selector.");
+    },
     async session() {
       return { user: activeUser, csrfToken: "preview-csrf", serverTime: iso(0) } as Session;
     },
@@ -366,7 +265,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         activities: [
           {
             id: 1,
-            actorName: "Farid Ahmadi",
+            actorName: "Fictional Call Center Agent",
             type: "entry_submitted",
             notes: lead.requirements,
             at: lead.callAt,
@@ -384,7 +283,6 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       };
       const proj = data.projects?.find((p) => p.id === Number(input.projectId));
       const apt = proj?.apartments.find((a) => a.id === Number(input.apartmentId));
-      const prefix = activeUser.role === "sales" ? "SA" : "CA";
       const seq = ++next;
       const serial =
         activeUser.role === "sales"
@@ -443,7 +341,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         data.customers.unshift(reg.customer);
       } else if (reg.outcome === "duplicate_conflict" && reg.reviewRequest) {
         data.customerReviewRequests = [
-          { id: ++next, ...reg.reviewRequest },
+          { id: ++next, ...reg.reviewRequest, status: "pending_review" },
           ...(data.customerReviewRequests || []),
         ];
       }
@@ -511,8 +409,8 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
           pricePerSqm: body.pricePerSqm,
           totalAmount: body.amount,
           currency: body.currency || "USD",
-          buyerPhotoUrl: body.buyerPhotoUrl || "/logo.png",
-          tazkiraPhotoUrl: body.tazkiraPhotoUrl || "/logo.png",
+          buyerPhotoUrl: body.buyerPhotoUrl || "",
+          tazkiraPhotoUrl: body.tazkiraPhotoUrl || "",
           date: iso(0),
         });
         lead.status = "closed";
@@ -635,12 +533,18 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       return { id: newUser.id, user: newUser };
     },
     async saveProject(projectInput: Partial<InventoryProject>) {
-      const validated = validateProjectInventory(
-        projectInput,
-        data.projects || [],
-        activeUser.role,
-      );
+      if (!isManagerRole(activeUser.role)) throw new Error("Only Manager can save inventory.");
+      const code = projectInput.code?.trim().toUpperCase();
+      if (!code || !projectInput.name?.trim() || !projectInput.location?.trim() || !(Number(projectInput.totalAreaSqm) > 0)) throw new Error("Project code, name, address and positive building area are required.");
+      if (data.projects?.some(p => p.code === code && p.id !== projectInput.id)) throw new Error("Project code already exists.");
+      const errors = validateInventoryLayout(projectInput);
+      if (errors.length) throw new Error(errors.join(" "));
+      if (projectInput.status !== "draft" && (!projectInput.coverPhotoUrl || !projectInput.apartments?.length)) throw new Error("Cover photo and units are required.");
+      const validated = {...projectInput, code, apartments: projectInput.apartments || []};
       if (projectInput.id) {
+        const existing = data.projects?.find(p => p.id === projectInput.id);
+        if (!existing || projectInput.version !== existing.version) throw new Error("Project changed. Refresh and try again.");
+        validated.apartments = validated.apartments.map(a => ({...a, id: a.id || ++next, projectId: existing.id}));
         data.projects = (data.projects || []).map((p) =>
           p.id === projectInput.id
             ? ({ ...p, ...validated, version: p.version + 1 } as InventoryProject)
@@ -654,8 +558,33 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         createdAt: iso(0),
         version: 1,
       };
+      created.apartments = created.apartments.map(a => ({...a, id: a.id || ++next, projectId: created.id}));
       data.projects = [created, ...(data.projects || [])];
       return created;
+    },
+    async upload(dataUrl: string, fileName: string, _purpose: string) {
+      if (!dataUrl.startsWith("data:")) throw new Error("Select a file to upload.");
+      return {url: dataUrl, fileName};
+    },
+    async verifyContract(token: string) {
+      const contract = data.hrContracts?.find(c => c.verificationToken === token);
+      if (!contract) throw new Error("Agreement verification not found.");
+      return {contractSerial: contract.contractSerial, status: contract.status, amendmentVersion: contract.amendmentVersion};
+    },
+    async saveProjectPreparation(projectId: number, body: ProjectPreparationInput) {
+      if (activeUser.role !== "hr_manager") throw new Error("Only HR Manager can prepare project details.");
+      const project = data.projects?.find(p => p.id === projectId);
+      if (!project || project.version !== body.version) throw new Error("Project changed. Refresh and try again.");
+      if (body.apartments.some(b => !project.apartments.some(a => a.id === b.id))) throw new Error("Apartment not found.");
+      project.sellers = structuredClone(body.sellers);
+      project.constructionCompany = structuredClone(body.constructionCompany);
+      for (const boundaries of body.apartments) {
+        const apartment = project.apartments.find(a => a.id === boundaries.id);
+        if (!apartment) throw new Error("Apartment not found.");
+        Object.assign(apartment, boundaries);
+      }
+      project.version++;
+      return project;
     },
     async resolveCustomerReview(reviewId: number, decision: "approved_shared" | "rejected") {
       if (!isManagerRole(activeUser.role)) {
@@ -674,17 +603,11 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       }
       return req;
     },
-    async issueContract(payload: {
-      projectId: number;
-      apartmentId: number;
-      buyers: HrContract["buyers"];
-      installments: Array<{ description: string; percentage: number; dueDate: string | null }>;
-      salesAgentName: string;
-      clauses: string[];
-      notes: string;
-    }) {
+    async issueContract(payload: ContractIssueInput) {
       const project = data.projects?.find((p) => p.id === Number(payload.projectId));
       const apartment = project?.apartments.find((a) => a.id === Number(payload.apartmentId));
+      const draft = payload.contractId ? data.hrContracts?.find(c => c.id === payload.contractId) : undefined;
+      if (payload.contractId && (!draft || draft.status !== "draft" || draft.version !== payload.version)) throw new Error("Contract draft changed. Refresh and try again.");
       const snapshot = issueContractSnapshot({
         actorRole: activeUser.role,
         project,
@@ -694,23 +617,40 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         salesAgentName: payload.salesAgentName,
         clauses: payload.clauses,
         notes: payload.notes,
-        existingContracts: data.hrContracts || [],
+        existingContracts: (data.hrContracts || []).filter(c => c.status !== "draft" && c.id !== draft?.id),
         issuedBy: `${activeUser.name} (HR Manager)`,
         now: iso(0),
       });
       const created: HrContract = {
         ...snapshot,
-        id: ++next,
+        installments: snapshot.installments.map(i => ({...i, status: i.status as HrContract["installments"][number]["status"]})),
+        status: payload.draft ? "draft" : "issued",
+        verificationToken: Array.from(crypto.getRandomValues(new Uint8Array(32)), n => n.toString(16).padStart(2, "0")).join(""),
+        id: draft?.id || ++next,
+        version: (draft?.version || 0) + 1,
+        issuedAt: payload.draft ? null : iso(0),
       };
-      if (apartment) apartment.status = "sold";
-      data.hrContracts = [created, ...(data.hrContracts || [])];
+      if (payload.draft) created.verificationToken = undefined;
+      if (apartment && !payload.draft) apartment.status = "sold";
+      data.hrContracts = [created, ...(data.hrContracts || []).filter(c => c.id !== created.id)];
       return created;
+    },
+    async amendContract(id: number, body: ContractAmendInput) {
+      if (activeUser.role !== "hr_manager") throw new Error("Only HR Manager can amend agreements.");
+      const contract = data.hrContracts?.find(c => c.id === id);
+      if (!contract || !["issued", "amended"].includes(contract.status) || contract.version !== body.version) throw new Error("Contract changed. Refresh and try again.");
+      if (!body.reason.trim()) throw new Error("Amendment reason is required.");
+      contractAmendmentHistory.set(id, [...(contractAmendmentHistory.get(id) || []), structuredClone(contract)]);
+      Object.assign(contract, {clauses: [...body.clauses], notes: body.notes, status: "amended", amendmentVersion: contract.amendmentVersion + 1, version: contract.version + 1});
+      return contract;
     },
     async manageDeposit(payload: {
       action: "draft" | "approve" | "return" | "reverse";
       contractId: number;
       installmentId: number;
       depositId?: number;
+      version?: number;
+      paymentDate?: string;
       amount?: number;
       paymentMethod?: "Cash" | "Bank Transfer" | "Cheque";
       receiptNumber?: string;
@@ -740,6 +680,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
             paymentMethod: payload.paymentMethod || "Cash",
             receiptNumber: payload.receiptNumber || `RCP-${next}`,
             notes: payload.notes || "",
+            paymentDate: payload.paymentDate || iso(0).slice(0,10),
             enteredBy: activeUser.name,
             approvedBy: null,
           },
@@ -757,6 +698,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         (d) => d.id === Number(payload.depositId),
       );
       if (!existingDep) throw new Error("Deposit record not found.");
+      if (existingDep.version !== payload.version) throw new Error("Deposit changed. Refresh and try again.");
       const res = processFinanceDeposit({
         action: payload.action,
         actorRole: activeUser.role,
@@ -767,6 +709,10 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       });
       Object.assign(existingDep, res.deposit, { approvedBy: activeUser.name });
       Object.assign(installment, res.installment);
+      if (payload.action === "approve") {
+        existingDep.receiptPaidToDate = contract.installments.reduce((sum, i) => sum + i.paidAmount, 0);
+        existingDep.receiptRemainingBalance = Math.max(0, contract.totalPrice - existingDep.receiptPaidToDate);
+      }
       return existingDep;
     },
     async createMarketingEntry(payload: {
@@ -789,7 +735,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         filmingCompletedAt: null,
         editingDeadlineAt: null,
         editorId: 7,
-        editorName: "Ramin Safi",
+        editorName: "Fictional Editor",
         contentType: null,
         serialNumber: null,
         propertyInfoNote: null,
@@ -810,10 +756,11 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         | "schedule_editing"
         | "ready_for_post"
         | "mark_posted",
-      payload: Record<string, any>,
+      payload: Record<string, unknown>,
     ) {
       const entry = data.marketingEntries?.find((m) => m.id === entryId);
       if (!entry) throw new Error("Marketing entry not found.");
+      if (entry.version !== payload.version) throw new Error("Entry changed. Refresh and try again.");
       const res = advanceMarketingProduction(entry, action, payload, activeUser.role);
       if (action === "mark_posted" && "submission" in res) {
         const subId = ++next;
@@ -828,7 +775,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       }
       if (action === "schedule_filming") {
         const vidUser = data.assignees.find((u) => u.id === Number(payload.videographerId));
-        Object.assign(entry, res, { videographerName: vidUser?.name || "Jawad Noori" });
+        Object.assign(entry, res, { videographerName: vidUser?.name || "Fictional Videographer" });
       } else {
         Object.assign(entry, res);
       }
@@ -836,10 +783,11 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
     },
     async uploadDeliverableVersion(
       deliverableId: number,
-      payload: { fileUrl: string; fileName: string; format: string; notes: string },
+      payload: { fileUrl: string; fileName: string; format: string; notes: string; version: number },
     ) {
       const deliv = data.engineeringDeliverables?.find((d) => d.id === deliverableId);
       if (!deliv) throw new Error("Deliverable task not found.");
+      if (deliv.version !== payload.version) throw new Error("Deliverable changed. Refresh and try again.");
       const updated = submitDeliverableVersion(deliv, {
         actorRole: activeUser.role,
         actorName: activeUser.name,
@@ -852,13 +800,15 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
     async reviewDeliverable(
       deliverableId: number,
       payload: {
-        versionNumber: number;
+        version: number;
+      versionNumber: number;
         decision: "approved" | "revision_requested";
         comment: string;
       },
     ) {
       const deliv = data.engineeringDeliverables?.find((d) => d.id === deliverableId);
       if (!deliv) throw new Error("Deliverable task not found.");
+      if (deliv.version !== payload.version) throw new Error("Deliverable changed. Refresh and try again.");
       const updated = reviewDeliverableVersion(deliv, {
         actorRole: activeUser.role,
         reviewerName: activeUser.name,

@@ -1,4 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
+import { reconcileInstallments } from '../../../../packages/staff-contracts/workflow.mjs';
+import { agreementVerificationUrl } from '../../../../packages/staff-contracts/documents.mjs';
+import { HrProjectPreparation, type PreparationPayload } from './HrProjectPreparation';
+import { StaffPhotoUpload, type UploadStaffFile } from './StaffPhotoUpload';
+import './staff-documents.css';
 import type {
   ContractBuyer,
   HrContract,
@@ -12,6 +18,10 @@ export interface HrContractsWorkspaceProps {
   projects: InventoryProject[];
   closedDeals: Lead[];
   actorRole: Role;
+  lang?: 'en' | 'fa';
+  onUpload?: UploadStaffFile;
+  onSavePreparation?: (projectId: number, payload: PreparationPayload) => Promise<unknown>;
+  onAmendContract?: (id: number, payload: { version: number; clauses: string[]; notes: string; reason: string }) => Promise<HrContract>;
   onIssueContract: (payload: {
     projectId: number;
     apartmentId: number;
@@ -20,6 +30,9 @@ export interface HrContractsWorkspaceProps {
     salesAgentName: string;
     clauses: string[];
     notes: string;
+    draft?: boolean;
+    contractId?: number;
+    version?: number;
   }) => Promise<HrContract>;
   onNotice: (msg: string) => void;
   onError: (err: string) => void;
@@ -30,11 +43,23 @@ export function HrContractsWorkspace({
   projects,
   closedDeals,
   actorRole,
+  lang = 'en',
+  onUpload,
+  onSavePreparation,
+  onAmendContract,
   onIssueContract,
   onNotice,
   onError,
 }: HrContractsWorkspaceProps) {
   const canIssue = actorRole === 'hr_manager';
+  const t = (en: string, fa: string) => lang === 'fa' ? fa : en;
+  const [busy, setBusy] = useState(false);
+  const [qrImage, setQrImage] = useState('');
+  const [qrError, setQrError] = useState('');
+  const [draftContract, setDraftContract] = useState<{id:number;version:number}|null>(null);
+  const [amendmentReason, setAmendmentReason] = useState('');
+  const [amendmentNotes, setAmendmentNotes] = useState('');
+  const [amendmentClauses, setAmendmentClauses] = useState('');
   const [showWizard, setShowWizard] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedContract, setSelectedContract] = useState<HrContract | null>(
@@ -45,7 +70,7 @@ export function HrContractsWorkspace({
   const [projectId, setProjectId] = useState<number>(projects[0]?.id || 1);
   const selectedProject = projects.find((p) => p.id === projectId) || projects[0];
   const eligibleApartments =
-    selectedProject?.apartments.filter((a) => a.status !== 'sold') || [];
+    selectedProject?.apartments.filter((a) => a.status !== 'sold' && (!a.kind || a.kind === 'apartment')) || [];
   const [apartmentId, setApartmentId] = useState<number>(
     eligibleApartments[0]?.id || selectedProject?.apartments[1]?.id || 1
   );
@@ -54,36 +79,41 @@ export function HrContractsWorkspace({
     eligibleApartments[0] ||
     selectedProject?.apartments[0];
 
-  const [salesAgentName, setSalesAgentName] = useState('Sara Karimi');
+  const [salesAgentName, setSalesAgentName] = useState('');
   const [buyers, setBuyers] = useState<ContractBuyer[]>([
     {
-      name: 'Zahra Azizi',
-      fatherName: 'Mohammad Kabir',
-      grandfatherName: 'Haji Aziz',
-      tazkiraNumber: '1401-05-88210',
-      phone: '+93700334455',
-      address: 'Shahr-e-Naw, District 10, Kabul',
-      photo3x4Url: '/logo.png',
-      tazkiraPhotoUrl: '/logo.png',
+      name: '',
+      fatherName: '',
+      grandfatherName: '',
+      tazkiraNumber: '',
+      phone: '',
+      address: '',
+      photo3x4Url: '',
+      tazkiraPhotoUrl: '',
     },
   ]);
 
   const [installments, setInstallments] = useState<
     Array<{ description: string; percentage: number; dueDate: string | null }>
   >([
-    { description: '30% Signing Downpayment', percentage: 30, dueDate: '2026-11-15' },
-    { description: '35% Frame Completion Milestone', percentage: 35, dueDate: '2027-03-15' },
-    { description: '35% Key Handover Balance', percentage: 35, dueDate: '2027-07-15' },
+    { description: '', percentage: 100, dueDate: null },
   ]);
 
-  const [clauses, setClauses] = useState<string[]>([
-    'The Seller and Construction Company guarantee clear legal title and timely construction delivery of the specified apartment unit.',
-    'The Buyer agrees to pay each scheduled installment to Attaie Properties Finance Department according to the agreed dates.',
-    'Any transfer or resale prior to full settlement requires written clearance from Attaie Properties HR & Finance Departments.',
-  ]);
-  const [notes, setNotes] = useState(
-    'Verified against buyer original Tazkira and Sales Deal Closed handoff.'
-  );
+  const [clauses, setClauses] = useState<string[]>([]);
+  const [notes, setNotes] = useState('');
+  useEffect(() => {
+    if (selectedContract) setSelectedContract(contracts.find(c => c.id === selectedContract.id) || selectedContract);
+  }, [contracts]);
+  useEffect(() => {
+    let active = true; setQrImage(''); setQrError('');
+    if (!selectedContract?.verificationToken && !selectedContract?.verificationUrl) return;
+    let url: string;
+    try { url = selectedContract.verificationToken ? agreementVerificationUrl(window.location.origin, selectedContract.verificationToken) : selectedContract.verificationUrl!; }
+    catch { setQrError('Verification link unavailable.'); return; }
+    QRCode.toDataURL(url, { width: 240, margin: 4, errorCorrectionLevel: 'M' }).then(value => { if (active) setQrImage(value); })
+      .catch(() => { if (active) setQrError('Verification QR could not be generated.'); });
+    return () => { active = false; };
+  }, [selectedContract?.id, selectedContract?.verificationToken, selectedContract?.verificationUrl]);
 
   const totalPct = installments.reduce((sum, i) => sum + Number(i.percentage || 0), 0);
 
@@ -94,21 +124,29 @@ export function HrContractsWorkspace({
     setBuyers([
       {
         name: lead.customerName || 'Buyer',
-        fatherName: 'Haji Ahmad',
-        grandfatherName: 'Mohammad',
-        tazkiraNumber: '1401-08-99123',
+        fatherName: '',
+        grandfatherName: '',
+        tazkiraNumber: '',
         phone: lead.phone,
-        address: 'Kabul, Afghanistan',
-        photo3x4Url: lead.deal?.buyerPhotoUrl || '/logo.png',
-        tazkiraPhotoUrl: lead.deal?.tazkiraPhotoUrl || '/logo.png',
+        address: '',
+        photo3x4Url: lead.deal?.buyerPhotoUrl || '',
+        tazkiraPhotoUrl: lead.deal?.tazkiraPhotoUrl || '',
       },
     ]);
     setStep(1);
     setShowWizard(true);
   };
 
-  const handleIssue = async () => {
+  const handleIssue = async (draft = false) => {
+    setBusy(true);
     try {
+      if (!selectedApartment || !selectedProject) throw new Error(t('Select a project and apartment.','پروژه و آپارتمان انتخاب کنید.'));
+      if (!selectedProject.sellers?.length || !selectedProject.constructionCompany?.representativeName)
+        throw new Error(t('Save the sellers and construction representative first.','ابتدا مشخصات فروشندگان و نماینده شرکت را ذخیره کنید.'));
+      if (buyers.some(b => !b.name.trim() || !b.fatherName.trim() || !b.tazkiraNumber.trim() || !b.phone.trim() || !b.address.trim() || !b.photo3x4Url))
+        throw new Error(t('Complete every buyer’s identity, contact, address and portrait.','هویت، تماس، آدرس و عکس هر خریدار را تکمیل کنید.'));
+      if (installments.some(i => !i.description.trim())) throw new Error(t('Describe each installment.','شرح هر قسط را وارد کنید.'));
+      reconcileInstallments(selectedApartment.totalPrice, installments);
       const created = await onIssueContract({
         projectId,
         apartmentId: selectedApartment?.id || apartmentId,
@@ -117,23 +155,26 @@ export function HrContractsWorkspace({
         salesAgentName,
         clauses,
         notes,
+        draft,
+        ...(draftContract ? {contractId:draftContract.id,version:draftContract.version} : {}),
       });
       setSelectedContract(created);
       setShowWizard(false);
       onNotice(
-        `Contract ${created.contractSerial} issued directly by HR Manager and synchronized to Finance installment ledger.`
+        draft ? t('Agreement draft saved.','پیش‌نویس قرارداد ذخیره شد.') : `Contract ${created.contractSerial} issued directly by HR Manager and synchronized to Finance installment ledger.`
       );
     } catch (e) {
       onError((e as Error).message);
-    }
+    } finally { setBusy(false); }
   };
 
   return (
-    <section className="panel" data-testid="hr-contracts-workspace">
+    <section className="panel" data-testid="hr-contracts-workspace" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
+      {canIssue && onSavePreparation && <HrProjectPreparation projects={projects} onSave={onSavePreparation} onUpload={onUpload} onError={onError} onNotice={onNotice} lang={lang} />}
       <div className="panel-heading">
         <div>
           <p className="eyebrow">HR Department • Bilingual Pre-Sale Apartment Contracts</p>
-          <h2>Deal Contracts & Two-Page A4 Legal Printout</h2>
+          <h2>{t('Deal agreements and installments','قرارداد معاملات و اقساط')}</h2>
         </div>
         {canIssue && (
           <div className="heading-actions">
@@ -143,6 +184,7 @@ export function HrContractsWorkspace({
               data-testid="open-hr-contract-wizard-btn"
               onClick={() => {
                 setStep(1);
+                setDraftContract(null);
                 setShowWizard(!showWizard);
               }}
             >
@@ -164,7 +206,7 @@ export function HrContractsWorkspace({
               {closedDeals
                 .map(
                   (d) =>
-                    `${d.deal?.dealSerial || d.serial} • ${d.customerName} (${d.projectName || ''} ${d.apartmentNumber || 'F4-A1'})`
+                    `${d.deal?.dealSerial || d.serial} • ${d.customerName} (${d.projectName || ''} ${d.apartmentNumber || ''})`
                 )
                 .join(' | ')}
             </p>
@@ -208,9 +250,7 @@ export function HrContractsWorkspace({
 
           {step === 1 && (
             <div className="form-grid" data-testid="hr-wizard-step-1">
-              <div className="field">
-                <label>Select Pre-Sale Project (Manager Inventory)</label>
-                <select
+              <label className="field"><span>{t('Select Pre-Sale Project (Manager Inventory)','?????? ????? ??????? ???? ????')}</span><select
                   value={projectId}
                   onChange={(e) => {
                     const nextProjId = Number(e.target.value);
@@ -225,11 +265,8 @@ export function HrContractsWorkspace({
                       {p.code} — {p.name}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Select Apartment Unit</label>
-                <select
+                </select></label>
+              <label className="field"><span>{t('Select Apartment Unit','?????? ????????')}</span><select
                   value={selectedApartment?.id || ''}
                   onChange={(e) => setApartmentId(Number(e.target.value))}
                 >
@@ -238,15 +275,11 @@ export function HrContractsWorkspace({
                       {a.unitNumber} (Floor {a.floor} • {a.areaSqm} m² • ${a.totalPrice.toLocaleString()} • {a.status})
                     </option>
                   ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Closing Sales Agent</label>
-                <input
+                </select></label>
+              <label className="field"><span>{t('Closing Sales Agent','??????? ????')}</span><input
                   value={salesAgentName}
                   onChange={(e) => setSalesAgentName(e.target.value)}
-                />
-              </div>
+                /></label>
 
               {selectedApartment && selectedProject && (
                 <div className="field full" style={{ background: 'var(--surface)', padding: 12, borderRadius: 8 }}>
@@ -285,7 +318,7 @@ export function HrContractsWorkspace({
                         tazkiraNumber: '',
                         phone: '',
                         address: '',
-                        photo3x4Url: '/logo.png',
+                        photo3x4Url: '',
                       },
                     ])
                   }
@@ -295,83 +328,59 @@ export function HrContractsWorkspace({
               </div>
               {buyers.map((b, idx) => (
                 <div key={idx} className="form-grid" style={{ marginBottom: 12 }}>
-                  <div className="field">
-                    <label>Buyer #{idx + 1} Full Name</label>
-                    <input
+                  <label className="field"><span>Buyer #{idx + 1} Full Name</span><input
                       value={b.name}
                       onChange={(e) => {
                         const next = [...buyers];
                         next[idx] = { ...next[idx], name: e.target.value };
                         setBuyers(next);
                       }}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Father Name</label>
-                    <input
+                    /></label>
+                  <label className="field"><span>{t('Father Name','??? ???')}</span><input
                       value={b.fatherName}
                       onChange={(e) => {
                         const next = [...buyers];
                         next[idx] = { ...next[idx], fatherName: e.target.value };
                         setBuyers(next);
                       }}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Grandfather Name</label>
-                    <input
+                    /></label>
+                  <label className="field"><span>{t('Grandfather Name','??? ?? / ????')}</span><input
                       value={b.grandfatherName}
                       onChange={(e) => {
                         const next = [...buyers];
                         next[idx] = { ...next[idx], grandfatherName: e.target.value };
                         setBuyers(next);
                       }}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Tazkira Number</label>
-                    <input
+                    /></label>
+                  <label className="field"><span>{t('Tazkira Number','????? ?????')}</span><input
                       value={b.tazkiraNumber}
                       onChange={(e) => {
                         const next = [...buyers];
                         next[idx] = { ...next[idx], tazkiraNumber: e.target.value };
                         setBuyers(next);
                       }}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Phone Number</label>
-                    <input
+                    /></label>
+                  <label className="field"><span>{t('Phone Number','????? ????')}</span><input
                       value={b.phone}
                       onChange={(e) => {
                         const next = [...buyers];
                         next[idx] = { ...next[idx], phone: e.target.value };
                         setBuyers(next);
                       }}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Residential Address</label>
-                    <input
+                    /></label>
+                  <label className="field"><span>{t('Residential Address','???? ????')}</span><input
                       value={b.address}
                       onChange={(e) => {
                         const next = [...buyers];
                         next[idx] = { ...next[idx], address: e.target.value };
                         setBuyers(next);
                       }}
-                    />
-                  </div>
-                  <div className="field full">
-                    <label>3×4 Portrait Photo URL</label>
-                    <input
-                      value={b.photo3x4Url}
-                      onChange={(e) => {
-                        const next = [...buyers];
-                        next[idx] = { ...next[idx], photo3x4Url: e.target.value };
-                        setBuyers(next);
-                      }}
-                    />
-                  </div>
+                    /></label>
+                  <StaffPhotoUpload label={t('Buyer portrait (3×4)','عکس خریدار (۳×۴)')} value={b.photo3x4Url || ''} purpose="buyer_portrait" lang={lang} onUpload={onUpload}
+                    onChange={url => setBuyers(buyers.map((buyer, i) => i === idx ? {...buyer, photo3x4Url: url} : buyer))} />
+                  <label className="field">{t('Birth date','تاریخ تولد')}<input type="date" value={b.birthDate || ''} onChange={e => setBuyers(buyers.map((buyer,i) => i===idx ? {...buyer,birthDate:e.target.value} : buyer))}/></label>
+                  <label className="field">{t('Permanent residence','سکونت اصلی')}<input value={b.permanentAddress || ''} onChange={e => setBuyers(buyers.map((buyer,i) => i===idx ? {...buyer,permanentAddress:e.target.value} : buyer))}/></label>
+                  {buyers.length > 1 && <button className="button secondary" type="button" onClick={() => setBuyers(buyers.filter((_, i) => i !== idx))}>{t('Remove buyer','حذف خریدار')}</button>}
                 </div>
               ))}
               <div className="modal-actions">
@@ -398,7 +407,7 @@ export function HrContractsWorkspace({
                   onClick={() =>
                     setInstallments((prev) => [
                       ...prev,
-                      { description: `Installment ${prev.length + 1}`, percentage: 10, dueDate: '2027-08-15' },
+                      { description: '', percentage: 0, dueDate: null },
                     ])
                   }
                 >
@@ -406,25 +415,22 @@ export function HrContractsWorkspace({
                 </button>
               </div>
               {installments.map((inst, idx) => {
-                const amt = Math.round(((selectedApartment?.totalPrice || 0) * Number(inst.percentage || 0)) / 100);
+                let amt = Math.round(((selectedApartment?.totalPrice || 0) * Number(inst.percentage || 0))) / 100;
+                try { amt = reconcileInstallments(selectedApartment?.totalPrice || 0, installments)[idx].scheduledAmount; } catch { /* Reconcile again after percentages total 100%. */ }
                 return (
                   <div key={idx} className="form-grid" style={{ marginBottom: 10 }}>
-                    <div className="field">
-                      <label>Milestone Description</label>
-                      <input
+                    <label className="field"><span>{t('Milestone Description','??? ???')}</span><input
                         value={inst.description}
                         onChange={(e) => {
                           const next = [...installments];
                           next[idx] = { ...next[idx], description: e.target.value };
                           setInstallments(next);
                         }}
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Percentage (%) — Scheduled: ${amt.toLocaleString()}</label>
-                      <input
+                      /></label>
+                    <label className="field"><span>Percentage (%) — Scheduled: ${amt.toLocaleString()}</span><input
                         type="number"
-                        min={1}
+                        min={0.01}
+                        step="0.01"
                         max={100}
                         value={inst.percentage}
                         onChange={(e) => {
@@ -432,20 +438,17 @@ export function HrContractsWorkspace({
                           next[idx] = { ...next[idx], percentage: Number(e.target.value) };
                           setInstallments(next);
                         }}
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Due Date</label>
-                      <input
+                      /></label>
+                    <label className="field"><span>{t('Due Date','????? ??????')}</span><input
                         type="date"
                         value={inst.dueDate || ''}
                         onChange={(e) => {
                           const next = [...installments];
-                          next[idx] = { ...next[idx], dueDate: e.target.value };
+                          next[idx] = { ...next[idx], dueDate: e.target.value || null };
                           setInstallments(next);
                         }}
-                      />
-                    </div>
+                      /></label>
+                    {installments.length > 1 && <button className="button secondary" type="button" onClick={() => setInstallments(installments.filter((_, i) => i !== idx))}>{t('Remove installment','حذف قسط')}</button>}
                   </div>
                 );
               })}
@@ -462,7 +465,8 @@ export function HrContractsWorkspace({
 
           {step === 4 && (
             <div data-testid="hr-wizard-step-4">
-              <h3>Review & Issue Bilingual Contract Directly (No Manager Approval Gate)</h3>
+              <h3>{t('Review and issue agreement','بررسی و صدور قرارداد')}</h3>
+              <label className="field">{t('Agreed clauses (one per line)','شرایط توافق‌شده (هر مورد در یک سطر)')}<textarea rows={5} value={clauses.join('\n')} onChange={e => setClauses(e.target.value.split('\n'))}/></label>
               <div className="field full" style={{ marginTop: 10 }}>
                 <label>Contract Notes / Special Conditions</label>
                 <textarea
@@ -479,10 +483,12 @@ export function HrContractsWorkspace({
                   type="button"
                   className="button"
                   data-testid="issue-hr-contract-btn"
-                  onClick={handleIssue}
+                  onClick={() => void handleIssue()}
+                  disabled={busy || totalPct !== 100 || !selectedApartment}
                 >
-                  Issue Contract Directly & Send Schedule to Finance
+                  {busy ? t('Issuing…','در حال صدور…') : t('Issue agreement and send installments to Finance','صدور قرارداد و ارسال اقساط به مالی')}
                 </button>
+                <button type="button" className="button secondary" disabled={busy || totalPct !== 100 || !selectedApartment} onClick={() => void handleIssue(true)}>{t('Save agreement draft','ذخیره پیش‌نویس قرارداد')}</button>
               </div>
             </div>
           )}
@@ -529,6 +535,12 @@ export function HrContractsWorkspace({
                   <span className={`badge ${c.status}`}>{c.status} (v{c.amendmentVersion})</span>
                 </td>
                 <td>
+                  {canIssue && c.status === 'draft' && <button type="button" className="button" onClick={() => {
+                    setProjectId(c.projectId); setApartmentId(c.apartmentId); setBuyers(structuredClone(c.buyers));
+                    setInstallments(c.installments.map(i=>({description:i.description,percentage:i.percentage,dueDate:i.dueDate})));
+                    setClauses([...c.clauses]);setNotes(c.notes);setSalesAgentName(c.salesAgentName);
+                    setDraftContract({id:c.id,version:c.version});setStep(1);setShowWizard(true);
+                  }}>{t('Resume draft','ادامه پیش‌نویس')}</button>}
                   <button
                     type="button"
                     className="button secondary"
@@ -544,8 +556,9 @@ export function HrContractsWorkspace({
       </div>
 
       {/* Two-Page A4 Bilingual Contract Print Sheet */}
-      {selectedContract && (
+      {selectedContract && selectedContract.constructionSnapshot && (
         <div className="contract-print-sheet" data-testid="bilingual-contract-print-sheet">
+          {selectedContract.status === 'draft' && <h2>{t('DRAFT — not issued','پیش‌نویس — صادر نشده')}</h2>}
           <div className="panel-heading no-print" style={{ marginBottom: 14 }}>
             <div>
               <strong>Two-Page A4 Bilingual Deal Contract Preview: {selectedContract.contractSerial}</strong>
@@ -561,15 +574,26 @@ export function HrContractsWorkspace({
               Print A4 Contract
             </button>
           </div>
+          {canIssue && onAmendContract && selectedContract.status !== 'draft' && selectedContract.status !== 'cancelled' && <details className="no-print panel">
+            <summary>{t('Amend agreement terms','اصلاح شرایط قرارداد')}</summary>
+            <p>{t('Party identities and payment schedules remain protected. The prior agreement version is retained.','هویت طرفین و برنامه اقساط محفوظ می‌ماند. نسخه قبلی قرارداد نگهداری می‌شود.')}</p>
+            <form onSubmit={async e => {e.preventDefault();setBusy(true);try{
+              const updated=await onAmendContract(selectedContract.id,{version:selectedContract.version,clauses:amendmentClauses.split('\n').filter(s=>s.trim()),notes:amendmentNotes,reason:amendmentReason});
+              setSelectedContract(updated);setAmendmentReason('');onNotice(t('Agreement amendment saved.','اصلاح قرارداد ذخیره شد.'));
+            }catch(err){onError((err as Error).message);}finally{setBusy(false);}}}>
+              <button type="button" className="button secondary" onClick={()=>{setAmendmentNotes(selectedContract.notes);setAmendmentClauses(selectedContract.clauses.join('\n'));}}>{t('Load current terms','بارگذاری شرایط فعلی')}</button>
+              <label className="field">{t('Replacement clauses','شرایط جایگزین')}<textarea rows={4} value={amendmentClauses} onChange={e=>setAmendmentClauses(e.target.value)}/></label>
+              <label className="field">{t('Replacement notes','یادداشت جایگزین')}<textarea value={amendmentNotes} onChange={e=>setAmendmentNotes(e.target.value)}/></label>
+              <label className="field">{t('Reason for amendment','دلیل اصلاح')}<input required value={amendmentReason} onChange={e=>setAmendmentReason(e.target.value)}/></label>
+              <button className="button" disabled={busy||!amendmentReason.trim()}>{t('Save versioned amendment','ذخیره اصلاح نسخه‌دار')}</button>
+            </form>
+          </details>}
 
           {/* PAGE 1: Parties, Apartment 4 Boundaries, Price & Installment Schedule */}
           <div className="contract-page" data-testid="contract-page-1">
             <div className="contract-header-grid">
               <div className="contract-photo-box">
-                <div>
-                  <strong>Seller / Co.</strong>
-                  <div style={{ fontSize: 10, marginTop: 4 }}>3×4 Official Stamp / Photo</div>
-                </div>
+                {qrImage ? <img data-testid="agreement-verification-qr" src={qrImage} alt={t('Scan to verify this agreement','برای تأیید اصالت قرارداد اسکن کنید')} style={{objectFit:'contain'}}/> : <small role="status">{qrError || t('Verification code unavailable','کد تأیید موجود نیست')}</small>}
               </div>
               <div style={{ textAlign: 'center' }}>
                 <h3 style={{ margin: 0, fontSize: 18 }}>
@@ -638,15 +662,15 @@ export function HrContractsWorkspace({
                   {selectedContract.sellersSnapshot.map((s, i) => (
                     <tr key={`seller-${i}`}>
                       <td><strong>Seller #{i + 1} (فروشنده)</strong></td>
-                      <td>{s.name}</td>
+                      <td>{s.photo3x4Url && <img className="party-portrait" src={s.photo3x4Url} alt={s.name}/>}<strong>{s.name}</strong><small>{s.birthDate}</small></td>
                       <td>{s.fatherName} / {s.grandfatherName}</td>
-                      <td>{s.tazkiraNumber} ({s.sharePercentage}%)</td>
-                      <td>{s.phone} — {s.address}</td>
+                      <td>{s.tazkiraNumber}</td>
+                      <td>{s.permanentAddress}<br/>{s.currentAddress || s.address}</td>
                     </tr>
                   ))}
                   <tr>
                     <td><strong>Construction Co. (شرکت ساختمانی)</strong></td>
-                    <td>{selectedContract.constructionSnapshot.companyName}</td>
+                    <td>{selectedContract.constructionSnapshot.representativePhotoUrl && <img className="party-portrait" src={selectedContract.constructionSnapshot.representativePhotoUrl} alt={selectedContract.constructionSnapshot.representativeName}/>}<strong>{selectedContract.constructionSnapshot.companyName}</strong></td>
                     <td>Rep: {selectedContract.constructionSnapshot.representativeName}</td>
                     <td>License: {selectedContract.constructionSnapshot.licenseNumber}</td>
                     <td>{selectedContract.constructionSnapshot.phone} — {selectedContract.constructionSnapshot.address}</td>
@@ -654,7 +678,7 @@ export function HrContractsWorkspace({
                   {selectedContract.buyers.map((b, i) => (
                     <tr key={`buyer-${i}`}>
                       <td><strong>Buyer #{i + 1} (مشتری / خریدار)</strong></td>
-                      <td>{b.name}</td>
+                      <td>{b.photo3x4Url && <img className="party-portrait" src={b.photo3x4Url} alt={b.name}/>}<strong>{b.name}</strong><small>{b.birthDate}</small></td>
                       <td>{b.fatherName} / {b.grandfatherName}</td>
                       <td>{b.tazkiraNumber}</td>
                       <td>{b.phone} — {b.address}</td>

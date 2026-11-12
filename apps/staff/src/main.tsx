@@ -58,6 +58,7 @@ import { api } from "./api";
 import { AttaieLogoEntrance } from "./components/AttaieLogoEntrance";
 import { ProjectInventoryWizard } from "./components/ProjectInventoryWizard";
 import { HrContractsWorkspace } from "./components/HrContractsWorkspace";
+import { AgreementVerification } from "./components/AgreementVerification";
 import { FinanceWorkspace } from "./components/FinanceWorkspace";
 import {
   MarketingWorkspace,
@@ -107,9 +108,9 @@ const base = isDashboardPath
     : "/callcenter";
 
 const client: Client = isPreview
-  ? ((await import("./preview").then((m) =>
+  ? await import("./preview").then((m) =>
       m.previewClient(management, initialRoleParam || undefined),
-    )) as unknown as Client)
+    )
   : api;
 
 const labels: Record<string, string> = {
@@ -145,7 +146,6 @@ const ROLE_LABELS: Record<string, string> = {
   videographer: "Videographer",
   photographer: "Videographer",
   finance_manager: "Finance Manager",
-  finance_assistant: "Finance Assistant",
   architect: "Architect",
   graphic_designer: "Graphic Designer",
   visual_designer_3d: "3D Visualization Engineer",
@@ -161,7 +161,6 @@ const SWITCHABLE_ROLES: { role: Role; label: string }[] = [
   { role: "videographer", label: "Videographer (Filming Completion)" },
   { role: "editor", label: "Editor (Editing & Mark Posted -> Submissions DB)" },
   { role: "finance_manager", label: "Finance Manager (Approve/Post/Reverse)" },
-  { role: "finance_assistant", label: "Finance Assistant (Draft Deposits)" },
   { role: "architect", label: "Architect (2D Floor Plans)" },
   { role: "graphic_designer", label: "Graphic Designer (Brochures & Print)" },
   { role: "visual_designer_3d", label: "3D Visualization Engineer (3D Renders)" },
@@ -217,7 +216,7 @@ function App() {
   useEffect(() => {
     client
       .session()
-      .then((s) => setSession(s.user ? s : null))
+      .then((s) => setSession(s.user ? {...s, user: s.user} : null))
       .catch((e) => setError(e.message))
       .finally(() => setStarting(false));
     const expire = () => {
@@ -299,7 +298,7 @@ function App() {
       setSession({ ...session, user: updatedUser });
       setNotice(`Switched active workspace role to ${ROLE_LABELS[nextRole] || nextRole}.`);
       const s = await client.session();
-      setSession(s);
+      setSession(s.user ? {...s, user: s.user} : null);
       await refresh();
     }
   };
@@ -354,7 +353,6 @@ function App() {
     "sales",
     "callcenter",
     "finance_manager",
-    "finance_assistant",
     "architect",
     "graphic_designer",
     "visual_designer_3d",
@@ -364,11 +362,9 @@ function App() {
     "manager",
     "ceo",
     "finance_manager",
-    "finance_assistant",
   ].includes(activeRole);
   const hasFinanceAccess = [
     "finance_manager",
-    "finance_assistant",
     "manager",
     "ceo",
   ].includes(activeRole);
@@ -613,6 +609,9 @@ function App() {
         text={t("Try another filter or check back when new work is assigned.")}
       />
     );
+
+  const verificationToken = searchParams.get("verify");
+  if (verificationToken) return <AgreementVerification token={verificationToken} verify={client.verifyContract} lang={language} />;
 
   if (starting)
     return (
@@ -1023,6 +1022,8 @@ function App() {
             <ProjectInventoryWizard
               projects={data?.projects || []}
               staffUsers={data?.assignees || []}
+              language={language}
+              onUpload={client.upload}
               actorRole={activeRole}
               onSaveProject={async (proj) => {
                 await client.saveProject(proj);
@@ -1036,12 +1037,16 @@ function App() {
           {/* Phase 4: HR Deal Contracts & Two-Page A4 Legal Printout */}
           {page === "contracts" && (
             <HrContractsWorkspace
+              lang={language}
+              onUpload={client.upload}
+              onSavePreparation={async (projectId, body) => { const result = await client.saveProjectPreparation(projectId, body); await refresh(); return result; }}
               contracts={data?.hrContracts || []}
               projects={data?.projects || []}
               closedDeals={(data?.leads || []).filter(
                 (l) => l.status === "closed",
               )}
               actorRole={activeRole}
+              onAmendContract={async (id, body) => { const updated = await client.amendContract(id, body); await refresh(); return updated; }}
               onIssueContract={async (payload) => {
                 const created = await client.issueContract(payload);
                 await refresh();
@@ -1055,6 +1060,7 @@ function App() {
           {/* Phase 4: Finance Installment Schedule & Customer Deposits */}
           {page === "finance" && (
             <FinanceWorkspace
+              lang={language}
               contracts={data?.hrContracts || []}
               deposits={data?.financeDeposits || []}
               actorRole={activeRole}
@@ -1070,6 +1076,7 @@ function App() {
           {/* Phase 5: Marketing & Media Production Pipeline */}
           {page === "marketing" && (
             <MarketingWorkspace
+              onUpload={client.upload}
               entries={data?.marketingEntries || []}
               submissions={data?.submissions || []}
               staffUsers={data?.assignees || []}
@@ -1095,6 +1102,7 @@ function App() {
           {/* Phase 6: Engineering Project Tasks & Versioned Deliverables */}
           {page === "deliverables" && (
             <EngineeringWorkspace
+              onUpload={client.upload}
               deliverables={data?.engineeringDeliverables || []}
               actorRole={activeRole}
               onUploadVersion={async (id, payload) => {

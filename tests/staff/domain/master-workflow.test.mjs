@@ -75,6 +75,22 @@ test('Phase 1: UDR-001..003 three-database isolation and Manager authority', () 
   );
 });
 
+test('retired Finance Assistant cannot access databases, receive tasks, or draft deposits', () => {
+  for (const database of ['crm', 'submissions', 'website']) {
+    assert.equal(canAccessDatabase('finance_assistant', database), false);
+  }
+  for (const role of ['manager', 'finance_manager']) {
+    assert.equal(canAssignTask(
+      { id: 1, role },
+      { id: 2, role: 'finance_assistant', active: true }
+    ), false);
+  }
+  assert.throws(() => processFinanceDeposit({
+    action: 'draft', actorRole: 'finance_assistant',
+    deposit: { amount: 100 }, installment: { paidAmount: 0 },
+  }), /Only Finance Manager/);
+});
+
 test('Phase 1 & 3: UDR-004 agent lead privacy and referral sharing', () => {
   const lead = {
     id: 101,
@@ -295,10 +311,10 @@ test('Phase 4: HR contract 100% installment reconciliation, direct issuance, and
   assert.equal(issued.status, 'issued');
   assert.equal(issued.contractSerial, 'CNT-KP12-F4-A1-111126');
 
-  // Finance Assistant can draft a deposit, cannot approve directly
-  const assistantDraft = processFinanceDeposit({
+  // Finance Manager drafts and posts deposits as the only Finance role.
+  const managerDraft = processFinanceDeposit({
     action: 'draft',
-    actorRole: 'finance_assistant',
+    actorRole: 'finance_manager',
     deposit: {
       id: 1,
       contractId: 1,
@@ -310,25 +326,25 @@ test('Phase 4: HR contract 100% installment reconciliation, direct issuance, and
     installment: issued.installments[0],
     now: '2026-11-11T13:00:00Z',
   });
-  assert.equal(assistantDraft.deposit.status, 'draft');
+  assert.equal(managerDraft.deposit.status, 'draft');
 
   assert.throws(
     () =>
       processFinanceDeposit({
         action: 'approve',
         actorRole: 'finance_assistant',
-        deposit: assistantDraft.deposit,
-        installment: assistantDraft.installment,
+        deposit: managerDraft.deposit,
+        installment: managerDraft.installment,
       }),
-    /Only Finance Manager can post, return, or reverse deposits/
+    /Only Finance Manager/
   );
 
   // Finance Manager approves deposit and updates installment balance
   const managerPost = processFinanceDeposit({
     action: 'approve',
     actorRole: 'finance_manager',
-    deposit: assistantDraft.deposit,
-    installment: assistantDraft.installment,
+    deposit: managerDraft.deposit,
+    installment: managerDraft.installment,
     now: '2026-11-11T14:00:00Z',
   });
   assert.equal(managerPost.deposit.status, 'posted');

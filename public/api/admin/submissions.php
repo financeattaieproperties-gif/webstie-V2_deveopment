@@ -14,10 +14,11 @@ require_admin();
 function submission_db(): mysqli {
     static $subConn = null;
     if ($subConn !== null) return $subConn;
-    $host = getenv('SUBMISSION_DB_HOST') ?: (defined('SUBMISSION_DB_HOST') ? SUBMISSION_DB_HOST : DB_HOST);
-    $user = getenv('SUBMISSION_DB_USER') ?: (defined('SUBMISSION_DB_USER') ? SUBMISSION_DB_USER : DB_USER);
-    $pass = getenv('SUBMISSION_DB_PASS') ?: (defined('SUBMISSION_DB_PASS') ? SUBMISSION_DB_PASS : DB_PASS);
-    $name = getenv('SUBMISSION_DB_NAME') ?: (defined('SUBMISSION_DB_NAME') ? SUBMISSION_DB_NAME : DB_NAME);
+    $host = getenv('SUBMISSION_DB_HOST') ?: (defined('SUBMISSION_DB_HOST') ? SUBMISSION_DB_HOST : '');
+    $user = getenv('SUBMISSION_DB_USER') ?: (defined('SUBMISSION_DB_USER') ? SUBMISSION_DB_USER : '');
+    $pass = getenv('SUBMISSION_DB_PASS') ?: (defined('SUBMISSION_DB_PASS') ? SUBMISSION_DB_PASS : '');
+    $name = getenv('SUBMISSION_DB_NAME') ?: (defined('SUBMISSION_DB_NAME') ? SUBMISSION_DB_NAME : '');
+    if ($host === '' || $user === '' || $name === '' || $name === DB_NAME) json_out(['error'=>'Separate Submission database configuration is required'],503);
     $subConn = new mysqli($host, $user, $pass, $name);
     if ($subConn->connect_error) {
         json_out(['error' => 'Submission database connection failed'], 500);
@@ -46,6 +47,16 @@ if ($method === 'GET') {
             $photos[] = $p['photo_url'];
         }
         $items[] = [
+            'property_serial' => $row['serial_number'],
+            'customer_name' => $row['customer_name'],
+            'property_type' => $row['property_type'],
+            'property_info_note' => $row['property_info_note'],
+            'social_platform' => $row['social_platform'],
+            'submission_status' => $row['publish_status'],
+            'submitted_by' => $row['submitted_by_name'],
+            'created_at' => $row['submitted_at'],
+            'rejected_reason' => $row['rejection_reason'],
+            'website_property_id' => $row['website_property_id'] !== null ? (int)$row['website_property_id'] : null,
             'id' => $postId,
             'marketingEntryId' => (int) $row['marketing_entry_id'],
             'serialNumber' => $row['serial_number'],
@@ -77,7 +88,8 @@ if ($method === 'PUT' || $method === 'POST') {
     }
 
     $sdb = submission_db();
-    $stmt = $sdb->prepare('SELECT * FROM sub_posts WHERE id = ?');
+    $sdb->begin_transaction();
+    $stmt = $sdb->prepare('SELECT * FROM sub_posts WHERE id = ? FOR UPDATE');
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $current = $stmt->get_result()->fetch_assoc();
@@ -86,6 +98,9 @@ if ($method === 'PUT' || $method === 'POST') {
     }
 
     $prevStatus = $current['publish_status'];
+    if (!isset($b['version']) || (int)$b['version'] !== (int)$current['version']) {
+        $sdb->rollback(); json_out(['error'=>'Submission changed. Refresh before updating.'],409);
+    }
 
     if ($action === 'approve') {
         if ($prevStatus !== 'Submitted') {
@@ -110,7 +125,29 @@ if ($method === 'PUT' || $method === 'POST') {
             json_out(['error' => 'Submission must be Approved before publishing to website'], 409);
         }
         $nextStatus = 'Published';
-        $websitePropId = !empty($b['websitePropertyId']) ? intval($b['websitePropertyId']) : null;
+        $website=db();
+        $website->begin_transaction();
+        try {
+            $existing=$website->prepare('SELECT property_id FROM website_submission_publications WHERE submission_id=? FOR UPDATE');
+            if (!$existing) throw new RuntimeException('Publishing migration is required.');
+            $existing->bind_param('i',$id);$existing->execute();$mapping=$existing->get_result()->fetch_assoc();
+            if ($mapping) $websitePropId=(int)$mapping['property_id'];
+            else {
+                $price=$b['price']??null; $listing=$b['listing_type']??'';
+                if (!is_numeric($price)||(float)$price<=0||!in_array($listing,['sale','rent'],true)) { $website->rollback();$sdb->rollback();json_out(['error'=>'Enter verified price and listing type.'],422); }
+                $price=(float)$price;$serial=$current['serial_number'];$title=$serial.' - '.$current['property_type'];$location=$current['address'];$description=$current['property_info_note'];
+                $type=match($current['property_type']){'Apartment'=>'Apartment','Villa'=>'Villa',default=>'Commercial'}; $status='available';
+                $photoStmt=$sdb->prepare('SELECT photo_url FROM sub_post_photos WHERE sub_post_id=? ORDER BY sort_order');$photoStmt->bind_param('i',$id);$photoStmt->execute();$photos=array_column($photoStmt->get_result()->fetch_all(MYSQLI_ASSOC),'photo_url');
+                if (count($photos)!==5) throw new RuntimeException('Submission requires five photos.');
+                $image=$photos[0];$gallery=json_encode($photos);
+                $insert=$website->prepare('INSERT INTO properties(serial_number,title,price,location,status,type,listing_type,image_url,description,gallery_images) VALUES (?,?,?,?,?,?,?,?,?,?)');
+                $insert->bind_param('ssdsssssss',$serial,$title,$price,$location,$status,$type,$listing,$image,$description,$gallery);
+                if (!$insert->execute()) throw new RuntimeException('Property serial conflicts or insertion failed.');
+                $websitePropId=(int)$website->insert_id;
+                $link=$website->prepare('INSERT INTO website_submission_publications(submission_id,property_id) VALUES (?,?)');$link->bind_param('ii',$id,$websitePropId);if (!$link->execute()) throw new RuntimeException('Publishing mapping failed.');
+            }
+            $website->commit();
+        } catch (Throwable $e) { $website->rollback();$sdb->rollback();json_out(['error'=>'Publishing was not confirmed. Check migrations and retry.'],503); }
         $upd = $sdb->prepare("UPDATE sub_posts SET publish_status = 'Published', published_at = UTC_TIMESTAMP(), website_property_id = ?, version = version + 1 WHERE id = ?");
         $upd->bind_param('ii', $websitePropId, $id);
         $upd->execute();
@@ -120,6 +157,8 @@ if ($method === 'PUT' || $method === 'POST') {
     $note = trim((string) ($b['reason'] ?? $b['note'] ?? ''));
     $evt->bind_param('isss', $id, $prevStatus, $nextStatus, $note);
     $evt->execute();
+    $sdb->commit();
+    if ($action==='publish') @build_and_save_sitemap();
 
-    json_out(['success' => true, 'id' => $id, 'publishStatus' => $nextStatus]);
+    json_out(['success' => true, 'ok'=>true,'id' => $id, 'publishStatus' => $nextStatus,'submission_status'=>$nextStatus,'website_property_id'=>$websitePropId??null]);
 }

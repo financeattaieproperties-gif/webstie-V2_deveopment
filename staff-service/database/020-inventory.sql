@@ -92,5 +92,5 @@ INSERT INTO core_role_permissions VALUES
   ('branch_manager','inventory.read'),('branch_manager','inventory.manage'),
   ('hr_manager','inventory.read'),
   ('sales_leader','inventory.read'),('sales','inventory.read'),('callcenter','inventory.read'),
-  ('finance_manager','inventory.read'),('finance_assistant','inventory.read'),
+  ('finance_manager','inventory.read'),
   ('architect','inventory.read'),('graphic_designer','inventory.read'),('visual_designer_3d','inventory.read');

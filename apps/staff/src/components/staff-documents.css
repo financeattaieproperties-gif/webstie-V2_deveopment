@@ -1,0 +1,22 @@
+.party-portrait { display:block; width:45px; height:60px; object-fit:cover; margin-block:4px; border-radius:3px; }
+[data-testid="hr-project-preparation"] summary { cursor:pointer; min-height:44px; padding-block:10px; }
+[data-testid="hr-project-preparation"] fieldset { min-width:0; border:1px solid var(--line); border-radius:10px; padding:14px; margin-block:14px; }
+.finance-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-block:16px; }
+.finance-summary article { background:var(--surface,#f0fdfa); border:1px solid var(--line); border-radius:12px; padding:16px; min-width:0; }
+.finance-summary article strong { display:block; font-size:1.4rem; overflow-wrap:anywhere; }
+.receipt-sheet { background:white; color:#112f2d; border:1px solid var(--line); padding:24px; max-width:640px; margin-inline:auto; }
+.receipt-sheet dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+.receipt-sheet dd { margin:0; overflow-wrap:anywhere; }
+.finance-progress { width:100%; accent-color:#0b3d3b; }
+@media(max-width:600px) { .finance-summary { grid-template-columns:1fr; } .contract-header-grid { grid-template-columns:1fr!important; } .contract-page { max-width:100%; box-sizing:border-box; } }
+@media print {
+  .staff-print-root, .receipt-sheet { overflow:visible!important; }
+  body:has(.receipt-sheet) * { visibility:hidden; }
+  body:has(.receipt-sheet) .receipt-sheet, body:has(.receipt-sheet) .receipt-sheet * { visibility:visible; }
+  body:has(.receipt-sheet) .receipt-sheet { position:absolute; inset:0 auto auto 0; border:0; width:100%; }
+  .no-print { display:none!important; }
+  .contract-page { break-inside:avoid; width:100%!important; max-width:none!important; }
+  .contract-print-sheet .table-scroll { overflow:visible!important; }
+  .contract-print-sheet table { min-width:0!important; table-layout:fixed; width:100%; }
+  .contract-print-sheet th, .contract-print-sheet td { overflow-wrap:anywhere; font-size:9pt; }
+}

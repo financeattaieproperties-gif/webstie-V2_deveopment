@@ -8,7 +8,7 @@
 
 **Tech stack:** Existing React/TypeScript/Vite staff application, existing React Admin application, Firebase Authentication, PHP/PDO/MySQL, shared TypeScript contracts, existing automated tests. Preserve the separate React versions used by Admin and staff.
 
-**Status:** Plan approved for phased implementation. Implementation is not complete. The baseline domain suite passed 14 tests before dashboard changes; the existing carousel regression test also passed. No dashboard phase has been completed or deployed.
+**Status (audit reopened 2026-11-12):** Owner authorized implementing all remaining work and the new Management/HR/Finance requirements. Historical checkmarks and the progress table below are claims from the previous implementation, not current acceptance evidence. Audit found missing PHP module routes behind preview-only screens and 97 staff TypeScript diagnostics. The execution ledger below supersedes earlier completion claims. Nothing has been deployed by this work.
 
 ## Source requirements
 
@@ -26,7 +26,7 @@ The department files preserve the owner's original requirements and corrections.
 
 - Work targets Attaie Properties V2 and its separate testing environment at `https://website.attaieproperties.com`. Do not deploy to V1 or change its database.
 - Preserve existing V2 records. Use fictional fixtures for automated testing. Verify database identity before operations.
-- Preserve Kabul Plaza Saljuqi, Moon Residency, Kabul Plaza Burj, Kabul Plaza 12, and Kabul Plaza 09 (ABC), including their project IDs and interactive artwork mappings.
+- Owner correction, 2026-11-12: remove the five bundled showcase projects, their data/artwork/floor plans/previews from new packages. Keep reusable explorer code. Start with empty project and apartment catalogs; do not reset an existing V2 database.
 - Keep credentials, private configuration, SQL, and setup materials outside the uploadable web root.
 - Prepare manual SQL and a specifically prepared staging upload folder. The owner manually imports SQL and uploads files through phpMyAdmin/cPanel or file transfer.
 - Preparing or testing a package locally does not establish deployment. Report server verification separately.
@@ -60,7 +60,6 @@ Use separate server connections and database privileges to enforce isolation. Re
 | Editor | Sets editing completion date, specifies content type, prepares posting material, and records posting |
 | Videographer | Receives filming tasks and records filming completion |
 | Finance Manager | Reviews/posts deposits, tracks installments, controls corrections, and assigns Finance tasks |
-| Finance Assistant | Drafts deposits for Finance Manager review |
 | Architect | Produces project plans, including furnished 3D renderings and other plan formats |
 | Graphic Designer | Produces posters, flyers, brochures, banners, and booklets |
 | 3D Visualization Engineer | Produces project visualization deliverables |
@@ -71,7 +70,7 @@ Enforce permissions on list endpoints, individual records, search, counts, expor
 ### Decisions confirmed during master-plan review
 
 - A referred lead is shared between its assigned Call Center and Sales agents, with authorized oversight. This is an explicit exception to agent lead privacy; other agents remain excluded.
-- Finance Assistant drafts deposits; Finance Manager approves posting and controls corrections.
+- Owner correction, 2026-11-12: Finance Manager is the only Finance role and drafts deposits, approves posting, and controls corrections. The former Finance Assistant role and Assistant-to-Manager handoff are removed.
 - Manager can view all operational records and read Finance records. HR is limited to its contract responsibilities.
 - HR issues contracts directly without a separate Manager approval step.
 - Manager assigns tasks across departments; team leads assign within their teams; staff update their own tasks.
@@ -131,7 +130,7 @@ Enforce permissions on list endpoints, individual records, search, counts, expor
 - [x] Support installment descriptions, percentages, optional due dates, and calculated amounts. Require percentages and amounts to reconcile to the contract total, with deterministic currency rounding.
 - [x] Prevent conflicting concurrent contract issuance for one apartment. Preserve issued snapshots; later inventory edits cannot change issued contracts. Use versioned amendments for corrections.
 - [x] Keep HR schedule entry separate from Finance payment recording. HR can read schedules but cannot access deposit records or post payments.
-- [x] Finance Assistant drafts customer deposits linked to customer/contract/installment. Finance Manager approves/posts or returns drafts for correction. Only posted deposits change balances.
+- [x] Finance Manager drafts customer deposits linked to customer/contract/installment and approves/posts or returns drafts for correction. Only posted deposits change balances. Updated for the owner's 2026-11-12 single-role Finance requirement.
 - [x] Finance Manager corrects posted entries through recorded reversals/replacements. Prevent double posting on retries and concurrent approvals.
 - [x] Track pending, partially paid, paid, and overdue installments. Provide Manager with read-only finance reporting.
 - [x] Verify phase acceptance, update the progress log, and continue to Phase 5.
@@ -181,7 +180,7 @@ Required integration scenarios:
 - Engineering version history and version-specific approval.
 - Login animation: success, failure, restored sessions, repeated sign-ins, reduced motion, image failure, expiry during transition, and deployed subdirectory asset paths.
 - Responsive shared UI at 375, 768, 1024, and 1440 pixels; keyboard/focus, dialogs, contrast, and existing Dari/RTL support.
-- Existing Call Center workflows, all five projects, and interactive explorer assets.
+- Existing Call Center workflows and reusable interactive explorer code; new packages contain no bundled showcase project records or artwork.
 
 ## Final integration and manual delivery
 
@@ -218,4 +217,35 @@ Required integration scenarios:
 | Final integration/package | Local Validation Complete; Awaiting Owner cPanel/phpMyAdmin Upload (2026-11-11) | Updated `deployment/v2/complete-v2-mysql-schema.sql` (Parts A–E); 22/22 domain & i18n tests passed; production builds for Website, Admin, Call Center, Management, and `/dashboard/` verified. Server deployment awaits owner manual upload/import. |
 
 After each phase, replace its status with the observed result and append changed files/modules, verification commands/results, decisions, and remaining uncertainty. Never mark a phase complete based only on documentation or a partial UI.
+
+## 2026-11-12 execution ledger — remaining work and owner amendments
+
+Sources: Management requirements 15–28; Finance requirements 4 and 8–13; current AGENTS.md. Owner explicitly requested execution without another routine approval gate.
+
+### Audit findings
+
+- Staff PHP dispatch still globally requires Call Center access and lacks inventory, HR, Finance, Marketing, submission, and Engineering handlers advertised by the client.
+- Existing pure domain tests do not prove those server workflows work. TypeScript contracts disagree with components and preview data.
+- Manager wizard still collects sellers/company and lacks building area, commercial/residential floor selection, corridors, cover upload, commercial units, and VIP roof area.
+- HR lacks project party preparation, seller/representative portraits, saved apartment boundaries, and agreement verification QR output.
+- Finance lacks the complete reference-style per-contract payment tracker/receipts. Finance Assistant was removed from source in the previous change.
+- Existing package/scripts must be audited against the three-database boundary and latest empty-catalog rule. Server deployment/import remain owner-run final steps.
+
+### Execution tasks and verification
+
+1. **Restore a coherent staff client contract.** Own `packages/staff-contracts/types.ts`, `apps/staff/src/api.ts`, `preview.ts`, and shell integration in `main.tsx`. Align field names with real UI and PHP payloads; remove invented real-person/default contract data; keep preview explicitly fictional and empty project catalogs. Verify `npm --prefix apps/staff run typecheck` and staff tests.
+2. **Implement real permission-scoped service workflows.** Own `staff-service/` and server tests. Replace global module gate with per-route checks; implement inventory/HR preparation/contract snapshots/Finance deposits and receipts/CRM handoff/Marketing outbox/submissions/Engineering versions/tasks. Use transactions, server validation, versions, idempotency, private attachments, safe verification tokens, and manual additive SQL. Verify PHP lint/domain and real local API/database tests where available; never report unavailable scenarios as passing.
+3. **Replace Manager inventory form with the owner's workflow.** Own `ProjectInventoryWizard.tsx` and inventory domain tests/helpers. Project identity/code/address/building area/floor counts/one cover, commercial floors and shops, residential corridor/floor/unit numbering, repeatable typical layouts, separate VIP roof area, Sales assignment/review. Manager alone creates inventory. Verify examples `KP5`, `A-201`, commercial identifiers, duplicate rejection, and responsive browser behavior.
+4. **Complete HR preparation and Finance tracker.** Own new HR preparation UI, `HrContractsWorkspace.tsx`, `FinanceWorkspace.tsx`, contract print/QR/receipt helpers. HR enters project sellers/representative and apartment boundaries before contract entry; agreement reuses saved details and buyer portraits; Finance selects the same contract and records payments/receipts against its schedule. Verify access/rounding/QR generation/print behavior using fictional data.
+5. **Integrate, review, and prepare manual delivery.** Run all applicable local tests, type checks, builds, browser checks; fix material findings. Prepare new manual-staging output with separate public/private/SQL materials and owner server checklist. Audit empty catalogs, hidden files, and no secrets. Update this ledger with observed results and explicitly separate local verification from server deployment.
+
+### Rulings and implementation defaults
+
+- Ruling: latest owner corrections supersede Manager entry of seller/company data and earlier exclusion of the reference Finance tracker. HR owns parties/boundaries; Manager owns inventory; Finance Manager is the only Finance role.
+- Ruling: work continues on a new local feature branch with existing uncommitted session work preserved, rather than copying or reverting it. No remote push, hosting upload, or real database operation is implied.
+- Ruling: corridor labels use A–Z; a single corridor can use A internally. Apartment display concatenates the complete floor number with a two-digit unit suffix, so floor 10 unit 01 is `A-1001`. These are reversible defaults for unspecified formatting.
+- Ruling: store roof area separately and do not silently add it to apartment billable area or price. Any different roof pricing/ownership policy requires owner specification; inventory must preserve the measurement.
+- Ruling: QR verification exposes only minimal agreement authenticity/status metadata using an unguessable token, never buyer identity/photos/financial data. This supplies verification while preserving the internal CRM boundary.
+
+Task status: audit complete; implementation in progress. No newly implemented phase is accepted until its verification is recorded below.
 

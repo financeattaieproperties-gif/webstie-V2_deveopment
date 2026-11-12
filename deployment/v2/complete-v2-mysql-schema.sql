@@ -517,7 +517,6 @@ INSERT IGNORE INTO core_roles VALUES
   ('branch_manager','branches','Manager'),
   ('assistant_manager','branches','Assistant Manager'),
   ('finance_manager','finance','Finance Manager'),
-  ('finance_assistant','finance','Finance Assistant'),
   ('architect','engineering','Architect'),
   ('graphic_designer','engineering','Graphic Designer'),
   ('visual_designer_3d','engineering','3D Visual Designer'),

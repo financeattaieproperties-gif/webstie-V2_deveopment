@@ -155,6 +155,7 @@ export const api = {
   getSubmissions: () => request<SubmissionPost[]>('/admin/submissions.php'),
   updateSubmissionStatus: (payload: {
     id: number;
+    version: number;
     action: 'approve' | 'publish' | 'reject';
     price?: number;
     listing_type?: 'sale' | 'rent';
@@ -1094,11 +1095,12 @@ export interface ChatConversation {
 
 export interface SubmissionPost {
   id: number;
+  version: number;
   marketing_entry_id?: number;
   property_serial: string;
   customer_name: string;
   address: string;
-  property_type: 'House' | 'Apartment' | 'Shop' | 'Villa' | 'Commercial' | 'Land';
+  property_type: 'House' | 'Apartment' | 'Shop' | 'Villa' | 'Commercial' | 'Land' | 'Block' | 'Building';
   property_info_note: string;
   photos: string[];
   social_platform: string;

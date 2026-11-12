@@ -169,7 +169,6 @@ const INTERNAL_CRM_ROLES = new Set([
   "videographer",
   "photographer",
   "finance_manager",
-  "finance_assistant",
   "architect",
   "graphic_designer",
   "visual_designer_3d",
@@ -207,7 +206,6 @@ export function canAccessDatabase(role, database) {
         "ceo",
         "branch_manager",
         "finance_manager",
-        "finance_assistant",
         "sales_leader",
         "sales",
         "callcenter",
@@ -226,6 +224,7 @@ export function canManageDepartmentsAndUsers(role) {
 
 export function canAssignTask(actor, targetUser) {
   if (!actor || !targetUser || !targetUser.active) return false;
+  if (!INTERNAL_CRM_ROLES.has(actor.role) || !INTERNAL_CRM_ROLES.has(targetUser.role)) return false;
   if (actor.role === "admin" || targetUser.role === "admin") return false;
   if (isManagerRole(actor.role)) return true;
   if (actor.role === "sales_leader") {
@@ -247,7 +246,7 @@ export function canAssignTask(actor, targetUser) {
     ].includes(targetUser.role);
   }
   if (actor.role === "finance_manager") {
-    return ["finance_assistant", "finance_manager"].includes(targetUser.role);
+    return targetUser.role === "finance_manager";
   }
   return false;
 }
@@ -532,6 +531,7 @@ export function reconcileInstallments(totalPrice, rawInstallments) {
   });
 }
 
+/** @param {{actorRole: string, project: import("./types").InventoryProject | undefined, apartment: import("./types").InventoryApartment | undefined, buyers: import("./types").ContractBuyer[], installments: import("./types").ContractIssueInput["installments"], salesAgentName: string, clauses?: string[], notes?: string, existingContracts?: Array<{projectId: number, apartmentId: number, status: string, contractSerial: string}>, issuedBy?: string, now?: string}} input */
 export function issueContractSnapshot({
   actorRole,
   project,
@@ -612,8 +612,8 @@ export function processFinanceDeposit({
   reason = "",
   now = new Date().toISOString(),
 }) {
-  if (!["finance_assistant", "finance_manager"].includes(actorRole)) {
-    throw new Error("Only Finance staff can draft or manage customer deposits.");
+  if (actorRole !== "finance_manager") {
+    throw new Error("Only Finance Manager can draft or manage customer deposits.");
   }
   if (action === "draft") {
     if (!(Number(deposit.amount) > 0)) {

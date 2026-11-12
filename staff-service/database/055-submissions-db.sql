@@ -44,3 +44,10 @@ CREATE TABLE sub_publish_events (
   FOREIGN KEY (sub_post_id) REFERENCES sub_posts(id),
   INDEX (sub_post_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Copied marketing images only. No buyer documents or CRM identity data.
+CREATE TABLE sub_post_assets (
+  sub_post_id INT UNSIGNED NOT NULL, sort_order TINYINT UNSIGNED NOT NULL,
+  mime VARCHAR(100) NOT NULL, content LONGBLOB NOT NULL,
+  PRIMARY KEY(sub_post_id,sort_order), FOREIGN KEY(sub_post_id) REFERENCES sub_posts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

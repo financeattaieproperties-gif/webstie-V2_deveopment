@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { readUpload } from './readUpload';
 import type {
   MarketingProductionEntry,
   Role,
@@ -11,6 +12,7 @@ export interface MarketingWorkspaceProps {
   submissions: SubmissionPost[];
   staffUsers: StaffUser[];
   actorRole: Role;
+  onUpload: (dataUrl: string, fileName: string, purpose: string) => Promise<{url: string}>;
   onCreateEntry: (payload: {
     customerName: string;
     address: string;
@@ -24,25 +26,18 @@ export interface MarketingWorkspaceProps {
       | 'schedule_editing'
       | 'ready_for_post'
       | 'mark_posted',
-    payload: Record<string, any>
+    payload: Record<string, unknown>
   ) => Promise<unknown>;
   onNotice: (msg: string) => void;
   onError: (err: string) => void;
 }
-
-const SAMPLE_FIVE_PHOTOS = [
-  'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80',
-];
 
 export function MarketingWorkspace({
   entries,
   submissions,
   staffUsers,
   actorRole,
+  onUpload,
   onCreateEntry,
   onAdvanceEntry,
   onNotice,
@@ -56,14 +51,12 @@ export function MarketingWorkspace({
 
   // Editor "Mark Posted" modal/inline state
   const [postingEntryId, setPostingEntryId] = useState<number | null>(null);
-  const [postSerial, setPostSerial] = useState('AP - 1766');
-  const [postNote, setPostNote] = useState(
-    'Luxury 4-Bedroom Residence in Shahr-e-Naw with elevator, solar backup, and central heating.'
-  );
+  const [postSerial, setPostSerial] = useState('');
+  const [postNote, setPostNote] = useState('');
   const [postPlatform, setPostPlatform] = useState<
     'Facebook' | 'YouTube' | 'Instagram'
   >('Instagram');
-  const [postPhotos, setPostPhotos] = useState<string[]>([...SAMPLE_FIVE_PHOTOS]);
+  const [postPhotos, setPostPhotos] = useState<string[]>([]);
 
   const videographers = staffUsers.filter(
     (u) => u.role === 'videographer' || u.role === 'photographer'
@@ -98,6 +91,7 @@ export function MarketingWorkspace({
   const handleCompletePosted = async (entryId: number) => {
     try {
       await onAdvanceEntry(entryId, 'mark_posted', {
+        version: entries.find(e => e.id === entryId)?.version,
         serialNumber: postSerial,
         propertyInfoNote: postNote,
         photos: postPhotos,
@@ -249,8 +243,9 @@ export function MarketingWorkspace({
                       onClick={async () => {
                         try {
                           await onAdvanceEntry(entry.id, 'schedule_filming', {
-                            filmingDate: '2026-11-15',
-                            videographerId: videographers[0]?.id || 8,
+                            version: entry.version,
+                            filmingDate: window.prompt('Filming date (YYYY-MM-DD)') || '',
+                            videographerId: Number(window.prompt('Videographer staff ID: ' + videographers.map(u => `${u.id}: ${u.name}`).join(', ')) || 0),
                           });
                           onNotice(`Scheduled filming for ${entry.customerName}.`);
                         } catch (err) {
@@ -267,7 +262,7 @@ export function MarketingWorkspace({
                       className="button secondary"
                       onClick={async () => {
                         try {
-                          await onAdvanceEntry(entry.id, 'complete_filming', {});
+                          await onAdvanceEntry(entry.id, 'complete_filming', {version: entry.version});
                           onNotice(`Filming completed for ${entry.customerName}; sent to Editor queue.`);
                         } catch (err) {
                           onError((err as Error).message);
@@ -284,7 +279,8 @@ export function MarketingWorkspace({
                       onClick={async () => {
                         try {
                           await onAdvanceEntry(entry.id, 'schedule_editing', {
-                            editingDeadlineAt: '2026-11-16',
+                            version: entry.version,
+                            editingDeadlineAt: window.prompt('Editing deadline (YYYY-MM-DD)') || '',
                           });
                           onNotice('Editing deadline set.');
                         } catch (err) {
@@ -302,9 +298,10 @@ export function MarketingWorkspace({
                       onClick={async () => {
                         try {
                           await onAdvanceEntry(entry.id, 'ready_for_post', {
-                            contentType: 'Ad Video',
+                            version: entry.version,
+                            contentType: window.prompt('Content type (for example Reel or Ad Video)') || '',
                           });
-                          onNotice('Marked Ready for Post (Ad Video).');
+                          onNotice('Marked Ready for Post.');
                         } catch (err) {
                           onError((err as Error).message);
                         }
@@ -318,7 +315,7 @@ export function MarketingWorkspace({
                       type="button"
                       className="button"
                       data-testid={`open-mark-posted-btn-${entry.id}`}
-                      onClick={() => setPostingEntryId(entry.id)}
+                      onClick={() => { setPostingEntryId(entry.id); setPostSerial(''); setPostNote(''); setPostPhotos([]); }}
                     >
                       Complete & Mark Posted
                     </button>
@@ -374,20 +371,14 @@ export function MarketingWorkspace({
             </div>
             <div className="field full">
               <label>Five Property Photos (Exactly 5 Required)</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-                {postPhotos.map((url, idx) => (
-                  <input
-                    key={idx}
-                    value={url}
-                    onChange={(e) => {
-                      const next = [...postPhotos];
-                      next[idx] = e.target.value;
-                      setPostPhotos(next);
-                    }}
-                    placeholder={`Photo #${idx + 1} URL`}
-                  />
-                ))}
-              </div>
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Five property photos" onChange={async e => {
+                const files = Array.from(e.target.files || []);
+                setPostPhotos([]);
+                if (files.length !== 5) { onError('Select exactly five property photos.'); return; }
+                try { const urls = []; for (const file of files) { const uploaded = await onUpload(await readUpload(file), file.name, 'marketing_photo'); urls.push(uploaded.url); } setPostPhotos(urls); }
+                catch (error) { onError((error as Error).message); }
+              }} />
+              <small>{postPhotos.length} / 5 photos uploaded</small>
             </div>
           </div>
           <div className="modal-actions" style={{ marginTop: 12 }}>
@@ -401,6 +392,7 @@ export function MarketingWorkspace({
             <button
               type="button"
               className="button"
+              disabled={postPhotos.length !== 5 || !postSerial.trim() || !postNote.trim()}
               data-testid="confirm-mark-posted-btn"
               onClick={() => handleCompletePosted(postingEntryId)}
             >

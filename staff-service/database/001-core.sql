@@ -69,7 +69,7 @@ INSERT INTO core_roles VALUES
  ('marketing_manager','production','Marketing Manager'),('production_manager','production','Production Manager'),
  ('editor','production','Editor'),('videographer','production','Videographer'),('photographer','production','Photographer'),
  ('branch_manager','branches','Manager'),('assistant_manager','branches','Assistant Manager'),
- ('finance_manager','finance','Finance Manager'),('finance_assistant','finance','Finance Assistant'),
+ ('finance_manager','finance','Finance Manager'),
  ('architect','engineering','Architect'),('graphic_designer','engineering','Graphic Designer'),('visual_designer_3d','engineering','3D Visual Designer'),
  ('customer','customers','Customer');
 INSERT INTO core_permissions VALUES
@@ -86,6 +86,6 @@ INSERT INTO core_role_permissions VALUES
  ('manager','core.departments.manage'),('ceo','core.departments.manage'),
  ('manager','core.submissions.read'),('ceo','core.submissions.read'),('marketing_manager','core.submissions.read'),
  ('production_manager','core.submissions.read'),('editor','core.submissions.read'),('videographer','core.submissions.read'),
- ('finance_manager','core.submissions.read'),('finance_assistant','core.submissions.read'),
+ ('finance_manager','core.submissions.read'),
  ('sales_leader','core.submissions.read'),('sales','core.submissions.read'),('callcenter','core.submissions.read');
 

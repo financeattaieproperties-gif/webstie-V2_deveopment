@@ -14,7 +14,6 @@ export type Role =
   | "branch_manager"
   | "assistant_manager"
   | "finance_manager"
-  | "finance_assistant"
   | "architect"
   | "graphic_designer"
   | "visual_designer_3d"
@@ -43,7 +42,7 @@ export interface StaffUser {
   id: number;
   name: string;
   role: Role;
-  department?: DepartmentCode;
+  departmentCode?: DepartmentCode;
   username?: string;
   firebaseUid?: string;
   teamLeaderId?: number | null;
@@ -70,7 +69,7 @@ export interface CustomerReviewRequest {
   requestingAgentName: string;
   submittedName: string;
   submittedRequirements: string;
-  status: "pending_review" | "approved_referral" | "reassigned" | "rejected";
+  status: "pending_review" | "approved_shared" | "reassigned" | "rejected";
   createdAt: string;
   resolvedAt?: string | null;
   resolutionNote?: string;
@@ -119,7 +118,10 @@ export interface Lead {
   version: number;
   activities?: Activity[];
   deal?: {
-    serial?: string;
+    dealSerial?: string;
+    projectId?: number;
+    apartmentId?: number;
+    hrContractId?: number | null;
     amount: string;
     pricePerSqm?: string;
     currency: string;
@@ -152,8 +154,9 @@ export interface ManagementTask {
   id: number;
   title: string;
   instructions: string;
-  department?: DepartmentCode;
+  departmentCode?: DepartmentCode;
   projectId?: number | null;
+  projectName?: string | null;
   priority: "low" | "normal" | "high" | "urgent";
   assigneeId: number;
   assigneeName?: string;
@@ -168,11 +171,15 @@ export interface ManagementTask {
 export interface ProjectSeller {
   name: string;
   fatherName: string;
-  grandFatherName?: string;
+  grandfatherName?: string;
   tazkiraNumber: string;
+  sharePercentage?: number;
   birthDate?: string;
-  permanentAddress: string;
-  currentAddress: string;
+  address: string;
+  phone: string;
+  photo3x4Url?: string;
+  permanentAddress?: string;
+  currentAddress?: string;
 }
 
 export interface ConstructionCompanyInfo {
@@ -181,6 +188,11 @@ export interface ConstructionCompanyInfo {
   representativeName: string;
   representativeFatherName: string;
   representativeTazkira: string;
+  representativePhotoUrl?: string;
+  representativeBirthDate?: string;
+  representativeGrandfatherName?: string;
+  representativePermanentAddress?: string;
+  representativeCurrentAddress?: string;
   address: string;
   phone: string;
 }
@@ -191,6 +203,11 @@ export interface InventoryApartment {
   unitNumber: string;
   serialNumber: string;
   floor: number;
+  kind?: "apartment" | "shop" | "supermarket";
+  corridor?: string;
+  unitSuffix?: string;
+  roofAreaSqm?: number;
+  isVip?: boolean;
   rooms: number;
   areaSqm: number;
   direction: string;
@@ -201,7 +218,7 @@ export interface InventoryApartment {
   pricePerSqm: number;
   totalPrice: number;
   currency: "USD" | "AFN";
-  status: "available" | "reserved" | "sold";
+  status: "available" | "reserved" | "deal_closed" | "sold";
 }
 
 export interface InventoryProject {
@@ -211,8 +228,15 @@ export interface InventoryProject {
   location: string;
   description: string;
   status: "draft" | "presale" | "active" | "completed";
+  totalAreaSqm: number;
+  floors: number;
+  commercialFloors: number[];
+  residentialFloors: number[];
+  corridorCount: number;
+  coverPhotoUrl: string;
+  assignedTeamLeaderId: number | null;
   sellers: ProjectSeller[];
-  constructionCompany: ConstructionCompanyInfo;
+  constructionCompany: ConstructionCompanyInfo | null;
   apartments: InventoryApartment[];
   assignedSalesAgentIds: number[];
   version: number;
@@ -222,13 +246,17 @@ export interface InventoryProject {
 export interface ContractBuyer {
   name: string;
   fatherName: string;
-  grandFatherName?: string;
+  grandfatherName?: string;
   tazkiraNumber: string;
+  sharePercentage?: number;
   birthDate?: string;
-  permanentAddress: string;
-  currentAddress: string;
+  address: string;
   phone: string;
+  photo3x4Url?: string;
+  permanentAddress?: string;
+  currentAddress?: string;
   portraitUrl?: string;
+  tazkiraPhotoUrl?: string;
 }
 
 export interface ContractInstallment {
@@ -263,7 +291,7 @@ export interface HrContract {
     west: string;
   };
   sellersSnapshot: ProjectSeller[];
-  constructionSnapshot: ConstructionCompanyInfo;
+  constructionSnapshot: ConstructionCompanyInfo | null;
   buyers: ContractBuyer[];
   pricePerSqm: number;
   totalPrice: number;
@@ -275,6 +303,8 @@ export interface HrContract {
   notes: string;
   installments: ContractInstallment[];
   status: "draft" | "issued" | "amended" | "cancelled";
+  verificationToken?: string;
+  verificationUrl?: string;
   amendmentVersion: number;
   issuedBy: string;
   issuedAt: string | null;
@@ -283,7 +313,16 @@ export interface HrContract {
 
 export interface FinanceDeposit {
   id: number;
-  voucherNumber: string;
+  voucherNumber?: string;
+  installmentId: number;
+  receiptNumber: string;
+  receiptPaidToDate?: number | null;
+  receiptRemainingBalance?: number | null;
+  paymentMethod: "Cash" | "Bank Transfer" | "Cheque";
+  notes: string;
+  paymentDate?: string;
+  enteredBy: string;
+  approvedBy?: string | null;
   contractId: number;
   contractSerial: string;
   installmentNumber: number;
@@ -291,10 +330,10 @@ export interface FinanceDeposit {
   amount: number;
   currency: "USD" | "AFN";
   status: "draft" | "posted" | "returned" | "reversed";
-  draftedBy: string;
+  draftedBy?: string;
   reviewedBy?: string | null;
   reversalReason?: string | null;
-  createdAt: string;
+  createdAt?: string;
   postedAt?: string | null;
   version: number;
 }
@@ -304,7 +343,9 @@ export interface MarketingProductionEntry {
   customerName: string;
   address: string;
   propertyType: "Villa" | "Block" | "Building" | "Apartment";
-  submittedBy: string;
+  submittedByName: string;
+  submittedAt: string;
+  submissionId: number | null;
   submittedByRole: Role;
   filmingDate: string | null;
   videographerId: number | null;
@@ -325,7 +366,6 @@ export interface MarketingProductionEntry {
     | "editing_scheduled"
     | "ready_for_post"
     | "posted";
-  createdAt: string;
   version: number;
 }
 
@@ -382,7 +422,8 @@ export interface EngineeringDeliverable {
     | "visualization";
   assigneeId: number;
   assigneeName: string;
-  assigneeRole: "architect" | "graphic_designer" | "visual_designer_3d";
+  apartmentNumber?: string | null;
+  role: "architect" | "graphic_designer" | "visual_designer_3d";
   deadlineAt: string;
   versions: EngineeringDeliverableVersion[];
   version: number;
@@ -415,7 +456,7 @@ export interface DashboardData {
   followups: Followup[];
   tasks: ManagementTask[];
   customers: Customer[];
-  customerReviews?: CustomerReviewRequest[];
+  customerReviewRequests?: CustomerReviewRequest[];
   departments?: Department[];
   projects?: InventoryProject[];
   hrWorkItems?: Array<{
@@ -437,14 +478,38 @@ export interface DashboardData {
     status: "pending_contract" | "contract_issued";
     createdAt: string;
   }>;
-  contracts?: HrContract[];
-  deposits?: FinanceDeposit[];
+  hrContracts?: HrContract[];
+  financeDeposits?: FinanceDeposit[];
   marketingEntries?: MarketingProductionEntry[];
   submissions?: SubmissionPost[];
-  deliverables?: EngineeringDeliverable[];
+  engineeringDeliverables?: EngineeringDeliverable[];
   assignees: StaffUser[];
   counts: Record<string, number>;
   page: number;
   integration: { enabled: boolean; message: string };
   serverTime: string;
 }
+
+export interface ProjectPreparationInput {
+  version: number;
+  sellers: ProjectSeller[];
+  constructionCompany: ConstructionCompanyInfo;
+  apartments: Array<Pick<InventoryApartment, "id" | "boundaryNorth" | "boundarySouth" | "boundaryEast" | "boundaryWest">>;
+}
+export interface ContractIssueInput {
+  projectId: number; apartmentId: number; buyers: ContractBuyer[];
+  installments: Array<Pick<ContractInstallment, "description" | "percentage" | "dueDate">>;
+  salesAgentName: string; clauses: string[]; notes: string;
+  contractDate?: string;
+  draft?: boolean;
+  contractId?: number;
+  version?: number;
+  dealHandoffId?: number;
+  leadId?: number;
+  dealSerial?: string; gregorianDate?: string; jalaliDate?: string;
+}
+export interface ContractVerification {
+  contractSerial: string; status: HrContract["status"]; amendmentVersion: number;
+}
+
+export interface ContractAmendInput { version: number; clauses: string[]; notes: string; reason: string; }

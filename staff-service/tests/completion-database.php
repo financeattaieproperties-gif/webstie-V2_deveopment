@@ -1,0 +1,76 @@
+<?php
+declare(strict_types=1);
+// No existing or remote database may be selected by this test.
+if (PHP_SAPI!=='cli'||getenv('STAFF_LOCAL_TEST')!=='1') throw new RuntimeException('Fictional local test only.');
+require __DIR__.'/../src/App.php';
+$db=new PDO('mysql:host=127.0.0.1;port=3397;charset=utf8mb4','root','',[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_EMULATE_PREPARES=>false,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
+$name='attaie_completion_fixture_'.bin2hex(random_bytes(5)); $db->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4"); $db->exec("USE `$name`");
+foreach (['001-core.sql','010-callcenter.sql','020-inventory.sql','030-sales-crm.sql','040-hr-finance.sql','050-marketing-production.sql','060-engineering.sql','090-role-migration.sql','095-retire-finance-assistant.sql','100-dashboard-completion.sql'] as $file) $db->exec(file_get_contents(__DIR__.'/../database/'.$file));
+$roles=['manager','hr_manager','finance_manager','sales','architect','marketing_manager','videographer','editor','sales'];
+foreach ($roles as $i=>$role) { $q=$db->prepare('INSERT INTO core_users(id,firebase_uid,name,username,role) VALUES (?,?,?,?,?)'); $q->execute([$i+1,'fictional-'.$role.$i,'Fictional '.$role,$role.$i.'@example.test',$role]); }
+$app=new Staff\App(); $rc=new ReflectionClass($app);
+foreach (['db'=>$db,'now'=>gmdate('Y-m-d H:i:s'),'config'=>['origin'=>'https://v2.example.test']] as $key=>$value) $rc->getProperty($key)->setValue($app,$value);
+$assertions=0;
+$check=function($condition)use(&$assertions){$assertions++; if (!$condition) throw new RuntimeException('Database assertion '.$assertions);};
+$user=function($id)use($app,$rc,$db){$q=$db->prepare('SELECT * FROM core_users WHERE id=?');$q->execute([$id]);$rc->getProperty('user')->setValue($app,$q->fetch());};
+$call=function($method,...$args)use($app,$rc){return $rc->getMethod($method)->invokeArgs($app,$args);};
+$write=function($route,$body)use($call){$_SERVER['HTTP_IDEMPOTENCY_KEY']=bin2hex(random_bytes(16));return $call('mutate',$route,$body,fn()=>$call('moduleWrite',$route,$body));};
+$reject=function($fn)use($check){try{$fn();}catch(Staff\HttpError|InvalidArgumentException $e){$check(true);return;}$check(false);};
+$user(1);
+$project=$write('inventory/projects',['code'=>'FX1','name'=>'Fictional Building','location'=>'Fictional Street','floors'=>2,'totalAreaSqm'=>1000,'status'=>'draft','corridorCount'=>1,'commercialFloors'=>[],'residentialFloors'=>[1,2],'apartments'=>[['unitNumber'=>'A-101','floor'=>1,'areaSqm'=>100,'pricePerSqm'=>10,'kind'=>'apartment','currency'=>'USD']],'assignedSalesAgentIds'=>[4]]);
+$check($project['id']>0&&count($project['apartments'])===1); $unit=$project['apartments'][0]['id'];
+$user(2); $reject(fn()=>$write('inventory/projects',[]));
+$image='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aGkQAAAAASUVORK5CYII=';
+$portrait=$write('files',['dataUrl'=>$image,'fileName'=>'fictional.png','purpose'=>'seller_portrait']);
+$check(str_starts_with($portrait['url'],'/staff-api/v1/files/'));
+$seller=['name'=>'Fictional Seller','fatherName'=>'Fictional Parent','tazkiraNumber'=>'FIXTURE-ONLY','photo3x4Url'=>$portrait['url']];
+$prepared=$write('inventory/projects/'.$project['id'].'/preparation',['version'=>1,'sellers'=>[$seller],'constructionCompany'=>['companyName'=>'Fictional Company','representativeName'=>'Fictional Representative','representativePhotoUrl'=>$portrait['url']],'apartments'=>[['id'=>$unit,'boundaryNorth'=>'N','boundarySouth'=>'S','boundaryEast'=>'E','boundaryWest'=>'W']]]);
+$check($prepared['version']===2); $reject(fn()=>$write('inventory/projects/'.$project['id'].'/preparation',['version'=>1]));
+$contract=$write('hr/contracts',['projectId'=>$project['id'],'apartmentId'=>$unit,'buyers'=>[['name'=>'Fictional Buyer','fatherName'=>'Fictional Parent','tazkiraNumber'=>'FIXTURE-BUYER','phone'=>'0700000000','photo3x4Url'=>$portrait['url']]],'installments'=>[['description'=>'First','percentage'=>50],['description'=>'Second','percentage'=>50]],'clauses'=>['Fictional test clause']]);
+$check($contract['totalPrice']===1000.0&&count($contract['installments'])===2); $check(str_contains($contract['verificationUrl'],'/dashboard/?verify='));
+$reject(fn()=>$write('hr/contracts',['projectId'=>$project['id'],'apartmentId'=>$unit]));
+$reject(fn()=>$write('finance/deposits',[]));
+$user(3); $deposit=$write('finance/deposits',['action'=>'draft','contractId'=>$contract['id'],'installmentId'=>$contract['installments'][0]['id'],'amount'=>200,'paymentMethod'=>'Cash','receiptNumber'=>'FIX-001']);
+$posted=$write('finance/deposits',['action'=>'approve','depositId'=>$deposit['id'],'version'=>1]); $check($posted['status']==='posted'&&$posted['receiptPaidToDate']===200.0&&$posted['receiptRemainingBalance']===800.0);
+$reject(fn()=>$write('finance/deposits',['action'=>'approve','depositId'=>$deposit['id'],'version'=>1]));
+$reversed=$write('finance/deposits',['action'=>'reverse','depositId'=>$deposit['id'],'version'=>2,'reason'=>'Fictional reversal']); $check($reversed['status']==='reversed'&&$reversed['receiptPaidToDate']===200.0);
+$check((float)$db->query('SELECT paid_amount FROM hr_contract_installments ORDER BY id LIMIT 1')->fetchColumn()===0.0);
+$user(1); $task=$write('engineering/deliverables',['projectId'=>$project['id'],'title'=>'Fictional plan','assigneeId'=>5,'deadlineAt'=>'2099-01-01T00:00:00Z']);
+$user(5); $file=$write('files',['dataUrl'=>$image,'fileName'=>'plan.png','purpose'=>'engineering_deliverable']); $v1=$write('engineering/deliverables/'.$task['id'].'/versions',['version'=>1,'fileUrl'=>$file['url'],'fileName'=>'plan.png','format'=>'png']);
+$check(count($v1['versions'])===1);
+$user(1); $review=$write('engineering/deliverables/'.$task['id'].'/review',['version'=>2,'versionNumber'=>1,'decision'=>'approved','comment'=>'Fictional approval']); $check($review['versions'][0]['status']==='approved');
+$user(5); $v2=$write('engineering/deliverables/'.$task['id'].'/versions',['version'=>3,'fileUrl'=>$file['url'],'fileName'=>'plan.png','format'=>'png']); $check(count($v2['versions'])===2&&$v2['versions'][0]['status']==='approved');
+$user(3); $financeView=$call('moduleWorkspace','finance'); $check($financeView['hrContracts'][0]['buyers'][0]===['name'=>'Fictional Buyer']); $reject(fn()=>$call('moduleWorkspace','contracts'));
+$user(4); $lead=$write('sales/leads',['phone'=>'0700000001','customerName'=>'Fictional Lead','requirements'=>'Fictional requirement','projectId'=>$project['id'],'nextScheduledAt'=>'2099-01-01T00:00:00Z']); $check($lead['customerId']>0);
+$user(9); $duplicate=$write('sales/leads',['phone'=>'0700000001','customerName'=>'Private duplicate','requirements'=>'No disclosure','nextScheduledAt'=>'2099-01-01T00:00:00Z']); $check($duplicate['duplicateConflict']===true&&!isset($duplicate['customerId']));
+$reviewId=(int)$db->query('SELECT id FROM crm_customer_review_requests LIMIT 1')->fetchColumn();
+$user(1); $write('customers/review-requests/'.$reviewId,['version'=>1,'decision'=>'approved_shared','note'=>'Fictional permission']);
+$user(9); $shared=$write('sales/leads',['phone'=>'0700000001','customerName'=>'Fictional Lead','requirements'=>'Shared by Manager','nextScheduledAt'=>'2099-01-01T00:00:00Z']); $check($shared['customerId']===$lead['customerId']);
+$user(6); $entry=$write('marketing/entries',['customerName'=>'Fictional Property Owner','address'=>'Fictional Address','propertyType'=>'Apartment']);
+$entry=$write('marketing/entries/'.$entry['id'],['version'=>1,'action'=>'schedule_filming','filmingDate'=>'2099-01-01','videographerId'=>7])['entry'];
+$user(7); $entry=$write('marketing/entries/'.$entry['id'],['version'=>2,'action'=>'complete_filming'])['entry'];
+$user(8); $entry=$write('marketing/entries/'.$entry['id'],['version'=>3,'action'=>'schedule_editing','editingDeadlineAt'=>'2099-01-02'])['entry'];
+$entry=$write('marketing/entries/'.$entry['id'],['version'=>4,'action'=>'ready_for_post','contentType'=>'Fictional photo set'])['entry'];
+$photos=[]; for($n=0;$n<5;$n++) $photos[]=$write('files',['dataUrl'=>$image,'fileName'=>'marketing-'.$n.'.png','purpose'=>'marketing_photo'])['url'];
+$entry=$write('marketing/entries/'.$entry['id'],['version'=>5,'action'=>'mark_posted','serialNumber'=>'FX-POST-1','propertyInfoNote'=>'Fictional details','photos'=>$photos,'platform'=>'Instagram'])['entry'];
+$check($entry['stage']==='posted'); $check($db->query('SELECT status FROM mkt_submission_outbox')->fetchColumn()==='pending');
+$subName='attaie_completion_sub_fixture_'.bin2hex(random_bytes(5)); $db->exec("CREATE DATABASE `$subName` CHARACTER SET utf8mb4");
+$sub=new PDO("mysql:host=127.0.0.1;port=3397;dbname=$subName;charset=utf8mb4",'root','',[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$sub->exec(file_get_contents(__DIR__.'/../database/055-submissions-db.sql'));
+$rc->getProperty('config')->setValue($app,['origin'=>'https://v2.example.test','dsn'=>"mysql:host=127.0.0.1;port=3397;dbname=$name",'submission_dsn'=>"mysql:host=127.0.0.1;port=3397;dbname=$subName",'submission_user'=>'root','submission_password'=>'']);
+$call('flushSubmissionOutbox'); $call('flushSubmissionOutbox');
+$check((int)$sub->query('SELECT COUNT(*) FROM sub_posts')->fetchColumn()===1);$check((int)$sub->query('SELECT COUNT(*) FROM sub_post_assets')->fetchColumn()===5);$check($db->query('SELECT status FROM mkt_submission_outbox')->fetchColumn()==='delivered');
+$check(count($call('submissionList'))===1);
+$user(2);$amended=$write('hr/contracts/'.$contract['id'].'/amend',['version'=>1,'clauses'=>['Amended fictional clause'],'notes'=>'Fictional update','reason'=>'Fictional correction']);
+$check($amended['amendmentVersion']===2&&$amended['status']==='amended');$check((int)$db->query('SELECT COUNT(*) FROM hr_contract_revisions')->fetchColumn()===1);
+$reject(fn()=>$write('hr/contracts/'.$contract['id'].'/amend',['version'=>2,'clauses'=>['X'],'reason'=>'X','totalPrice'=>1]));
+$user(3);$reject(fn()=>$write('engineering/deliverables/'.$task['id'].'/versions',['version'=>4,'fileUrl'=>$file['url'],'fileName'=>'plan.png','format'=>'png']));
+echo "$assertions real MySQL workflow assertions passed in NEW fictional $name.\n";
+if ($dir=getenv('STAFF_COMPLETION_HTTP_DIR')) {
+    if (!is_dir($dir)) mkdir($dir,0700,true); if (!is_dir($dir.'/sessions')) mkdir($dir.'/sessions',0700,true);
+    $config=['dsn'=>"mysql:host=127.0.0.1;port=3397;dbname=$name;charset=utf8mb4",'database_user'=>'root','database_password'=>'','origin'=>'http://127.0.0.1:8898','session_directory'=>$dir.'/sessions','allow_local_http'=>true];
+    file_put_contents($dir.'/config.php','<?php return '.var_export($config,true).';'); $sessions=[];
+    foreach ($roles as $i=>$role) { $sid=bin2hex(random_bytes(16));$csrf=bin2hex(random_bytes(32));$now=time();
+        $session=['user_id'=>$i+1,'auth_version'=>1,'last_seen'=>$now,'firebase_expiry'=>$now+3600,'firebase_checked'=>$now,'csrf'=>$csrf];$encoded='';foreach($session as $k=>$v)$encoded.=$k.'|'.serialize($v);file_put_contents($dir.'/sessions/sess_'.$sid,$encoded);$sessions[(string)($i+1)]=['cookie'=>'attaie_staff_session='.$sid,'csrf'=>$csrf];
+    }
+    file_put_contents($dir.'/fixture.json',json_encode(['sessions'=>$sessions,'contractId'=>$contract['id'],'projectId'=>$project['id'],'depositId'=>$deposit['id'],'verificationToken'=>$db->query('SELECT verification_token FROM hr_contracts ORDER BY id LIMIT 1')->fetchColumn()]));
+}

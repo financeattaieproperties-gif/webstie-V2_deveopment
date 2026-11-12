@@ -9,7 +9,7 @@ test('Dari staff translations contain no damaged placeholder text',()=>{
 test('core registers all departments and roles without password storage', () => {
  const sql=read('001-core.sql');
  for(const name of ['core_users','core_departments','core_roles','core_permissions','core_role_permissions','core_modules','core_module_versions','core_management_tasks']) assert.match(sql,new RegExp(`CREATE TABLE ${name}\\s*\\(`));
- for(const role of ['ceo','callcenter','sales_leader','sales','production_manager','editor','photographer','branch_manager','assistant_manager','finance_manager','finance_assistant','architect','graphic_designer','visual_designer_3d','customer']) assert.ok(sql.includes(`'${role}'`),role);
+ for(const role of ['ceo','callcenter','sales_leader','sales','production_manager','editor','photographer','branch_manager','assistant_manager','finance_manager','architect','graphic_designer','visual_designer_3d','customer']) assert.ok(sql.includes(`'${role}'`),role);
  assert.match(sql,/firebase_uid VARCHAR\(128\).*UNIQUE/);
  assert.doesNotMatch(sql,/password_hash|DROP TABLE|ALTER TABLE/i);
 });

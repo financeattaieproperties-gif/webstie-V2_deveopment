@@ -1,4 +1,8 @@
 import type {
+  ContractIssueInput,
+  ContractAmendInput,
+  ContractVerification,
+  ProjectPreparationInput,
   CustomerReviewRequest,
   DashboardData,
   EngineeringDeliverable,
@@ -10,6 +14,7 @@ import type {
   MarketingProductionEntry,
   Role,
   Session,
+  StaffUser,
   SubmissionPost,
 } from "../../../packages/staff-contracts/types";
 
@@ -50,14 +55,14 @@ async function request<T>(
   return payload.data as T;
 }
 export const api = {
-  getActiveUser() {
+  getActiveUser(): StaffUser | null {
     return null;
   },
-  setActiveRole(_role: Role) {
+  setActiveRole(_role: Role): StaffUser | null {
     return null;
   },
   async session() {
-    const data = await request<Session & { user: Session["user"] | null }>(
+    const data = await request<Omit<Session, "user"> & { user: StaffUser | null }>(
       "session",
     );
     csrf = data.csrfToken;
@@ -97,20 +102,20 @@ export const api = {
     request<InventoryProject>("inventory/projects", "POST", projectInput),
   resolveCustomerReview: (reviewId: number, decision: "approved_shared" | "rejected") =>
     request<CustomerReviewRequest>(`customers/review-requests/${reviewId}`, "POST", { decision }),
-  issueContract: (payload: {
-    projectId: number;
-    apartmentId: number;
-    buyers: HrContract["buyers"];
-    installments: Array<{ description: string; percentage: number; dueDate: string | null }>;
-    salesAgentName: string;
-    clauses: string[];
-    notes: string;
-  }) => request<HrContract>("hr/contracts", "POST", payload),
+  upload: (dataUrl: string, fileName: string, purpose: string) =>
+    request<{url: string; fileName: string}>("files", "POST", {dataUrl, fileName, purpose}),
+  saveProjectPreparation: (projectId: number, body: ProjectPreparationInput) =>
+    request<InventoryProject>(`inventory/projects/${projectId}/preparation`, "POST", body),
+  verifyContract: (token: string) => request<ContractVerification>(`hr/contracts/verify?${new URLSearchParams({token})}`),
+  issueContract: (payload: ContractIssueInput) => request<HrContract>("hr/contracts", "POST", payload),
+  amendContract: (id: number, body: ContractAmendInput) => request<HrContract>(`hr/contracts/${id}/amend`, "POST", body),
   manageDeposit: (payload: {
     action: "draft" | "approve" | "return" | "reverse";
     contractId: number;
     installmentId: number;
     depositId?: number;
+    version?: number;
+    paymentDate?: string;
     amount?: number;
     paymentMethod?: "Cash" | "Bank Transfer" | "Cheque";
     receiptNumber?: string;
@@ -130,7 +135,7 @@ export const api = {
       | "schedule_editing"
       | "ready_for_post"
       | "mark_posted",
-    payload: Record<string, any>,
+    payload: Record<string, unknown>,
   ) =>
     request<{ entry: MarketingProductionEntry; submission?: SubmissionPost }>(
       `marketing/entries/${entryId}`,
@@ -139,7 +144,7 @@ export const api = {
     ),
   uploadDeliverableVersion: (
     deliverableId: number,
-    payload: { fileUrl: string; fileName: string; format: string; notes: string },
+    payload: { fileUrl: string; fileName: string; format: string; notes: string; version: number },
   ) =>
     request<EngineeringDeliverable>(
       `engineering/deliverables/${deliverableId}/versions`,
@@ -149,6 +154,7 @@ export const api = {
   reviewDeliverable: (
     deliverableId: number,
     payload: {
+      version: number;
       versionNumber: number;
       decision: "approved" | "revision_requested";
       comment: string;

@@ -178,18 +178,18 @@ export default function PublishingTasks() {
     setError('');
     setPublishingId(item.id);
     try {
-      const priceVal = Number(publishPrice[item.id] ?? 245000);
-      const lType = publishListingType[item.id] ?? 'sale';
-      const reason = rejectReason[item.id] ?? 'Requires updated property photos or verified address.';
+      const priceVal = Number(publishPrice[item.id] ?? '');
+      const lType = publishListingType[item.id];
+      const reason = rejectReason[item.id]?.trim() || '';
+      if (action === 'publish' && (!(priceVal > 0) || !Number.isFinite(priceVal) || !lType))
+        throw new Error('Enter the verified listing price and select sale or rent before publishing.');
+      if (action === 'reject' && !reason) throw new Error('Enter a reason for rejection.');
       const res = await api.updateSubmissionStatus({
         id: item.id,
+        version: item.version,
         action,
-        price: Number.isFinite(priceVal) && priceVal > 0 ? priceVal : 245000,
+        price: action === 'publish' ? priceVal : undefined,
         listing_type: lType,
-        beds: 3,
-        baths: 2,
-        area: 165,
-        floor: 4,
         reason,
       });
       setNotice(
@@ -354,12 +354,14 @@ export default function PublishingTasks() {
                     ✓ Approve Submission
                   </button>
                 )}
-                {(item.submission_status === 'Submitted' || item.submission_status === 'Approved') && (
+                {item.submission_status === 'Approved' && (
                   <>
                     <input
                       type="number"
-                      placeholder="Price USD (e.g. 245000)"
-                      value={publishPrice[item.id] ?? '245000'}
+                      placeholder="Verified price USD"
+                      value={publishPrice[item.id] ?? ''}
+                      min="0.01"
+                      step="0.01"
                       onChange={(e) =>
                         setPublishPrice((prev) => ({ ...prev, [item.id]: e.target.value }))
                       }
@@ -367,7 +369,7 @@ export default function PublishingTasks() {
                       aria-label="Listing price USD"
                     />
                     <select
-                      value={publishListingType[item.id] ?? 'sale'}
+                      value={publishListingType[item.id] ?? ''}
                       onChange={(e) =>
                         setPublishListingType((prev) => ({
                           ...prev,
@@ -377,6 +379,7 @@ export default function PublishingTasks() {
                       style={S.input}
                       aria-label="Listing type"
                     >
+                      <option value="" disabled>Select listing type</option>
                       <option value="sale">For Sale</option>
                       <option value="rent">For Rent</option>
                     </select>
@@ -394,7 +397,7 @@ export default function PublishingTasks() {
                   <>
                     <input
                       type="text"
-                      placeholder="Reject reason (optional)"
+                      placeholder="Reason for rejection"
                       value={rejectReason[item.id] ?? ''}
                       onChange={(e) =>
                         setRejectReason((prev) => ({ ...prev, [item.id]: e.target.value }))

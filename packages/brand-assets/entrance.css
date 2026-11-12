@@ -1,0 +1,19 @@
+.attaie-original-canvas{display:block;width:100%;height:auto;aspect-ratio:1870/841;margin-inline:auto}
+.attaie-logo-transition-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--background,#f8fffe);padding:24px;box-sizing:border-box}
+.attaie-original-layer{transform-box:fill-box;animation-timing-function:cubic-bezier(.22,1,.36,1);animation-fill-mode:both}
+.attaie-original-swoosh{animation-name:attaieOriginalSwoosh}
+.attaie-original-tower{animation-name:attaieOriginalTower}
+.attaie-original-roof{animation-name:attaieOriginalRoof}
+.attaie-original-window{animation-name:attaieOriginalWindow}
+.attaie-original-attaie{animation-name:attaieOriginalName}
+.attaie-original-properties{animation-name:attaieOriginalProperties}
+.attaie-original-keys{animation-name:attaieOriginalKeys}
+.attaie-original-fallback{font:700 1.25rem system-ui,sans-serif}
+@keyframes attaieOriginalSwoosh{from{clip-path:inset(0 100% 0 0) fill-box}to{clip-path:inset(0) fill-box}}
+@keyframes attaieOriginalTower{from{clip-path:inset(100% 0 0 0) fill-box}to{clip-path:inset(0) fill-box}}
+@keyframes attaieOriginalRoof{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes attaieOriginalWindow{from{transform:scale(.72);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes attaieOriginalName{from{transform:translateX(22px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes attaieOriginalProperties{from{transform:translateY(15px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes attaieOriginalKeys{from{transform:rotate(-11deg) translateY(14px);opacity:0}to{transform:rotate(0deg) translateY(0);opacity:1}}
+@media(prefers-reduced-motion:reduce){.attaie-original-layer{animation:none!important}}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { readUpload } from './readUpload';
 import type {
   EngineeringDeliverable,
   Role,
@@ -8,13 +9,15 @@ import { isManagerRole } from '../../../../packages/staff-contracts/workflow.mjs
 export interface EngineeringWorkspaceProps {
   deliverables: EngineeringDeliverable[];
   actorRole: Role;
+  onUpload: (dataUrl: string, fileName: string, purpose: string) => Promise<{url: string}>;
   onUploadVersion: (
     deliverableId: number,
-    payload: { fileUrl: string; fileName: string; format: string; notes: string }
+    payload: { fileUrl: string; fileName: string; format: string; notes: string; version: number }
   ) => Promise<unknown>;
   onReviewVersion: (
     deliverableId: number,
     payload: {
+      version: number;
       versionNumber: number;
       decision: 'approved' | 'revision_requested';
       comment: string;
@@ -27,6 +30,7 @@ export interface EngineeringWorkspaceProps {
 export function EngineeringWorkspace({
   deliverables,
   actorRole,
+  onUpload,
   onUploadVersion,
   onReviewVersion,
   onNotice,
@@ -41,11 +45,10 @@ export function EngineeringWorkspace({
 
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [fileName, setFileName] = useState('');
-  const [fileUrl, setFileUrl] = useState('/logo.png');
+  const [fileUrl, setFileUrl] = useState('');
   const [format, setFormat] = useState('2D Floor Plan (CAD/PDF)');
-  const [notes, setNotes] = useState(
-    'Updated room dimensions and corridor clearance per Manager feedback.'
-  );
+  const [notes, setNotes] = useState('');
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const [reviewComments, setReviewComments] = useState<Record<string, string>>({});
 
@@ -57,7 +60,8 @@ export function EngineeringWorkspace({
     e.preventDefault();
     if (uploadingId === null) return;
     try {
-      await onUploadVersion(uploadingId, { fileUrl, fileName, format, notes });
+      if (!fileUrl || uploadingFile) throw new Error("Select and upload a deliverable file first.");
+      await onUploadVersion(uploadingId, { fileUrl, fileName, format, notes, version: deliverables.find(d => d.id === uploadingId)!.version });
       setUploadingId(null);
       onNotice(`Uploaded new deliverable version (${fileName}) to version history.`);
     } catch (err) {
@@ -107,12 +111,15 @@ export function EngineeringWorkspace({
               </select>
             </div>
             <div className="field">
-              <label>File URL / Attachment Path</label>
-              <input
-                required
-                value={fileUrl}
-                onChange={(e) => setFileUrl(e.target.value)}
-              />
+              <label htmlFor="engineering-file">Deliverable file</label>
+              <input id="engineering-file" type="file" required disabled={uploadingFile} onChange={async e => {
+                const file = e.target.files?.[0]; if (!file) return;
+                setUploadingFile(true); setFileUrl('');
+                try { const result = await onUpload(await readUpload(file), file.name, 'engineering_deliverable'); setFileUrl(result.url); setFileName(file.name); }
+                catch (error) { onError((error as Error).message); }
+                finally { setUploadingFile(false); }
+              }} />
+              <small>{uploadingFile ? 'Uploading?' : fileUrl ? 'File ready' : 'Choose a file'}</small>
             </div>
             <div className="field">
               <label>Revision & Technical Notes</label>
@@ -165,7 +172,7 @@ export function EngineeringWorkspace({
                   type="button"
                   className="button"
                   data-testid={`open-upload-version-btn-${deliv.id}`}
-                  onClick={() => setUploadingId(deliv.id)}
+                  onClick={() => { setUploadingId(deliv.id); setFileUrl(''); setFileName(''); setNotes(''); }}
                 >
                   + Upload New Version (v{deliv.versions.length + 1})
                 </button>
@@ -238,6 +245,7 @@ export function EngineeringWorkspace({
                                   onClick={async () => {
                                     try {
                                       await onReviewVersion(deliv.id, {
+                                        version: deliv.version,
                                         versionNumber: ver.versionNumber,
                                         decision: 'approved',
                                         comment:
@@ -261,6 +269,7 @@ export function EngineeringWorkspace({
                                   onClick={async () => {
                                     try {
                                       await onReviewVersion(deliv.id, {
+                                        version: deliv.version,
                                         versionNumber: ver.versionNumber,
                                         decision: 'revision_requested',
                                         comment:

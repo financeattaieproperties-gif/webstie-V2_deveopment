@@ -9,4 +9,8 @@ return [
     'allow_local_http' => false,
     'firebase_project_id' => 'YOUR_V2_FIREBASE_PROJECT_ID',
     'firebase_api_key' => 'YOUR_V2_FIREBASE_WEB_API_KEY',
+    // Third database: no CRM or website runtime credentials. Leave blank to keep outbox pending.
+    'submission_dsn' => 'mysql:host=localhost;dbname=NEW_SUBMISSION_DATABASE;charset=utf8mb4',
+    'submission_user' => 'NEW_SUBMISSION_RUNTIME_USER',
+    'submission_password' => '',
 ];
