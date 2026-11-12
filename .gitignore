@@ -42,3 +42,4 @@ debug.log
 .cursor/mcp.json
 .gemini/settings.json
 opencode.json
+.worktrees/
