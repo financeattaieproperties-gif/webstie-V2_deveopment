@@ -271,7 +271,47 @@ function createMockPhpApiPlugin(): Plugin {
     updated_at: new Date().toISOString(),
   };
 
-  let leads: any[] = [];
+  let leads: any[] = [
+    {
+      id: 1,
+      name: 'Haji Abdul Qadir',
+      email: 'qadir.invest@afghanmail.af',
+      phone: '+93 78 222 1190',
+      message: 'Interested in 5-bedroom diplomatic villa in Wazir Akbar Khan (AP-101).',
+      property_id: '1',
+      property_name: 'Exclusive Luxury Villa in Wazir Akbar Khan',
+      stage: 'New',
+      source: 'Website',
+      status: 'Pending',
+      created_at: '2026-11-10T09:30:00.000Z',
+    },
+    {
+      id: 2,
+      name: 'Eng. Maryam Sadat',
+      email: 'maryam.sadat@kabulengineering.af',
+      phone: '+93 70 445 8821',
+      message: 'Requesting floor plan and installment terms for Kabul Plaza 12.',
+      property_id: '2',
+      property_name: 'Contemporary High-Rise Apartment in Shahr-e-Naw',
+      stage: 'Follow-Up',
+      source: 'Website',
+      status: 'Contacted',
+      created_at: '2026-11-11T11:15:00.000Z',
+    },
+    {
+      id: 3,
+      name: 'Ahmad Fawad Rahmani',
+      email: 'fawad.rahmani@rahmani-group.com',
+      phone: '+93 79 910 3344',
+      message: 'Looking to lease ground-floor commercial space on Kolola Pushta Main Boulevard.',
+      property_id: '3',
+      property_name: 'Prime Commercial Plaza Space on Kolola Pushta Main',
+      stage: 'Visit Scheduled',
+      source: 'Website',
+      status: 'Active',
+      created_at: '2026-11-11T15:40:00.000Z',
+    },
+  ];
   let visitRequests: any[] = [];
 
   let careerJobs: any[] = [
@@ -597,6 +637,19 @@ function createMockPhpApiPlugin(): Plugin {
       if (pathname === '/sitemap-status.json' && method === 'GET') {
         const { xml: _xml, ...statusOnly } = buildLiveSitemap(undefined, false);
         return sendJson(res, statusOnly);
+      }
+
+      // Serve sub-application HTML entries for /admin, /callcenter, /management, and /dashboard
+      const subAppMatch = pathname.match(/^\/(admin|callcenter|management|dashboard)(?:\/.*)?$/);
+      if (subAppMatch && method === 'GET' && !/\.[a-zA-Z0-9]+$/.test(pathname)) {
+        const subApp = subAppMatch[1];
+        const candidateHtml = path.resolve(import.meta.dirname, `./public/${subApp}/index.html`);
+        if (fs.existsSync(candidateHtml)) {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(fs.readFileSync(candidateHtml, 'utf8'));
+          return;
+        }
       }
 
       if (!pathname.startsWith('/api/')) {
@@ -1070,6 +1123,141 @@ function createMockPhpApiPlugin(): Plugin {
 
       if (pathname === '/api/admin/leads.php' && method === 'GET') {
         return sendJson(res, leads);
+      }
+
+      if (pathname === '/api/admin/submissions.php') {
+        if (!(globalThis as any).__attaieSubmissions) {
+          (globalThis as any).__attaieSubmissions = [
+            {
+              id: 1,
+              marketing_entry_id: 1,
+              property_serial: 'AP - 1765',
+              customer_name: 'Haji Abdul Qadir',
+              address: 'Street 10, Wazir Akbar Khan, Kabul',
+              property_type: 'Villa',
+              property_info_note:
+                '5-bedroom diplomatic residence with landscaped courtyard, 550 sqm, verified Qawala.',
+              photos: [
+                'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=900&q=80',
+                'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80',
+                'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80',
+                'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=80',
+                'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=80',
+              ],
+              social_platform: 'Instagram + Facebook + YouTube',
+              submission_status: 'Submitted',
+              submitted_by: 'Omid Rahimi (Editor)',
+              approved_by: null,
+              published_by: null,
+              rejected_reason: null,
+              website_property_id: null,
+              created_at: '2026-11-11 11:30:00',
+              updated_at: '2026-11-11 11:30:00',
+            },
+          ];
+        }
+        const submissionsList: any[] = (globalThis as any).__attaieSubmissions;
+
+        if (method === 'GET') {
+          const statusFilter = parsedUrl.searchParams.get('status');
+          const result = statusFilter
+            ? submissionsList.filter((s) => s.submission_status === statusFilter)
+            : submissionsList;
+          return sendJson(res, result);
+        }
+
+        if (method === 'POST') {
+          const body = await readBody(req);
+          const photos = Array.isArray(body.photos) ? body.photos.filter(Boolean) : [];
+          if (photos.length < 5) {
+            return sendJson(res, { error: 'At least 5 property photos are required.' }, 422);
+          }
+          const nextId = submissionsList.reduce((m, s) => Math.max(m, s.id), 0) + 1;
+          const nextItem = {
+            id: nextId,
+            marketing_entry_id: Number(body.marketing_entry_id || nextId),
+            property_serial: String(body.property_serial || `AP - ${1765 + nextId}`),
+            customer_name: String(body.customer_name || 'Property Owner'),
+            address: String(body.address || 'Kabul'),
+            property_type: body.property_type || 'Apartment',
+            property_info_note: String(body.property_info_note || ''),
+            photos,
+            social_platform: String(body.social_platform || 'Instagram + Facebook'),
+            submission_status: 'Submitted',
+            submitted_by: String(body.submitted_by || 'Marketing Editor'),
+            approved_by: null,
+            published_by: null,
+            rejected_reason: null,
+            website_property_id: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          submissionsList.unshift(nextItem);
+          return sendJson(res, { id: nextId, submission_status: 'Submitted' }, 201);
+        }
+
+        if (method === 'PUT') {
+          const body = await readBody(req);
+          const id = Number(body.id || 0);
+          const action = String(body.action || '');
+          const idx = submissionsList.findIndex((s) => s.id === id);
+          if (idx === -1) {
+            return sendJson(res, { error: 'Submission not found.' }, 404);
+          }
+          const current = submissionsList[idx];
+          if (action === 'approve') {
+            current.submission_status = 'Approved';
+            current.approved_by = 'Admin';
+            current.updated_at = new Date().toISOString();
+            return sendJson(res, { ok: true, submission_status: 'Approved' });
+          }
+          if (action === 'reject') {
+            current.submission_status = 'Rejected';
+            current.rejected_reason = String(body.reason || 'Requires revision.');
+            current.updated_at = new Date().toISOString();
+            return sendJson(res, { ok: true, submission_status: 'Rejected' });
+          }
+          if (action === 'publish') {
+            const newPropId = properties.reduce((max, p) => Math.max(max, p.id), 0) + 1;
+            const mappedType =
+              current.property_type === 'Shop' ? 'Commercial' : current.property_type || 'Apartment';
+            const newProp = {
+              id: newPropId,
+              serial_number: current.property_serial,
+              title: `${current.property_type} in ${current.address} (${current.property_serial})`,
+              price: Number(body.price || 245000),
+              location: current.address,
+              beds: body.beds ?? 3,
+              baths: body.baths ?? 2,
+              area: body.area ?? 165,
+              floor: body.floor ?? 4,
+              status: 'available',
+              type: mappedType,
+              listing_type: body.listing_type === 'rent' ? 'rent' : 'sale',
+              image_url: current.photos[0] || '/logo.png',
+              gallery_images: current.photos,
+              video_url: null,
+              floor_plan_url: null,
+              three_d_plan_url: null,
+              description: current.property_info_note,
+              created_at: new Date().toISOString(),
+            };
+            properties.unshift(newProp);
+            current.submission_status = 'Published';
+            current.approved_by = current.approved_by || 'Admin';
+            current.published_by = 'Admin';
+            current.website_property_id = newPropId;
+            current.updated_at = new Date().toISOString();
+            buildLiveSitemap();
+            return sendJson(res, {
+              ok: true,
+              submission_status: 'Published',
+              website_property_id: newPropId,
+              serial_number: current.property_serial,
+            });
+          }
+          return sendJson(res, { error: 'Unsupported action.' }, 422);
+        }
       }
 
       if (pathname === '/api/admin/visit-requests.php') {

@@ -1,12 +1,20 @@
 import type {
+  CustomerReviewRequest,
   DashboardData,
+  EngineeringDeliverable,
   Feedback,
+  FinanceDeposit,
+  HrContract,
+  InventoryProject,
   Lead,
+  MarketingProductionEntry,
+  Role,
   Session,
+  SubmissionPost,
 } from "../../../packages/staff-contracts/types";
 
-import { signIn, resetPassword } from './auth/firebase.mjs';
-const firebaseKey = import.meta.env.VITE_STAFF_FIREBASE_API_KEY || '';
+import { signIn, resetPassword } from "./auth/firebase.mjs";
+const firebaseKey = import.meta.env.VITE_STAFF_FIREBASE_API_KEY || "";
 let csrf = "";
 async function request<T>(
   path: string,
@@ -42,6 +50,12 @@ async function request<T>(
   return payload.data as T;
 }
 export const api = {
+  getActiveUser() {
+    return null;
+  },
+  setActiveRole(_role: Role) {
+    return null;
+  },
   async session() {
     const data = await request<Session & { user: Session["user"] | null }>(
       "session",
@@ -67,15 +81,83 @@ export const api = {
   draft: (body: unknown, key: string) =>
     request<Lead>("call-drafts", "POST", body, key),
   entry: (id: number, body: unknown, key: string) =>
-    request<Lead>(`leads/${id}/submit-entry`, "POST", body, key),
+    request<Lead & { duplicateConflict?: boolean }>(`leads/${id}/submit-entry`, "POST", body, key),
   feedback: (id: number, body: Feedback, key: string) =>
     request(`followups/${id}/feedback`, "POST", body, key),
   createTask: (body: unknown, key: string) =>
     request("tasks", "POST", body, key),
-  taskStatus: (id: number, status: string, version: number, key: string) =>
+  taskStatus: (id: number, status: string, version: number, key?: string) =>
     request(`tasks/${id}`, "PATCH", { status, version }, key),
   staff: () => request<Session["user"][]>("staff"),
+  createDepartment: (body: { code: string; name: string }) =>
+    request("departments", "POST", body),
   createStaff: (body: unknown, key: string) =>
     request("staff", "POST", body, key),
+  saveProject: (projectInput: Partial<InventoryProject>) =>
+    request<InventoryProject>("inventory/projects", "POST", projectInput),
+  resolveCustomerReview: (reviewId: number, decision: "approved_shared" | "rejected") =>
+    request<CustomerReviewRequest>(`customers/review-requests/${reviewId}`, "POST", { decision }),
+  issueContract: (payload: {
+    projectId: number;
+    apartmentId: number;
+    buyers: HrContract["buyers"];
+    installments: Array<{ description: string; percentage: number; dueDate: string | null }>;
+    salesAgentName: string;
+    clauses: string[];
+    notes: string;
+  }) => request<HrContract>("hr/contracts", "POST", payload),
+  manageDeposit: (payload: {
+    action: "draft" | "approve" | "return" | "reverse";
+    contractId: number;
+    installmentId: number;
+    depositId?: number;
+    amount?: number;
+    paymentMethod?: "Cash" | "Bank Transfer" | "Cheque";
+    receiptNumber?: string;
+    notes?: string;
+    reason?: string;
+  }) => request<FinanceDeposit>("finance/deposits", "POST", payload),
+  createMarketingEntry: (payload: {
+    customerName: string;
+    address: string;
+    propertyType: "Villa" | "Block" | "Building" | "Apartment";
+  }) => request<MarketingProductionEntry>("marketing/entries", "POST", payload),
+  advanceMarketing: (
+    entryId: number,
+    action:
+      | "schedule_filming"
+      | "complete_filming"
+      | "schedule_editing"
+      | "ready_for_post"
+      | "mark_posted",
+    payload: Record<string, any>,
+  ) =>
+    request<{ entry: MarketingProductionEntry; submission?: SubmissionPost }>(
+      `marketing/entries/${entryId}`,
+      "POST",
+      { action, ...payload },
+    ),
+  uploadDeliverableVersion: (
+    deliverableId: number,
+    payload: { fileUrl: string; fileName: string; format: string; notes: string },
+  ) =>
+    request<EngineeringDeliverable>(
+      `engineering/deliverables/${deliverableId}/versions`,
+      "POST",
+      payload,
+    ),
+  reviewDeliverable: (
+    deliverableId: number,
+    payload: {
+      versionNumber: number;
+      decision: "approved" | "revision_requested";
+      comment: string;
+    },
+  ) =>
+    request<EngineeringDeliverable>(
+      `engineering/deliverables/${deliverableId}/review`,
+      "POST",
+      payload,
+    ),
   resetPassword: (email: string) => resetPassword(firebaseKey, email),
 };

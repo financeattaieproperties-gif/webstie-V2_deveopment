@@ -54,6 +54,7 @@ const S = {
 const navItems = [
   { to: '/properties', label: 'Properties', icon: '🏠' },
   { to: '/projects',   label: 'Projects',   icon: '🏗' },
+  { to: '/tasks',      label: 'Tasks (Submissions)', icon: '✅' },
   { to: '/leads',      label: 'Leads',      icon: '📋' },
   { to: '/chat',       label: 'Live Chat',  icon: '💬' },
   { to: '/visits',     label: 'Visits',     icon: '📅' },

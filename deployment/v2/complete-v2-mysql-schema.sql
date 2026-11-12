@@ -491,6 +491,8 @@ INSERT IGNORE INTO core_module_versions VALUES ('core',1,UTC_TIMESTAMP());
 
 INSERT IGNORE INTO core_departments VALUES
   ('administration','Administration'),
+  ('management','Management'),
+  ('hr','Human Resources'),
   ('callcenter','Call Center'),
   ('sales','Sales Department'),
   ('production','Marketing and Production'),
@@ -502,11 +504,15 @@ INSERT IGNORE INTO core_departments VALUES
 INSERT IGNORE INTO core_roles VALUES
   ('ceo','administration','Admin (CEO)'),
   ('admin','administration','Administrator'),
+  ('manager','management','Manager'),
+  ('hr_manager','hr','HR Manager'),
   ('callcenter','callcenter','Call Center Agent'),
   ('sales_leader','sales','Sales Team Leader'),
   ('sales','sales','Sales Agent'),
+  ('marketing_manager','production','Marketing Manager'),
   ('production_manager','production','Production Manager'),
   ('editor','production','Editor'),
+  ('videographer','production','Videographer'),
   ('photographer','production','Photographer'),
   ('branch_manager','branches','Manager'),
   ('assistant_manager','branches','Assistant Manager'),
@@ -520,16 +526,26 @@ INSERT IGNORE INTO core_roles VALUES
 INSERT IGNORE INTO core_permissions VALUES
   ('core.tasks.read_own','core','Read and complete assigned management tasks'),
   ('core.tasks.assign','core','Assign management tasks'),
-  ('core.staff.manage','core','Provision and deactivate operational staff');
+  ('core.staff.manage','core','Provision and deactivate operational staff'),
+  ('core.departments.manage','core','Create and manage internal departments and staff roles'),
+  ('core.submissions.read','core','Read website publishing submission status');
 
 INSERT IGNORE INTO core_role_permissions
-  SELECT code, 'core.tasks.read_own' FROM core_roles WHERE code <> 'customer';
+  SELECT code, 'core.tasks.read_own' FROM core_roles WHERE code NOT IN ('customer','admin');
 
 INSERT IGNORE INTO core_role_permissions VALUES
+  ('manager','core.tasks.assign'),
   ('ceo','core.tasks.assign'),
-  ('admin','core.tasks.assign'),
+  ('branch_manager','core.tasks.assign'),
+  ('sales_leader','core.tasks.assign'),
+  ('marketing_manager','core.tasks.assign'),
+  ('production_manager','core.tasks.assign'),
+  ('finance_manager','core.tasks.assign'),
+  ('manager','core.staff.manage'),
   ('ceo','core.staff.manage'),
-  ('admin','core.staff.manage');
+  ('branch_manager','core.staff.manage'),
+  ('manager','core.departments.manage'),
+  ('ceo','core.departments.manage');
 
 
 -- ==============================================================================
@@ -659,9 +675,332 @@ INSERT IGNORE INTO core_permissions VALUES
 INSERT IGNORE INTO core_role_permissions VALUES
   ('callcenter','callcenter.access'),
   ('sales','callcenter.access'),
+  ('sales_leader','callcenter.access'),
+  ('manager','callcenter.access'),
+  ('manager','callcenter.manage'),
   ('ceo','callcenter.access'),
-  ('admin','callcenter.access'),
-  ('ceo','callcenter.manage'),
-  ('admin','callcenter.manage');
+  ('ceo','callcenter.manage');
+
+
+-- ==============================================================================
+-- PART D: PRE-SALE INVENTORY, SALES CRM, HR CONTRACTS, FINANCE & ENGINEERING
+-- (INTERNAL OFFICE CRM DATABASE — TEXT & NUMERIC ONLY, NO WEBSITE IMAGE LINKS)
+-- ==============================================================================
+
+-- 40. Pre-Sale Projects (Manager Inventory)
+CREATE TABLE IF NOT EXISTS inv_projects (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(40) NOT NULL UNIQUE,
+  name VARCHAR(160) NOT NULL,
+  location VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  floors INT UNSIGNED NOT NULL DEFAULT 1,
+  assigned_team_leader_id INT UNSIGNED NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  version INT NOT NULL DEFAULT 1,
+  FOREIGN KEY (assigned_team_leader_id) REFERENCES core_users(id),
+  FOREIGN KEY (created_by) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 41. Project Sellers (Multiple Owners/Sellers per Project)
+CREATE TABLE IF NOT EXISTS inv_project_sellers (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  father_name VARCHAR(160) NOT NULL DEFAULT '',
+  grandfather_name VARCHAR(160) NOT NULL DEFAULT '',
+  tazkira_number VARCHAR(80) NOT NULL,
+  phone VARCHAR(40) NOT NULL DEFAULT '',
+  address VARCHAR(255) NOT NULL DEFAULT '',
+  share_percentage DECIMAL(5,2) NOT NULL DEFAULT 100.00,
+  FOREIGN KEY (project_id) REFERENCES inv_projects(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 42. Construction Company Details per Project
+CREATE TABLE IF NOT EXISTS inv_construction_companies (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL UNIQUE,
+  company_name VARCHAR(180) NOT NULL,
+  license_number VARCHAR(80) NOT NULL DEFAULT '',
+  representative_name VARCHAR(160) NOT NULL,
+  representative_father_name VARCHAR(160) NOT NULL DEFAULT '',
+  representative_tazkira VARCHAR(80) NOT NULL DEFAULT '',
+  phone VARCHAR(40) NOT NULL DEFAULT '',
+  address VARCHAR(255) NOT NULL DEFAULT '',
+  FOREIGN KEY (project_id) REFERENCES inv_projects(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 43. Project Apartments (4 Boundaries, Direction, Sqm Price)
+CREATE TABLE IF NOT EXISTS inv_apartments (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL,
+  unit_number VARCHAR(40) NOT NULL,
+  serial_number VARCHAR(80) NOT NULL UNIQUE,
+  floor INT NOT NULL,
+  rooms INT UNSIGNED NOT NULL DEFAULT 3,
+  area_sqm DECIMAL(10,2) NOT NULL,
+  direction VARCHAR(80) NOT NULL,
+  boundary_north VARCHAR(180) NOT NULL,
+  boundary_south VARCHAR(180) NOT NULL,
+  boundary_east VARCHAR(180) NOT NULL,
+  boundary_west VARCHAR(180) NOT NULL,
+  price_per_sqm DECIMAL(14,2) NOT NULL,
+  total_price DECIMAL(14,2) NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  status ENUM('available','reserved','deal_closed','sold') NOT NULL DEFAULT 'available',
+  version INT NOT NULL DEFAULT 1,
+  UNIQUE KEY uq_inv_project_unit (project_id, unit_number),
+  FOREIGN KEY (project_id) REFERENCES inv_projects(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 44. Project Sales Agent Assignments
+CREATE TABLE IF NOT EXISTS inv_project_sales_agents (
+  project_id INT UNSIGNED NOT NULL,
+  sales_agent_id INT UNSIGNED NOT NULL,
+  assigned_by INT UNSIGNED NOT NULL,
+  assigned_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (project_id, sales_agent_id),
+  FOREIGN KEY (project_id) REFERENCES inv_projects(id),
+  FOREIGN KEY (sales_agent_id) REFERENCES core_users(id),
+  FOREIGN KEY (assigned_by) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 45. Customer Duplicate Review Requests
+CREATE TABLE IF NOT EXISTS crm_customer_review_requests (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  customer_id INT UNSIGNED NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  requesting_agent_id INT UNSIGNED NOT NULL,
+  submitted_name VARCHAR(160) NOT NULL,
+  submitted_requirements TEXT NOT NULL,
+  status ENUM('pending_review','approved_shared','rejected') NOT NULL DEFAULT 'pending_review',
+  reviewed_by INT UNSIGNED NULL,
+  manager_note TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at DATETIME NULL,
+  version INT NOT NULL DEFAULT 1,
+  FOREIGN KEY (customer_id) REFERENCES cc_customers(id),
+  FOREIGN KEY (requesting_agent_id) REFERENCES core_users(id),
+  FOREIGN KEY (reviewed_by) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 46. Sales Deal Closures & HR Contract Handoffs
+CREATE TABLE IF NOT EXISTS crm_deal_handoffs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  lead_id INT UNSIGNED NOT NULL UNIQUE,
+  deal_serial VARCHAR(100) NOT NULL UNIQUE,
+  sales_agent_id INT UNSIGNED NOT NULL,
+  project_id INT UNSIGNED NOT NULL,
+  apartment_id INT UNSIGNED NOT NULL,
+  agreed_amount DECIMAL(14,2) NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  buyer_photo_url VARCHAR(500) NOT NULL,
+  tazkira_photo_url VARCHAR(500) NOT NULL,
+  hr_status ENUM('pending_contract','contract_issued') NOT NULL DEFAULT 'pending_contract',
+  closed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lead_id) REFERENCES cc_leads(id),
+  FOREIGN KEY (sales_agent_id) REFERENCES core_users(id),
+  FOREIGN KEY (project_id) REFERENCES inv_projects(id),
+  FOREIGN KEY (apartment_id) REFERENCES inv_apartments(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 47. HR Bilingual Apartment Contracts
+CREATE TABLE IF NOT EXISTS hr_contracts (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  contract_serial VARCHAR(100) NOT NULL UNIQUE,
+  deal_handoff_id INT UNSIGNED NULL,
+  project_id INT UNSIGNED NOT NULL,
+  apartment_id INT UNSIGNED NOT NULL,
+  sellers_snapshot_json MEDIUMTEXT NOT NULL,
+  construction_snapshot_json MEDIUMTEXT NOT NULL,
+  apartment_snapshot_json MEDIUMTEXT NOT NULL,
+  price_per_sqm DECIMAL(14,2) NOT NULL,
+  total_price DECIMAL(14,2) NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  sales_agent_name VARCHAR(160) NOT NULL DEFAULT '',
+  gregorian_date DATE NOT NULL,
+  jalali_date VARCHAR(40) NOT NULL,
+  clauses_json MEDIUMTEXT NOT NULL,
+  notes TEXT NOT NULL,
+  status ENUM('draft','issued','amended','cancelled') NOT NULL DEFAULT 'issued',
+  amendment_version INT UNSIGNED NOT NULL DEFAULT 1,
+  issued_by INT UNSIGNED NOT NULL,
+  issued_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  version INT NOT NULL DEFAULT 1,
+  FOREIGN KEY (deal_handoff_id) REFERENCES crm_deal_handoffs(id),
+  FOREIGN KEY (project_id) REFERENCES inv_projects(id),
+  FOREIGN KEY (apartment_id) REFERENCES inv_apartments(id),
+  FOREIGN KEY (issued_by) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 48. HR Contract Buyers (Multiple Co-Buyers Supported)
+CREATE TABLE IF NOT EXISTS hr_contract_buyers (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  contract_id INT UNSIGNED NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  father_name VARCHAR(160) NOT NULL,
+  grandfather_name VARCHAR(160) NOT NULL DEFAULT '',
+  tazkira_number VARCHAR(80) NOT NULL,
+  phone VARCHAR(40) NOT NULL,
+  address VARCHAR(255) NOT NULL,
+  photo_3x4_url VARCHAR(500) NOT NULL,
+  tazkira_photo_url VARCHAR(500) NULL,
+  FOREIGN KEY (contract_id) REFERENCES hr_contracts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 49. HR Contract Installment Schedule (100% Reconciled)
+CREATE TABLE IF NOT EXISTS hr_contract_installments (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  contract_id INT UNSIGNED NOT NULL,
+  installment_number INT UNSIGNED NOT NULL,
+  description VARCHAR(180) NOT NULL,
+  percentage DECIMAL(5,2) NOT NULL,
+  due_date DATE NULL,
+  scheduled_amount DECIMAL(14,2) NOT NULL,
+  paid_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  status ENUM('pending','partially_paid','paid','overdue') NOT NULL DEFAULT 'pending',
+  UNIQUE KEY uq_hr_contract_inst (contract_id, installment_number),
+  FOREIGN KEY (contract_id) REFERENCES hr_contracts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 50. Finance Installment Deposits (Assistant Draft -> Manager Post/Reverse)
+CREATE TABLE IF NOT EXISTS fin_deposits (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  contract_id INT UNSIGNED NOT NULL,
+  installment_id INT UNSIGNED NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  payment_method ENUM('Cash','Bank Transfer','Cheque') NOT NULL DEFAULT 'Cash',
+  receipt_number VARCHAR(80) NOT NULL,
+  notes TEXT NOT NULL,
+  status ENUM('draft','posted','returned','reversed') NOT NULL DEFAULT 'draft',
+  reversal_reason TEXT NULL,
+  entered_by INT UNSIGNED NOT NULL,
+  approved_by INT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  posted_at DATETIME NULL,
+  version INT NOT NULL DEFAULT 1,
+  FOREIGN KEY (contract_id) REFERENCES hr_contracts(id),
+  FOREIGN KEY (installment_id) REFERENCES hr_contract_installments(id),
+  FOREIGN KEY (entered_by) REFERENCES core_users(id),
+  FOREIGN KEY (approved_by) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 51. Marketing & Media Production Entries
+CREATE TABLE IF NOT EXISTS mkt_production_entries (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  customer_name VARCHAR(160) NOT NULL,
+  address VARCHAR(255) NOT NULL,
+  property_type ENUM('Villa','Block','Building','Apartment') NOT NULL,
+  submitted_by_id INT UNSIGNED NOT NULL,
+  submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  filming_date DATE NULL,
+  videographer_id INT UNSIGNED NULL,
+  filming_completed_at DATETIME NULL,
+  editing_deadline_at DATE NULL,
+  editor_id INT UNSIGNED NULL,
+  content_type VARCHAR(120) NULL,
+  serial_number VARCHAR(80) NULL UNIQUE,
+  property_info_note TEXT NULL,
+  photos_json MEDIUMTEXT NULL,
+  platform ENUM('Facebook','YouTube','Instagram') NULL,
+  stage ENUM('submitted','filming_scheduled','filming_completed','editing_scheduled','ready_for_post','posted') NOT NULL DEFAULT 'submitted',
+  submission_post_id INT UNSIGNED NULL,
+  version INT NOT NULL DEFAULT 1,
+  FOREIGN KEY (submitted_by_id) REFERENCES core_users(id),
+  FOREIGN KEY (videographer_id) REFERENCES core_users(id),
+  FOREIGN KEY (editor_id) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 52. Engineering Deliverables & Version History
+CREATE TABLE IF NOT EXISTS eng_deliverables (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL,
+  apartment_id INT UNSIGNED NULL,
+  title VARCHAR(200) NOT NULL,
+  assigned_role ENUM('architect','graphic_designer','visual_designer_3d') NOT NULL,
+  assignee_id INT UNSIGNED NOT NULL,
+  assigned_by_id INT UNSIGNED NOT NULL,
+  deadline_at DATETIME NOT NULL,
+  version INT NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES inv_projects(id),
+  FOREIGN KEY (apartment_id) REFERENCES inv_apartments(id),
+  FOREIGN KEY (assignee_id) REFERENCES core_users(id),
+  FOREIGN KEY (assigned_by_id) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS eng_deliverable_versions (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  deliverable_id INT UNSIGNED NOT NULL,
+  version_number INT UNSIGNED NOT NULL,
+  file_url VARCHAR(500) NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  format VARCHAR(100) NOT NULL,
+  notes TEXT NOT NULL,
+  submitted_by_id INT UNSIGNED NOT NULL,
+  submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  status ENUM('submitted','approved','revision_requested') NOT NULL DEFAULT 'submitted',
+  reviewer_comment TEXT NULL,
+  reviewed_by_id INT UNSIGNED NULL,
+  reviewed_at DATETIME NULL,
+  UNIQUE KEY uq_eng_deliv_version (deliverable_id, version_number),
+  FOREIGN KEY (deliverable_id) REFERENCES eng_deliverables(id),
+  FOREIGN KEY (submitted_by_id) REFERENCES core_users(id),
+  FOREIGN KEY (reviewed_by_id) REFERENCES core_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- ==============================================================================
+-- PART E: ISOLATED THIRD SUBMISSION DATABASE (BRIDGE BETWEEN MARKETING & ADMIN)
+-- UDR-001/002/003: Admin reads/updates status here and publishes to Website DB;
+-- Internal Staff reads status here; Admin NEVER accesses Internal CRM DB.
+-- ==============================================================================
+
+-- 53. Submitted Posts for Website Publishing
+CREATE TABLE IF NOT EXISTS sub_posts (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  marketing_entry_id INT UNSIGNED NOT NULL UNIQUE,
+  serial_number VARCHAR(80) NOT NULL UNIQUE,
+  customer_name VARCHAR(160) NOT NULL,
+  address VARCHAR(255) NOT NULL,
+  property_type ENUM('Villa','Block','Building','Apartment') NOT NULL,
+  property_info_note TEXT NOT NULL,
+  social_platform ENUM('Facebook','YouTube','Instagram') NOT NULL,
+  publish_status ENUM('Submitted','Approved','Published','Rejected') NOT NULL DEFAULT 'Submitted',
+  rejection_reason TEXT NULL,
+  submitted_by_name VARCHAR(160) NOT NULL,
+  submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at DATETIME NULL,
+  published_at DATETIME NULL,
+  website_property_id INT UNSIGNED NULL,
+  version INT NOT NULL DEFAULT 1,
+  INDEX idx_sub_posts_status (publish_status, submitted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 54. Submitted Post Five Photos
+CREATE TABLE IF NOT EXISTS sub_post_photos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  sub_post_id INT UNSIGNED NOT NULL,
+  sort_order TINYINT UNSIGNED NOT NULL,
+  photo_url VARCHAR(500) NOT NULL,
+  UNIQUE KEY uq_sub_photo_order (sub_post_id, sort_order),
+  FOREIGN KEY (sub_post_id) REFERENCES sub_posts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 55. Submission Status Audit Trail
+CREATE TABLE IF NOT EXISTS sub_publish_events (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  sub_post_id INT UNSIGNED NOT NULL,
+  actor_role VARCHAR(60) NOT NULL,
+  previous_status VARCHAR(40) NULL,
+  next_status VARCHAR(40) NOT NULL,
+  notes TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (sub_post_id) REFERENCES sub_posts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;
+

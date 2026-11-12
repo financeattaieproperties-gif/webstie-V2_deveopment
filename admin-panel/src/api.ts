@@ -152,6 +152,24 @@ export const api = {
   deleteBranch: (id: number) => request<{ deleted: number }>(`/admin/branches.php?id=${id}`, { method: 'DELETE' }),
 
   getLeads: () => request<Lead[]>('/admin/leads.php'),
+  getSubmissions: () => request<SubmissionPost[]>('/admin/submissions.php'),
+  updateSubmissionStatus: (payload: {
+    id: number;
+    action: 'approve' | 'publish' | 'reject';
+    price?: number;
+    listing_type?: 'sale' | 'rent';
+    beds?: number | null;
+    baths?: number | null;
+    area?: number | null;
+    floor?: number | null;
+    reason?: string;
+  }) =>
+    request<{
+      ok: boolean;
+      submission_status: SubmissionPost['submission_status'];
+      website_property_id?: number;
+      serial_number?: string;
+    }>('/admin/submissions.php', { method: 'PUT', body: JSON.stringify(payload) }),
   getVisitRequests: () => request<VisitRequest[]>('/admin/visit-requests.php'),
   updateVisitRequest: (id: number, status: VisitRequest['status'], staff_note: string) =>
     request<{ success: boolean }>('/admin/visit-requests.php', { method: 'PUT', body: JSON.stringify({ id, status, staff_note }) }),
@@ -1073,4 +1091,25 @@ export interface ChatConversation {
   updated_at: string;
   messages: ChatMessage[];
 }
+
+export interface SubmissionPost {
+  id: number;
+  marketing_entry_id?: number;
+  property_serial: string;
+  customer_name: string;
+  address: string;
+  property_type: 'House' | 'Apartment' | 'Shop' | 'Villa' | 'Commercial' | 'Land';
+  property_info_note: string;
+  photos: string[];
+  social_platform: string;
+  submission_status: 'Submitted' | 'Approved' | 'Published' | 'Rejected';
+  submitted_by: string;
+  approved_by?: string | null;
+  published_by?: string | null;
+  rejected_reason?: string | null;
+  website_property_id?: number | null;
+  created_at: string;
+  updated_at?: string;
+}
+
 

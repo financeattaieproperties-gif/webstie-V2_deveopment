@@ -7,12 +7,12 @@ const option = (name) => process.argv[process.argv.indexOf(name) + 1];
 const role = option("--role");
 const output = option("--out");
 if (
-  !["callcenter", "management"].includes(role) ||
+  !["callcenter", "management", "dashboard"].includes(role) ||
   !output ||
   output.startsWith("--")
 )
   throw new Error(
-    "Usage: node scripts/build-staff.mjs --role callcenter|management --out <new directory>. Sales dashboard is excluded.",
+    "Usage: node scripts/build-staff.mjs --role callcenter|management|dashboard --out <new directory>. Sales dashboard is excluded.",
   );
 const out = path.resolve(output);
 if (fs.existsSync(out))

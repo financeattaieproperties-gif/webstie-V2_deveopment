@@ -58,20 +58,34 @@ CREATE TABLE core_idempotency_keys (
 INSERT INTO core_modules VALUES ('core','Shared application core',UTC_TIMESTAMP());
 INSERT INTO core_module_versions VALUES ('core',1,UTC_TIMESTAMP());
 INSERT INTO core_departments VALUES
- ('administration','Administration'),('callcenter','Call Center'),('sales','Sales Department'),
+ ('administration','Administration'),('management','Management'),('hr','Human Resources'),
+ ('callcenter','Call Center'),('sales','Sales Department'),
  ('production','Marketing and Production'),('branches','Branch Management'),('finance','Finance'),
  ('engineering','Engineering and Graphic Department'),('customers','Customers');
 INSERT INTO core_roles VALUES
  ('ceo','administration','Admin (CEO)'),('admin','administration','Administrator'),
+ ('manager','management','Manager'),('hr_manager','hr','HR Manager'),
  ('callcenter','callcenter','Call Center Agent'),('sales_leader','sales','Sales Team Leader'),('sales','sales','Sales Agent'),
- ('production_manager','production','Production Manager'),('editor','production','Editor'),('photographer','production','Photographer'),
+ ('marketing_manager','production','Marketing Manager'),('production_manager','production','Production Manager'),
+ ('editor','production','Editor'),('videographer','production','Videographer'),('photographer','production','Photographer'),
  ('branch_manager','branches','Manager'),('assistant_manager','branches','Assistant Manager'),
  ('finance_manager','finance','Finance Manager'),('finance_assistant','finance','Finance Assistant'),
  ('architect','engineering','Architect'),('graphic_designer','engineering','Graphic Designer'),('visual_designer_3d','engineering','3D Visual Designer'),
  ('customer','customers','Customer');
 INSERT INTO core_permissions VALUES
  ('core.tasks.read_own','core','Read and complete assigned management tasks'),
- ('core.tasks.assign','core','Assign management tasks'),('core.staff.manage','core','Provision and deactivate operational staff');
-INSERT INTO core_role_permissions SELECT code,'core.tasks.read_own' FROM core_roles WHERE code <> 'customer';
+ ('core.tasks.assign','core','Assign management tasks'),
+ ('core.staff.manage','core','Provision and deactivate operational staff'),
+ ('core.departments.manage','core','Create and manage internal departments and staff roles'),
+ ('core.submissions.read','core','Read website publishing submission status');
+INSERT INTO core_role_permissions SELECT code,'core.tasks.read_own' FROM core_roles WHERE code NOT IN ('customer','admin');
 INSERT INTO core_role_permissions VALUES
- ('ceo','core.tasks.assign'),('admin','core.tasks.assign'),('ceo','core.staff.manage'),('admin','core.staff.manage');
+ ('manager','core.tasks.assign'),('ceo','core.tasks.assign'),('branch_manager','core.tasks.assign'),
+ ('sales_leader','core.tasks.assign'),('marketing_manager','core.tasks.assign'),('production_manager','core.tasks.assign'),('finance_manager','core.tasks.assign'),
+ ('manager','core.staff.manage'),('ceo','core.staff.manage'),('branch_manager','core.staff.manage'),
+ ('manager','core.departments.manage'),('ceo','core.departments.manage'),
+ ('manager','core.submissions.read'),('ceo','core.submissions.read'),('marketing_manager','core.submissions.read'),
+ ('production_manager','core.submissions.read'),('editor','core.submissions.read'),('videographer','core.submissions.read'),
+ ('finance_manager','core.submissions.read'),('finance_assistant','core.submissions.read'),
+ ('sales_leader','core.submissions.read'),('sales','core.submissions.read'),('callcenter','core.submissions.read');
+

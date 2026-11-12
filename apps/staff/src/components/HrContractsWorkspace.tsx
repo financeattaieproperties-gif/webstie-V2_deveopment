@@ -1,0 +1,783 @@
+import React, { useState } from 'react';
+import type {
+  ContractBuyer,
+  HrContract,
+  InventoryProject,
+  Lead,
+  Role,
+} from '../../../../packages/staff-contracts/types';
+
+export interface HrContractsWorkspaceProps {
+  contracts: HrContract[];
+  projects: InventoryProject[];
+  closedDeals: Lead[];
+  actorRole: Role;
+  onIssueContract: (payload: {
+    projectId: number;
+    apartmentId: number;
+    buyers: ContractBuyer[];
+    installments: Array<{ description: string; percentage: number; dueDate: string | null }>;
+    salesAgentName: string;
+    clauses: string[];
+    notes: string;
+  }) => Promise<HrContract>;
+  onNotice: (msg: string) => void;
+  onError: (err: string) => void;
+}
+
+export function HrContractsWorkspace({
+  contracts,
+  projects,
+  closedDeals,
+  actorRole,
+  onIssueContract,
+  onNotice,
+  onError,
+}: HrContractsWorkspaceProps) {
+  const canIssue = actorRole === 'hr_manager';
+  const [showWizard, setShowWizard] = useState(false);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [selectedContract, setSelectedContract] = useState<HrContract | null>(
+    contracts[0] || null
+  );
+
+  // Wizard state
+  const [projectId, setProjectId] = useState<number>(projects[0]?.id || 1);
+  const selectedProject = projects.find((p) => p.id === projectId) || projects[0];
+  const eligibleApartments =
+    selectedProject?.apartments.filter((a) => a.status !== 'sold') || [];
+  const [apartmentId, setApartmentId] = useState<number>(
+    eligibleApartments[0]?.id || selectedProject?.apartments[1]?.id || 1
+  );
+  const selectedApartment =
+    selectedProject?.apartments.find((a) => a.id === apartmentId) ||
+    eligibleApartments[0] ||
+    selectedProject?.apartments[0];
+
+  const [salesAgentName, setSalesAgentName] = useState('Sara Karimi');
+  const [buyers, setBuyers] = useState<ContractBuyer[]>([
+    {
+      name: 'Zahra Azizi',
+      fatherName: 'Mohammad Kabir',
+      grandfatherName: 'Haji Aziz',
+      tazkiraNumber: '1401-05-88210',
+      phone: '+93700334455',
+      address: 'Shahr-e-Naw, District 10, Kabul',
+      photo3x4Url: '/logo.png',
+      tazkiraPhotoUrl: '/logo.png',
+    },
+  ]);
+
+  const [installments, setInstallments] = useState<
+    Array<{ description: string; percentage: number; dueDate: string | null }>
+  >([
+    { description: '30% Signing Downpayment', percentage: 30, dueDate: '2026-11-15' },
+    { description: '35% Frame Completion Milestone', percentage: 35, dueDate: '2027-03-15' },
+    { description: '35% Key Handover Balance', percentage: 35, dueDate: '2027-07-15' },
+  ]);
+
+  const [clauses, setClauses] = useState<string[]>([
+    'The Seller and Construction Company guarantee clear legal title and timely construction delivery of the specified apartment unit.',
+    'The Buyer agrees to pay each scheduled installment to Attaie Properties Finance Department according to the agreed dates.',
+    'Any transfer or resale prior to full settlement requires written clearance from Attaie Properties HR & Finance Departments.',
+  ]);
+  const [notes, setNotes] = useState(
+    'Verified against buyer original Tazkira and Sales Deal Closed handoff.'
+  );
+
+  const totalPct = installments.reduce((sum, i) => sum + Number(i.percentage || 0), 0);
+
+  const handleSelectDealHandoff = (lead: Lead) => {
+    if (lead.projectId) setProjectId(lead.projectId);
+    if (lead.apartmentId) setApartmentId(lead.apartmentId);
+    if (lead.deal?.salesAgent) setSalesAgentName(lead.deal.salesAgent);
+    setBuyers([
+      {
+        name: lead.customerName || 'Buyer',
+        fatherName: 'Haji Ahmad',
+        grandfatherName: 'Mohammad',
+        tazkiraNumber: '1401-08-99123',
+        phone: lead.phone,
+        address: 'Kabul, Afghanistan',
+        photo3x4Url: lead.deal?.buyerPhotoUrl || '/logo.png',
+        tazkiraPhotoUrl: lead.deal?.tazkiraPhotoUrl || '/logo.png',
+      },
+    ]);
+    setStep(1);
+    setShowWizard(true);
+  };
+
+  const handleIssue = async () => {
+    try {
+      const created = await onIssueContract({
+        projectId,
+        apartmentId: selectedApartment?.id || apartmentId,
+        buyers,
+        installments,
+        salesAgentName,
+        clauses,
+        notes,
+      });
+      setSelectedContract(created);
+      setShowWizard(false);
+      onNotice(
+        `Contract ${created.contractSerial} issued directly by HR Manager and synchronized to Finance installment ledger.`
+      );
+    } catch (e) {
+      onError((e as Error).message);
+    }
+  };
+
+  return (
+    <section className="panel" data-testid="hr-contracts-workspace">
+      <div className="panel-heading">
+        <div>
+          <p className="eyebrow">HR Department • Bilingual Pre-Sale Apartment Contracts</p>
+          <h2>Deal Contracts & Two-Page A4 Legal Printout</h2>
+        </div>
+        {canIssue && (
+          <div className="heading-actions">
+            <button
+              type="button"
+              className="button"
+              data-testid="open-hr-contract-wizard-btn"
+              onClick={() => {
+                setStep(1);
+                setShowWizard(!showWizard);
+              }}
+            >
+              {showWizard ? 'Close Contract Wizard' : '+ New Deal Contract (4-Step Wizard)'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Pending Deal Closed Handoffs from Sales */}
+      {closedDeals.length > 0 && (
+        <div
+          className="integration-note"
+          style={{ marginTop: 12, marginBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}
+        >
+          <div>
+            <strong>Pending Sales Deal Closed Handoffs ({closedDeals.length})</strong>
+            <p style={{ margin: '2px 0 0', fontSize: 13 }}>
+              {closedDeals
+                .map(
+                  (d) =>
+                    `${d.deal?.dealSerial || d.serial} • ${d.customerName} (${d.projectName || 'KP12'} ${d.apartmentNumber || 'F4-A1'})`
+                )
+                .join(' | ')}
+            </p>
+          </div>
+          {canIssue && (
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => handleSelectDealHandoff(closedDeals[0])}
+            >
+              Load Deal into Contract Wizard
+            </button>
+          )}
+        </div>
+      )}
+
+      {showWizard && canIssue && (
+        <div
+          className="panel"
+          style={{ marginBottom: 18, borderStyle: 'dashed' }}
+          data-testid="hr-contract-wizard"
+        >
+          <div className="wizard-steps">
+            {[
+              { s: 1 as const, label: '1. Project & Apartment' },
+              { s: 2 as const, label: '2. Buyer & 3×4 Portrait' },
+              { s: 3 as const, label: '3. 100% Installments' },
+              { s: 4 as const, label: '4. Review & Direct Issue' },
+            ].map((item) => (
+              <button
+                key={item.s}
+                type="button"
+                className={`wizard-step ${step === item.s ? 'active' : ''}`}
+                onClick={() => setStep(item.s)}
+              >
+                <span className="wizard-step-num">{item.s}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {step === 1 && (
+            <div className="form-grid" data-testid="hr-wizard-step-1">
+              <div className="field">
+                <label>Select Pre-Sale Project (Manager Inventory)</label>
+                <select
+                  value={projectId}
+                  onChange={(e) => {
+                    const nextProjId = Number(e.target.value);
+                    setProjectId(nextProjId);
+                    const nextProj = projects.find((p) => p.id === nextProjId);
+                    const firstAvail = nextProj?.apartments.find((a) => a.status !== 'sold');
+                    if (firstAvail) setApartmentId(firstAvail.id);
+                  }}
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.code} — {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Select Apartment Unit</label>
+                <select
+                  value={selectedApartment?.id || ''}
+                  onChange={(e) => setApartmentId(Number(e.target.value))}
+                >
+                  {eligibleApartments.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.unitNumber} (Floor {a.floor} • {a.areaSqm} m² • ${a.totalPrice.toLocaleString()} • {a.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Closing Sales Agent</label>
+                <input
+                  value={salesAgentName}
+                  onChange={(e) => setSalesAgentName(e.target.value)}
+                />
+              </div>
+
+              {selectedApartment && selectedProject && (
+                <div className="field full" style={{ background: 'var(--surface)', padding: 12, borderRadius: 8 }}>
+                  <strong>Auto-Populated Inventory Specifications:</strong>
+                  <p style={{ margin: '4px 0', fontSize: 13 }}>
+                    Unit <strong>{selectedApartment.unitNumber}</strong> ({selectedApartment.serialNumber}) • Floor {selectedApartment.floor} • {selectedApartment.rooms} Rooms • {selectedApartment.areaSqm} m² • Direction: {selectedApartment.direction} • Total: <strong>${selectedApartment.totalPrice.toLocaleString()} {selectedApartment.currency}</strong> (${selectedApartment.pricePerSqm}/m²)
+                  </p>
+                  <small>
+                    Boundaries — North: {selectedApartment.boundaryNorth} | South: {selectedApartment.boundarySouth} | East: {selectedApartment.boundaryEast} | West: {selectedApartment.boundaryWest}
+                  </small>
+                </div>
+              )}
+
+              <div className="modal-actions full">
+                <button type="button" className="button" onClick={() => setStep(2)}>
+                  Next: Buyer Info & 3×4 Portrait
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div data-testid="hr-wizard-step-2">
+              <div className="panel-heading">
+                <h3>Buyer Identity & 3×4 Portrait ({buyers.length})</h3>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() =>
+                    setBuyers((prev) => [
+                      ...prev,
+                      {
+                        name: '',
+                        fatherName: '',
+                        grandfatherName: '',
+                        tazkiraNumber: '',
+                        phone: '',
+                        address: '',
+                        photo3x4Url: '/logo.png',
+                      },
+                    ])
+                  }
+                >
+                  + Add Co-Buyer
+                </button>
+              </div>
+              {buyers.map((b, idx) => (
+                <div key={idx} className="form-grid" style={{ marginBottom: 12 }}>
+                  <div className="field">
+                    <label>Buyer #{idx + 1} Full Name</label>
+                    <input
+                      value={b.name}
+                      onChange={(e) => {
+                        const next = [...buyers];
+                        next[idx] = { ...next[idx], name: e.target.value };
+                        setBuyers(next);
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Father Name</label>
+                    <input
+                      value={b.fatherName}
+                      onChange={(e) => {
+                        const next = [...buyers];
+                        next[idx] = { ...next[idx], fatherName: e.target.value };
+                        setBuyers(next);
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Grandfather Name</label>
+                    <input
+                      value={b.grandfatherName}
+                      onChange={(e) => {
+                        const next = [...buyers];
+                        next[idx] = { ...next[idx], grandfatherName: e.target.value };
+                        setBuyers(next);
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Tazkira Number</label>
+                    <input
+                      value={b.tazkiraNumber}
+                      onChange={(e) => {
+                        const next = [...buyers];
+                        next[idx] = { ...next[idx], tazkiraNumber: e.target.value };
+                        setBuyers(next);
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Phone Number</label>
+                    <input
+                      value={b.phone}
+                      onChange={(e) => {
+                        const next = [...buyers];
+                        next[idx] = { ...next[idx], phone: e.target.value };
+                        setBuyers(next);
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Residential Address</label>
+                    <input
+                      value={b.address}
+                      onChange={(e) => {
+                        const next = [...buyers];
+                        next[idx] = { ...next[idx], address: e.target.value };
+                        setBuyers(next);
+                      }}
+                    />
+                  </div>
+                  <div className="field full">
+                    <label>3×4 Portrait Photo URL</label>
+                    <input
+                      value={b.photo3x4Url}
+                      onChange={(e) => {
+                        const next = [...buyers];
+                        next[idx] = { ...next[idx], photo3x4Url: e.target.value };
+                        setBuyers(next);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              <div className="modal-actions">
+                <button type="button" className="button secondary" onClick={() => setStep(1)}>
+                  Back
+                </button>
+                <button type="button" className="button" onClick={() => setStep(3)}>
+                  Next: 100% Installment Schedule
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div data-testid="hr-wizard-step-3">
+              <div className="panel-heading">
+                <h3>
+                  Installment Schedule (Total: {totalPct}% — Must Equal 100% of $
+                  {(selectedApartment?.totalPrice || 0).toLocaleString()})
+                </h3>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() =>
+                    setInstallments((prev) => [
+                      ...prev,
+                      { description: `Installment ${prev.length + 1}`, percentage: 10, dueDate: '2027-08-15' },
+                    ])
+                  }
+                >
+                  + Add Installment Row
+                </button>
+              </div>
+              {installments.map((inst, idx) => {
+                const amt = Math.round(((selectedApartment?.totalPrice || 0) * Number(inst.percentage || 0)) / 100);
+                return (
+                  <div key={idx} className="form-grid" style={{ marginBottom: 10 }}>
+                    <div className="field">
+                      <label>Milestone Description</label>
+                      <input
+                        value={inst.description}
+                        onChange={(e) => {
+                          const next = [...installments];
+                          next[idx] = { ...next[idx], description: e.target.value };
+                          setInstallments(next);
+                        }}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Percentage (%) — Scheduled: ${amt.toLocaleString()}</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={inst.percentage}
+                        onChange={(e) => {
+                          const next = [...installments];
+                          next[idx] = { ...next[idx], percentage: Number(e.target.value) };
+                          setInstallments(next);
+                        }}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Due Date</label>
+                      <input
+                        type="date"
+                        value={inst.dueDate || ''}
+                        onChange={(e) => {
+                          const next = [...installments];
+                          next[idx] = { ...next[idx], dueDate: e.target.value };
+                          setInstallments(next);
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="modal-actions">
+                <button type="button" className="button secondary" onClick={() => setStep(2)}>
+                  Back
+                </button>
+                <button type="button" className="button" onClick={() => setStep(4)}>
+                  Next: Review & Direct Issue
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div data-testid="hr-wizard-step-4">
+              <h3>Review & Issue Bilingual Contract Directly (No Manager Approval Gate)</h3>
+              <div className="field full" style={{ marginTop: 10 }}>
+                <label>Contract Notes / Special Conditions</label>
+                <textarea
+                  rows={2}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+              <div className="modal-actions" style={{ marginTop: 14 }}>
+                <button type="button" className="button secondary" onClick={() => setStep(3)}>
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className="button"
+                  data-testid="issue-hr-contract-btn"
+                  onClick={handleIssue}
+                >
+                  Issue Contract Directly & Send Schedule to Finance
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Issued Contracts List */}
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Contract Serial</th>
+              <th>Project & Apartment</th>
+              <th>Buyer(s)</th>
+              <th>Total Price</th>
+              <th>Installments</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {contracts.map((c) => (
+              <tr key={c.id}>
+                <td>
+                  <strong>{c.contractSerial}</strong>
+                  <small>{c.gregorianDate} ({c.jalaliDate})</small>
+                </td>
+                <td>
+                  <strong>{c.projectName} — {c.apartmentNumber}</strong>
+                  <small>Floor {c.floor} • {c.areaSqm} m² • {c.direction}</small>
+                </td>
+                <td>
+                  <strong>{c.buyers.map((b) => b.name).join(', ')}</strong>
+                  <small>Tazkira: {c.buyers.map((b) => b.tazkiraNumber).join(', ')}</small>
+                </td>
+                <td>
+                  <strong>${c.totalPrice.toLocaleString()} {c.currency}</strong>
+                  <small>${c.pricePerSqm}/m²</small>
+                </td>
+                <td>
+                  {c.installments.filter((i) => i.status === 'paid').length}/{c.installments.length} Paid
+                </td>
+                <td>
+                  <span className={`badge ${c.status}`}>{c.status} (v{c.amendmentVersion})</span>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className="button secondary"
+                    onClick={() => setSelectedContract(c)}
+                  >
+                    View Two-Page A4 Contract
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Two-Page A4 Bilingual Contract Print Sheet */}
+      {selectedContract && (
+        <div className="contract-print-sheet" data-testid="bilingual-contract-print-sheet">
+          <div className="panel-heading no-print" style={{ marginBottom: 14 }}>
+            <div>
+              <strong>Two-Page A4 Bilingual Deal Contract Preview: {selectedContract.contractSerial}</strong>
+              <p style={{ margin: 0, fontSize: 12 }}>
+                Ready for A4 printing with Seller, Construction Company, Buyer 3×4 Portrait, 4 Boundaries, and 100% Installment Schedule.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="button"
+              onClick={() => window.print()}
+            >
+              Print A4 Contract
+            </button>
+          </div>
+
+          {/* PAGE 1: Parties, Apartment 4 Boundaries, Price & Installment Schedule */}
+          <div className="contract-page" data-testid="contract-page-1">
+            <div className="contract-header-grid">
+              <div className="contract-photo-box">
+                <div>
+                  <strong>Seller / Co.</strong>
+                  <div style={{ fontSize: 10, marginTop: 4 }}>3×4 Official Stamp / Photo</div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: 18 }}>
+                  ATTAIE PROPERTIES — رهنمای معاملات عطایی
+                </h3>
+                <p style={{ margin: '4px 0', fontSize: 13, fontWeight: 700 }}>
+                  OFFICIAL APARTMENT PRE-SALE & CONSTRUCTION CONTRACT (سند رسمی فروش اپارتمان)
+                </p>
+                <small>
+                  Contract No: <strong>{selectedContract.contractSerial}</strong> | Date: {selectedContract.gregorianDate} ({selectedContract.jalaliDate})
+                </small>
+              </div>
+              <div className="contract-photo-box">
+                {selectedContract.buyers[0]?.photo3x4Url &&
+                selectedContract.buyers[0].photo3x4Url !== '/logo.png' ? (
+                  <img
+                    src={selectedContract.buyers[0].photo3x4Url}
+                    alt={selectedContract.buyers[0].name}
+                  />
+                ) : (
+                  <div style={{ padding: 6 }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        background: '#99f6e4',
+                        color: '#0b3d3b',
+                        fontWeight: 800,
+                        fontSize: 13,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      {(selectedContract.buyers[0]?.name || 'B')
+                        .split(' ')
+                        .map((p) => p[0])
+                        .join('')
+                        .slice(0, 2)}
+                    </div>
+                    <strong style={{ display: 'block', fontSize: 10 }}>
+                      {selectedContract.buyers[0]?.name || 'Buyer 3×4'}
+                    </strong>
+                    <div style={{ fontSize: 9, marginTop: 2, color: '#376663' }}>
+                      3×4 Verified Portrait
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="table-scroll" style={{ marginBottom: 14 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Party Role (طرفین قرارداد)</th>
+                    <th>Full Name (نام مکمل)</th>
+                    <th>Father / Grandfather (ولد / ولدیت)</th>
+                    <th>Tazkira / License (نمبر تذکره / جواز)</th>
+                    <th>Phone & Address (شماره تماس و آدرس)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedContract.sellersSnapshot.map((s, i) => (
+                    <tr key={`seller-${i}`}>
+                      <td><strong>Seller #{i + 1} (فروشنده)</strong></td>
+                      <td>{s.name}</td>
+                      <td>{s.fatherName} / {s.grandfatherName}</td>
+                      <td>{s.tazkiraNumber} ({s.sharePercentage}%)</td>
+                      <td>{s.phone} — {s.address}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td><strong>Construction Co. (شرکت ساختمانی)</strong></td>
+                    <td>{selectedContract.constructionSnapshot.companyName}</td>
+                    <td>Rep: {selectedContract.constructionSnapshot.representativeName}</td>
+                    <td>License: {selectedContract.constructionSnapshot.licenseNumber}</td>
+                    <td>{selectedContract.constructionSnapshot.phone} — {selectedContract.constructionSnapshot.address}</td>
+                  </tr>
+                  {selectedContract.buyers.map((b, i) => (
+                    <tr key={`buyer-${i}`}>
+                      <td><strong>Buyer #{i + 1} (مشتری / خریدار)</strong></td>
+                      <td>{b.name}</td>
+                      <td>{b.fatherName} / {b.grandfatherName}</td>
+                      <td>{b.tazkiraNumber}</td>
+                      <td>{b.phone} — {b.address}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h4 style={{ margin: '10px 0 6px' }}>
+              Apartment Specifications & Four Geographic Boundaries (مشخصات اپارتمان و حدود اربعه)
+            </h4>
+            <div className="table-scroll" style={{ marginBottom: 14 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Apartment</th>
+                    <th>Floor & Rooms</th>
+                    <th>Area & Price/m²</th>
+                    <th>Total Contract Amount</th>
+                    <th>North (شمالاً)</th>
+                    <th>South (جنوباً)</th>
+                    <th>East (شرقاً)</th>
+                    <th>West (غرباً)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>{selectedContract.projectName}</strong> ({selectedContract.projectCode})</td>
+                    <td><strong>{selectedContract.apartmentNumber}</strong></td>
+                    <td>Floor {selectedContract.floor} • {selectedContract.rooms} Rooms</td>
+                    <td>{selectedContract.areaSqm} m² @ ${selectedContract.pricePerSqm}/m²</td>
+                    <td><strong>${selectedContract.totalPrice.toLocaleString()} {selectedContract.currency}</strong></td>
+                    <td>{selectedContract.boundaries.north}</td>
+                    <td>{selectedContract.boundaries.south}</td>
+                    <td>{selectedContract.boundaries.east}</td>
+                    <td>{selectedContract.boundaries.west}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4 style={{ margin: '10px 0 6px' }}>
+              100% Reconciled Payment & Installment Schedule (جدول اقساط و تادیات)
+            </h4>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Milestone Description</th>
+                    <th>Share (%)</th>
+                    <th>Due Date</th>
+                    <th>Scheduled Amount</th>
+                    <th>Paid Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedContract.installments.map((inst) => (
+                    <tr key={inst.number}>
+                      <td>{inst.number}</td>
+                      <td>{inst.description}</td>
+                      <td>{inst.percentage}%</td>
+                      <td>{inst.dueDate || 'Upon Milestone'}</td>
+                      <td><strong>${inst.scheduledAmount.toLocaleString()} {selectedContract.currency}</strong></td>
+                      <td>${inst.paidAmount.toLocaleString()} {selectedContract.currency}</td>
+                      <td><span className={`badge ${inst.status}`}>{inst.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* PAGE 2: Clauses, Notes & Official Signature / Thumbprint Blocks */}
+          <div className="contract-page" data-testid="contract-page-2">
+            <h4 style={{ marginTop: 0 }}>
+              Legal Terms, Conditions & Covenants (شرایط و مواد قانونی قرارداد — صفحه دوم)
+            </h4>
+            <ol style={{ paddingInlineStart: 20, lineHeight: 1.65, fontSize: 13 }}>
+              {selectedContract.clauses.map((clause, idx) => (
+                <li key={idx} style={{ marginBottom: 6 }}>
+                  {clause}
+                </li>
+              ))}
+            </ol>
+
+            <div style={{ marginTop: 12, padding: 12, background: '#f8fffe', border: '1px solid #b9e8df', borderRadius: 6, fontSize: 13 }}>
+              <strong>Special Notes (ملاحظات اختصاصی):</strong> {selectedContract.notes}
+              <div style={{ marginTop: 4 }}>
+                <small>
+                  Closing Sales Advisor: <strong>{selectedContract.salesAgentName}</strong> | Issued By: <strong>{selectedContract.issuedBy}</strong>
+                </small>
+              </div>
+            </div>
+
+            <div className="contract-signatures">
+              <div className="contract-sig-box">
+                <strong>Project Seller(s) Signature & Thumbprint</strong>
+                <div>امضا و شصت فروشنده</div>
+              </div>
+              <div className="contract-sig-box">
+                <strong>Construction Co. Rep Signature & Seal</strong>
+                <div>مهر و امضای نماینده شرکت ساختمانی</div>
+              </div>
+              <div className="contract-sig-box">
+                <strong>Buyer(s) Signature & Thumbprint</strong>
+                <div>امضا و شصت خریدار</div>
+              </div>
+              <div className="contract-sig-box">
+                <strong>Witness #1 & Witness #2</strong>
+                <div>امضا و شصت شهود</div>
+              </div>
+              <div className="contract-sig-box">
+                <strong>Attaie Properties HR & Management Seal</strong>
+                <div>مهر و تایید رهنمای معاملات عطایی</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

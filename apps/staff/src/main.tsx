@@ -26,22 +26,44 @@ import {
   Building2,
   Globe,
   CheckCheck,
+  FileText,
+  DollarSign,
+  Film,
+  Send,
+  Compass,
+  Download,
 } from "lucide-react";
 import type {
   DashboardData,
   Followup,
+  InventoryProject,
   Lead,
   ManagementTask,
+  Role,
   Session,
   StaffUser,
   Feedback,
 } from "../../../packages/staff-contracts/types";
 import {
+  canAccessDatabase,
   feedbackDeadline,
   followupState,
+  formatLeadsToCsv,
+  generateLeadsPdfDocument,
+  isManagerRole,
+  summarizeLeadsPipeline,
   taskState,
 } from "../../../packages/staff-contracts/workflow.mjs";
 import { api } from "./api";
+import { AttaieLogoEntrance } from "./components/AttaieLogoEntrance";
+import { ProjectInventoryWizard } from "./components/ProjectInventoryWizard";
+import { HrContractsWorkspace } from "./components/HrContractsWorkspace";
+import { FinanceWorkspace } from "./components/FinanceWorkspace";
+import {
+  MarketingWorkspace,
+  SubmissionsStatusView,
+} from "./components/MarketingWorkspace";
+import { EngineeringWorkspace } from "./components/EngineeringWorkspace";
 import logo from "./assets/logo.png";
 import "./styles.css";
 import "./callcenter-theme.css";
@@ -54,20 +76,42 @@ type Page =
   | "leads"
   | "tasks"
   | "team"
+  | "projects"
+  | "contracts"
+  | "finance"
+  | "marketing"
+  | "submissions"
+  | "deliverables"
   | "profile";
+
+const searchParams = new URLSearchParams(location.search);
+const isDashboardPath = location.pathname.startsWith("/dashboard");
 const isPreview =
-  __STAFF_PREVIEW_ALLOWED__ &&
-  new URLSearchParams(location.search).get("preview") === "1";
+  (__STAFF_PREVIEW_ALLOWED__ && searchParams.get("preview") === "1") ||
+  (__STAFF_PREVIEW_ALLOWED__ && isDashboardPath);
 const management = __STAFF_PREVIEW_ALLOWED__
-  ? location.pathname.startsWith("/management")
-  : __STAFF_ROLE__ === "management";
-document.documentElement.dataset.staffRole = management ? "management" : "callcenter";
-const base = management ? "/management" : "/callcenter";
+  ? location.pathname.startsWith("/management") || isDashboardPath
+  : __STAFF_ROLE__ === "management" || __STAFF_ROLE__ === "dashboard";
+
+const initialRoleParam = searchParams.get("role") as Role | null;
+document.documentElement.dataset.staffRole = isDashboardPath
+  ? "dashboard"
+  : management
+    ? "management"
+    : "callcenter";
+
+const base = isDashboardPath
+  ? "/dashboard"
+  : management
+    ? "/management"
+    : "/callcenter";
+
 const client: Client = isPreview
   ? ((await import("./preview").then((m) =>
-      m.previewClient(management),
-    )) as Client)
+      m.previewClient(management, initialRoleParam || undefined),
+    )) as unknown as Client)
   : api;
+
 const labels: Record<string, string> = {
   upcoming: "Upcoming",
   due: "Due now",
@@ -87,7 +131,45 @@ const labels: Record<string, string> = {
   high: "High",
   urgent: "Urgent",
 };
-const fa: Record<string, string> = management ? (await import("./i18n/fa.json")).default : {};
+
+const ROLE_LABELS: Record<string, string> = {
+  manager: "Manager",
+  ceo: "Manager (CEO)",
+  hr_manager: "HR Manager",
+  sales_leader: "Sales Team Leader",
+  sales: "Sales Agent",
+  callcenter: "Call Center Agent",
+  marketing_manager: "Marketing Manager",
+  production_manager: "Production Manager",
+  editor: "Editor",
+  videographer: "Videographer",
+  photographer: "Videographer",
+  finance_manager: "Finance Manager",
+  finance_assistant: "Finance Assistant",
+  architect: "Architect",
+  graphic_designer: "Graphic Designer",
+  visual_designer_3d: "3D Visualization Engineer",
+};
+
+const SWITCHABLE_ROLES: { role: Role; label: string }[] = [
+  { role: "manager", label: "Manager (Full Internal CRM Authority)" },
+  { role: "hr_manager", label: "HR Manager (Deal Contracts & A4 Print)" },
+  { role: "sales_leader", label: "Sales Team Leader" },
+  { role: "sales", label: "Sales Agent (Pipeline & Deal Closure)" },
+  { role: "callcenter", label: "Call Center Agent" },
+  { role: "marketing_manager", label: "Marketing Manager (Filming Schedule)" },
+  { role: "videographer", label: "Videographer (Filming Completion)" },
+  { role: "editor", label: "Editor (Editing & Mark Posted -> Submissions DB)" },
+  { role: "finance_manager", label: "Finance Manager (Approve/Post/Reverse)" },
+  { role: "finance_assistant", label: "Finance Assistant (Draft Deposits)" },
+  { role: "architect", label: "Architect (2D Floor Plans)" },
+  { role: "graphic_designer", label: "Graphic Designer (Brochures & Print)" },
+  { role: "visual_designer_3d", label: "3D Visualization Engineer (3D Renders)" },
+];
+
+const fa: Record<string, string> = management
+  ? (await import("./i18n/fa.json")).default
+  : {};
 
 function App() {
   const [language, setLanguage] = useState<"en" | "fa">(() =>
@@ -98,6 +180,7 @@ function App() {
     [language],
   );
   const [session, setSession] = useState<Session | null>(null);
+  const [playingEntrance, setPlayingEntrance] = useState(false);
   const [starting, setStarting] = useState(true);
   const [page, setPage] = useState<Page>(() => pageFromPath());
   const [data, setData] = useState<DashboardData | null>(null);
@@ -109,15 +192,28 @@ function App() {
   const [filter, setFilter] = useState("today");
   const [notice, setNotice] = useState("");
   const [modal, setModal] = useState<{
-    kind: "entry" | "feedback" | "task" | "detail" | "assign" | "staff";
+    kind:
+      | "entry"
+      | "feedback"
+      | "task"
+      | "detail"
+      | "assign"
+      | "staff"
+      | "department";
     item?: Lead | Followup | ManagementTask;
   } | null>(null);
   const generation = useRef(0);
+
+  const activeRole: Role = session?.user?.role || (management ? "manager" : "callcenter");
+  const isCallCenterOnly = activeRole === "callcenter" && !isDashboardPath && !management;
+
   useEffect(() => {
-    document.documentElement.lang = language;
-    document.documentElement.dir = language === "fa" ? "rtl" : "ltr";
-    if (management) localStorage.setItem("staff-language", language);
-  }, [language]);
+    const effectiveLang = isCallCenterOnly ? "en" : language;
+    document.documentElement.lang = effectiveLang;
+    document.documentElement.dir = effectiveLang === "fa" ? "rtl" : "ltr";
+    if (!isCallCenterOnly) localStorage.setItem("staff-language", effectiveLang);
+  }, [language, isCallCenterOnly]);
+
   useEffect(() => {
     client
       .session()
@@ -132,6 +228,7 @@ function App() {
     window.addEventListener("staff-session-expired", expire);
     return () => window.removeEventListener("staff-session-expired", expire);
   }, []);
+
   const refresh = useCallback(async () => {
     if (!session) return;
     const current = ++generation.current;
@@ -153,13 +250,15 @@ function App() {
       if (current === generation.current) setLoading(false);
     }
   }, [session, page, query, number, filter]);
+
   useEffect(() => {
-    const timer = window.setTimeout(refresh, 250);
+    const timer = window.setTimeout(refresh, 180);
     return () => {
       clearTimeout(timer);
       generation.current++;
     };
   }, [refresh]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       if (!document.hidden) void refresh();
@@ -171,6 +270,7 @@ function App() {
       window.removeEventListener("focus", focus);
     };
   }, [refresh]);
+
   useEffect(() => {
     const pop = () => {
       setPage(pageFromPath());
@@ -180,6 +280,7 @@ function App() {
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
   }, []);
+
   const navigate = (next: Page) => {
     history.pushState(
       {},
@@ -191,37 +292,153 @@ function App() {
     setNumber(0);
     setMenu(false);
   };
+
+  const handleSwitchRole = async (nextRole: Role) => {
+    const updatedUser = client.setActiveRole(nextRole);
+    if (updatedUser && session) {
+      setSession({ ...session, user: updatedUser });
+      setNotice(`Switched active workspace role to ${ROLE_LABELS[nextRole] || nextRole}.`);
+      const s = await client.session();
+      setSession(s);
+      await refresh();
+    }
+  };
+
   const format = (value: string) =>
-    new Intl.DateTimeFormat(language === "fa" ? "fa-AF" : "en-GB", {
+    new Intl.DateTimeFormat(language === "fa" && !isCallCenterOnly ? "fa-AF" : "en-GB", {
       timeZone: "Asia/Kabul",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(value));
+
   const badge = (value: string) => (
     <span className={`badge ${value}`}>{t(labels[value] || value)}</span>
   );
-  const manager = !!session && ["admin", "ceo"].includes(session.user.role);
+
+  const manager =
+    !!session &&
+    (isManagerRole(session.user.role) || session.user.role === "admin");
+
+  const canAssignTasks =
+    !!session &&
+    [
+      "manager",
+      "ceo",
+      "branch_manager",
+      "sales_leader",
+      "marketing_manager",
+      "production_manager",
+      "finance_manager",
+    ].includes(session.user.role);
+
   const complete = async () => {
     setModal(null);
     setNotice(t("Saved successfully."));
     await refresh();
   };
+
+  const hasSalesOrCallAccess = [
+    "callcenter",
+    "sales",
+    "sales_leader",
+    "manager",
+    "ceo",
+  ].includes(activeRole);
+  const hasProjectsAccess = [
+    "manager",
+    "ceo",
+    "hr_manager",
+    "sales_leader",
+    "sales",
+    "callcenter",
+    "finance_manager",
+    "finance_assistant",
+    "architect",
+    "graphic_designer",
+    "visual_designer_3d",
+  ].includes(activeRole);
+  const hasContractsAccess = [
+    "hr_manager",
+    "manager",
+    "ceo",
+    "finance_manager",
+    "finance_assistant",
+  ].includes(activeRole);
+  const hasFinanceAccess = [
+    "finance_manager",
+    "finance_assistant",
+    "manager",
+    "ceo",
+  ].includes(activeRole);
+  const hasMarketingAccess = [
+    "marketing_manager",
+    "production_manager",
+    "editor",
+    "videographer",
+    "photographer",
+    "sales",
+    "sales_leader",
+    "callcenter",
+    "manager",
+    "ceo",
+  ].includes(activeRole);
+  const hasEngineeringAccess = [
+    "architect",
+    "graphic_designer",
+    "visual_designer_3d",
+    "manager",
+    "ceo",
+  ].includes(activeRole);
+  const hasSubmissionsReadAccess =
+    canAccessDatabase(activeRole, "submissions") !== false;
+
   const tabs: { id: Page; label: string; icon: React.ElementType }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
-    ...(manager
-      ? []
-      : [
+    ...(hasSalesOrCallAccess && !manager
+      ? [
           { id: "followups" as Page, label: "Follow-ups", icon: CalendarClock },
           { id: "customers" as Page, label: "Customers", icon: Users },
           { id: "leads" as Page, label: "Leads", icon: PhoneIncoming },
-        ]),
-    { id: "tasks", label: "My Tasks", icon: ClipboardList },
+        ]
+      : []),
     ...(manager
+      ? [
+          { id: "customers" as Page, label: "Customers", icon: Users },
+          { id: "leads" as Page, label: "Leads", icon: PhoneIncoming },
+        ]
+      : []),
+    ...(hasProjectsAccess
+      ? [{ id: "projects" as Page, label: "Pre-Sale Projects", icon: Building2 }]
+      : []),
+    ...(hasContractsAccess
+      ? [{ id: "contracts" as Page, label: "HR Contracts", icon: FileText }]
+      : []),
+    ...(hasFinanceAccess
+      ? [{ id: "finance" as Page, label: "Finance Ledger", icon: DollarSign }]
+      : []),
+    ...(hasMarketingAccess
+      ? [{ id: "marketing" as Page, label: "Marketing & Media", icon: Film }]
+      : []),
+    ...(hasEngineeringAccess
+      ? [
+          {
+            id: "deliverables" as Page,
+            label: "Engineering",
+            icon: Compass,
+          },
+        ]
+      : []),
+    ...(hasSubmissionsReadAccess
+      ? [{ id: "submissions" as Page, label: "Submissions", icon: Send }]
+      : []),
+    { id: "tasks", label: "My Tasks", icon: ClipboardList },
+    ...(canAssignTasks
       ? [{ id: "team" as Page, label: "Team tasks", icon: Users }]
       : []),
   ];
+
   const headings: Record<Page, [string, string]> = {
     overview: ["Overview", "Your day, clearly organized."],
     followups: ["Follow-ups", "Focus on the next conversation."],
@@ -229,8 +446,86 @@ function App() {
     leads: ["Leads", "Every inquiry has a next step."],
     tasks: ["My Tasks", "A clear view of your assigned work."],
     team: ["Team tasks", "Give your team a clear next step."],
+    projects: [
+      "Pre-Sale Projects",
+      "Manager project inventory, multiple sellers, construction company, and floor apartments.",
+    ],
+    contracts: [
+      "HR Contracts",
+      "4-step bilingual apartment contract issuance and Two-Page A4 legal printout.",
+    ],
+    finance: [
+      "Finance Ledger",
+      "Contract installment schedules, draft customer deposits, and Finance Manager approvals.",
+    ],
+    marketing: [
+      "Marketing & Media",
+      "Filming, editing, and social media post workflow connected to the Submission DB.",
+    ],
+    submissions: [
+      "Submissions",
+      "Read-only status of property posts sent to the isolated Submission Database.",
+    ],
+    deliverables: [
+      "Engineering",
+      "Project-linked architectural plans, graphic brochures, and 3D renders with version history.",
+    ],
     profile: ["Profile", "Your workspace preferences and security."],
   };
+
+  const [leadStatusFilter, setLeadStatusFilter] = useState<string>("all");
+
+  const leadsPipelineSummary = summarizeLeadsPipeline(data?.leads || []);
+
+  const visibleLeads = (data?.leads || []).filter(
+    (l) => leadStatusFilter === "all" || l.status === leadStatusFilter,
+  );
+
+  const triggerBlobDownload = (
+    content: string,
+    mimeType: string,
+    filename: string,
+  ) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const handleExportLeadsCsv = () => {
+    const csvContent = formatLeadsToCsv(visibleLeads);
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    triggerBlobDownload(
+      csvContent,
+      "text/csv;charset=utf-8;",
+      `attaie-leads-${leadStatusFilter}-${dateStamp}.csv`,
+    );
+    setNotice(
+      `${t("Exported current leads view to CSV.")} (${visibleLeads.length})`,
+    );
+  };
+
+  const handleExportLeadsPdf = () => {
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    const pdfContent = generateLeadsPdfDocument(visibleLeads, {
+      title: "Attaie Properties — Internal CRM Leads Export",
+      subtitle: `Role: ${ROLE_LABELS[activeRole] || activeRole} · Filter: ${leadStatusFilter.toUpperCase()} · Search: "${query || "All"}" · Records: ${visibleLeads.length}`,
+    });
+    triggerBlobDownload(
+      pdfContent,
+      "application/pdf",
+      `attaie-leads-${leadStatusFilter}-${dateStamp}.pdf`,
+    );
+    setNotice(
+      `${t("Exported current leads view to PDF.")} (${visibleLeads.length})`,
+    );
+  };
+
   const followups = (data?.followups || []).filter((f) => {
     const state = followupState(f, data?.serverTime);
     return (
@@ -248,6 +543,7 @@ function App() {
           : state === filter)
     );
   });
+
   const followupTable = (items: Followup[]) =>
     items.length ? (
       <div className="table-scroll">
@@ -317,6 +613,7 @@ function App() {
         text={t("Try another filter or check back when new work is assigned.")}
       />
     );
+
   if (starting)
     return (
       <div className="center-screen">
@@ -324,21 +621,36 @@ function App() {
         <p>{t("Loading your workspace…")}</p>
       </div>
     );
+
   if (!session)
     return (
       <Login
         t={t}
         error={error}
         onLogin={(s) => {
+          setPlayingEntrance(true);
           setSession(s);
           setError("");
         }}
         management={management}
       />
     );
+
+  if (playingEntrance) {
+    return (
+      <AttaieLogoEntrance
+        mode="login-transition"
+        variant="teal"
+        onComplete={() => setPlayingEntrance(false)}
+      />
+    );
+  }
+
   if (
-    (management && !manager) ||
-    (!management && session.user.role !== "callcenter")
+    !isDashboardPath &&
+    !isPreview &&
+    ((management && !manager) ||
+      (!management && session.user.role !== "callcenter"))
   )
     return (
       <div className="center-screen">
@@ -347,16 +659,24 @@ function App() {
         <button
           className="button"
           onClick={() =>
-            client.logout().then(() => {
-              setSession(null);
-              setData(null);
-            }).catch(e => setError(e.message))
+            client
+              .logout()
+              .then(() => {
+                setSession(null);
+                setData(null);
+              })
+              .catch((e) => setError(e.message))
           }
         >
           {t("Sign out")}
         </button>
       </div>
     );
+
+  const roleLabel =
+    ROLE_LABELS[session.user.role] ||
+    (manager ? "Management" : "Call Center");
+
   return (
     <div className="staff-shell">
       {menu && (
@@ -379,7 +699,15 @@ function App() {
             <Headphones size={18} />
           </span>
           <span>
-            <strong>{t(manager ? "Management" : "Call Center")}</strong>
+            <strong>
+              {t(
+                !isDashboardPath
+                  ? manager
+                    ? "Management"
+                    : "Call Center"
+                  : roleLabel,
+              )}
+            </strong>
             <small>ATTAIE PROPERTIES</small>
           </span>
         </div>
@@ -388,6 +716,7 @@ function App() {
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
+              data-testid={`nav-tab-${id}`}
               className={`nav-item ${page === id ? "selected" : ""}`}
               onClick={() => navigate(id)}
             >
@@ -411,7 +740,7 @@ function App() {
             <span className="avatar gold">{initials(session.user.name)}</span>
             <span>
               <strong>{session.user.name}</strong>
-              <small>{t(manager ? "Management" : "Call center")}</small>
+              <small>{t(roleLabel)}</small>
             </span>
             <ChevronDown size={15} />
           </button>
@@ -427,33 +756,59 @@ function App() {
             >
               <Menu size={20} />
             </button>
-            <span>{t(manager ? "Management" : "Call Center")}</span>
+            <span>
+              {t(
+                !isDashboardPath
+                  ? manager
+                    ? "Management"
+                    : "Call Center"
+                  : roleLabel,
+              )}
+            </span>
             <span className="crumb-divider">/</span>
             <strong>{t(headings[page][0])}</strong>
           </div>
           <div className="topbar-actions">
             <span className="timezone">Kabul · UTC+04:30</span>
-            {management && <button
-              className="language-toggle"
-              onClick={() => setLanguage(language === "en" ? "fa" : "en")}
-            >
-              <Globe size={15} />
-              {language === "en" ? "دری" : "English"}
-            </button>}
+            {!isCallCenterOnly && (
+              <button
+                className="language-toggle"
+                data-testid="staff-language-toggle"
+                onClick={() => setLanguage(language === "en" ? "fa" : "en")}
+              >
+                <Globe size={15} />
+                {language === "en" ? "دری" : "English"}
+              </button>
+            )}
             <span className="avatar small gold">
               {initials(session.user.name)}
             </span>
           </div>
         </header>
         {isPreview && (
-          <div className="preview-banner">
+          <div className="role-switcher-bar" data-testid="role-switcher-bar">
             <span>
-              <strong>{t("Sample preview")}</strong> ·{" "}
-              {t(
-                "No real calls or customer data. Changes last only in this preview.",
-              )}
+              <strong>{t("Internal Office CRM Role Switcher")}</strong> ·{" "}
+              Active: <strong>{session.user.name}</strong> ({roleLabel})
             </span>
-            <a href={base + "/"}>{t("Exit preview")}</a>
+            <div className="role-switcher-controls">
+              <label htmlFor="preview-role-select" style={{ fontWeight: 600 }}>
+                Switch Department Role:
+              </label>
+              <select
+                id="preview-role-select"
+                data-testid="preview-role-select"
+                value={session.user.role}
+                onChange={(e) => void handleSwitchRole(e.target.value as Role)}
+              >
+                {SWITCHABLE_ROLES.map((r) => (
+                  <option key={r.role} value={r.role}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+              <a href={base + "/"}>{t("Exit preview")}</a>
+            </div>
           </div>
         )}
         <main className="content">
@@ -472,17 +827,20 @@ function App() {
               >
                 <RefreshCw className={loading ? "spinning" : ""} size={18} />
               </button>
-              {manager ? (
+              {canAssignTasks && (
                 <button
-                  className="button"
+                  className="button secondary"
+                  data-testid="assign-task-btn"
                   onClick={() => setModal({ kind: "assign" })}
                 >
                   <Plus size={17} />
                   {t("Assign task")}
                 </button>
-              ) : (
+              )}
+              {(activeRole === "callcenter" || activeRole === "sales") && (
                 <button
                   className="button"
+                  data-testid="new-entry-btn"
                   onClick={() => setModal({ kind: "entry" })}
                 >
                   <Plus size={17} />
@@ -507,6 +865,7 @@ function App() {
               </button>
             </div>
           )}
+
           {page === "overview" && (
             <>
               <div className="stats-grid">
@@ -520,7 +879,7 @@ function App() {
                     note: "Needs a first response",
                     icon: PhoneIncoming,
                     color: "gold",
-                    target: "leads" as Page,
+                    target: (hasSalesOrCallAccess ? "leads" : "tasks") as Page,
                   },
                   {
                     label: "Due now",
@@ -532,7 +891,7 @@ function App() {
                     note: "Within the feedback window",
                     icon: CalendarClock,
                     color: "blue",
-                    target: "followups" as Page,
+                    target: (hasSalesOrCallAccess ? "followups" : "tasks") as Page,
                   },
                   {
                     label: "Overtime",
@@ -545,7 +904,7 @@ function App() {
                     note: "Past the 24-hour deadline",
                     icon: Clock3,
                     color: "red",
-                    target: "followups" as Page,
+                    target: (hasSalesOrCallAccess ? "followups" : "tasks") as Page,
                   },
                   {
                     label: "My Tasks",
@@ -589,16 +948,18 @@ function App() {
                       <h2>{t("Your follow-ups")}</h2>
                       <p>{t("All times in Kabul · UTC+04:30")}</p>
                     </div>
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setFilter("all");
-                        navigate("followups");
-                      }}
-                    >
-                      {t("View all")}
-                      <ArrowRight size={15} />
-                    </button>
+                    {hasSalesOrCallAccess && (
+                      <button
+                        className="text-button"
+                        onClick={() => {
+                          setFilter("all");
+                          navigate("followups");
+                        }}
+                      >
+                        {t("View all")}
+                        <ArrowRight size={15} />
+                      </button>
+                    )}
                   </div>
                   {followupTable(
                     (data?.followups || [])
@@ -656,8 +1017,386 @@ function App() {
               </div>
             </>
           )}
-          {page !== "overview" && page !== "profile" && (
+
+          {/* Phase 2: Pre-Sale Projects & Apartments Wizard */}
+          {page === "projects" && (
+            <ProjectInventoryWizard
+              projects={data?.projects || []}
+              staffUsers={data?.assignees || []}
+              actorRole={activeRole}
+              onSaveProject={async (proj) => {
+                await client.saveProject(proj);
+                await refresh();
+              }}
+              onNotice={setNotice}
+              onError={setError}
+            />
+          )}
+
+          {/* Phase 4: HR Deal Contracts & Two-Page A4 Legal Printout */}
+          {page === "contracts" && (
+            <HrContractsWorkspace
+              contracts={data?.hrContracts || []}
+              projects={data?.projects || []}
+              closedDeals={(data?.leads || []).filter(
+                (l) => l.status === "closed",
+              )}
+              actorRole={activeRole}
+              onIssueContract={async (payload) => {
+                const created = await client.issueContract(payload);
+                await refresh();
+                return created;
+              }}
+              onNotice={setNotice}
+              onError={setError}
+            />
+          )}
+
+          {/* Phase 4: Finance Installment Schedule & Customer Deposits */}
+          {page === "finance" && (
+            <FinanceWorkspace
+              contracts={data?.hrContracts || []}
+              deposits={data?.financeDeposits || []}
+              actorRole={activeRole}
+              onManageDeposit={async (payload) => {
+                await client.manageDeposit(payload);
+                await refresh();
+              }}
+              onNotice={setNotice}
+              onError={setError}
+            />
+          )}
+
+          {/* Phase 5: Marketing & Media Production Pipeline */}
+          {page === "marketing" && (
+            <MarketingWorkspace
+              entries={data?.marketingEntries || []}
+              submissions={data?.submissions || []}
+              staffUsers={data?.assignees || []}
+              actorRole={activeRole}
+              onCreateEntry={async (payload) => {
+                await client.createMarketingEntry(payload);
+                await refresh();
+              }}
+              onAdvanceEntry={async (id, action, payload) => {
+                await client.advanceMarketing(id, action, payload);
+                await refresh();
+              }}
+              onNotice={setNotice}
+              onError={setError}
+            />
+          )}
+
+          {/* Phase 5: Read-Only Submissions Status View */}
+          {page === "submissions" && (
+            <SubmissionsStatusView submissions={data?.submissions || []} />
+          )}
+
+          {/* Phase 6: Engineering Project Tasks & Versioned Deliverables */}
+          {page === "deliverables" && (
+            <EngineeringWorkspace
+              deliverables={data?.engineeringDeliverables || []}
+              actorRole={activeRole}
+              onUploadVersion={async (id, payload) => {
+                await client.uploadDeliverableVersion(id, payload);
+                await refresh();
+              }}
+              onReviewVersion={async (id, payload) => {
+                await client.reviewDeliverable(id, payload);
+                await refresh();
+              }}
+              onNotice={setNotice}
+              onError={setError}
+            />
+          )}
+
+          {["followups", "customers", "leads", "tasks", "team"].includes(page) && (
             <>
+              {/* Manager Customer Duplicate Review Queue */}
+              {page === "customers" &&
+                manager &&
+                (data?.customerReviewRequests || []).filter(
+                  (r) => r.status === "pending_review",
+                ).length > 0 && (
+                  <section
+                    className="panel"
+                    style={{ marginBottom: 16 }}
+                    data-testid="manager-customer-review-queue"
+                  >
+                    <div className="panel-heading">
+                      <div>
+                        <p className="eyebrow">
+                          Phase 3 Deduplication · Redacted Conflict Queue
+                        </p>
+                        <h2>Pending Customer Duplicate Review Requests</h2>
+                      </div>
+                    </div>
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Phone</th>
+                            <th>Requesting Agent</th>
+                            <th>Submitted Name & Requirements</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(data?.customerReviewRequests || [])
+                            .filter((r) => r.status === "pending_review")
+                            .map((req) => (
+                              <tr key={req.id}>
+                                <td dir="ltr">
+                                  <strong>{req.phone}</strong>
+                                </td>
+                                <td>{req.requestingAgentName}</td>
+                                <td>
+                                  <strong>{req.submittedName}</strong>
+                                  <small>{req.submittedRequirements}</small>
+                                </td>
+                                <td>
+                                  <div style={{ display: "flex", gap: 8 }}>
+                                    <button
+                                      type="button"
+                                      className="button"
+                                      data-testid={`approve-customer-review-${req.id}`}
+                                      onClick={async () => {
+                                        await client.resolveCustomerReview(
+                                          req.id,
+                                          "approved_shared",
+                                        );
+                                        setNotice(
+                                          `Granted shared customer access to ${req.requestingAgentName}.`,
+                                        );
+                                        await refresh();
+                                      }}
+                                    >
+                                      Approve Shared Access
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="button secondary"
+                                      onClick={async () => {
+                                        await client.resolveCustomerReview(
+                                          req.id,
+                                          "rejected",
+                                        );
+                                        setNotice("Rejected duplicate request.");
+                                        await refresh();
+                                      }}
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                )}
+
+              {page === "leads" && (
+                <section
+                  className="panel"
+                  style={{ marginBottom: 16 }}
+                  data-testid="leads-pipeline-summary-card"
+                >
+                  <div className="panel-heading" style={{ marginBottom: 12 }}>
+                    <div>
+                      <p className="eyebrow">{t("ATTAIE WORKSPACE")}</p>
+                      <h2>{t("Pipeline Health Summary")}</h2>
+                      <p>{t("Quick glance at lead pipeline distribution by status.")}</p>
+                    </div>
+                    <span className="badge active">
+                      {t("Total Leads")}: {leadsPipelineSummary.total}
+                    </span>
+                  </div>
+
+                  {/* Proportional Pipeline Health Bar */}
+                  <div
+                    style={{
+                      display: "flex",
+                      height: 10,
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      background: "#e6fffb",
+                      border: "1px solid #b9e8df",
+                      marginBottom: 14,
+                    }}
+                    aria-label="Pipeline status distribution bar"
+                  >
+                    {leadsPipelineSummary.active > 0 && (
+                      <div
+                        style={{
+                          width: `${Math.max(4, leadsPipelineSummary.percentages.activePct)}%`,
+                          background: "#14b8a6",
+                        }}
+                        title={`Active: ${leadsPipelineSummary.active} (${leadsPipelineSummary.percentages.activePct}%)`}
+                      />
+                    )}
+                    {leadsPipelineSummary.draft > 0 && (
+                      <div
+                        style={{
+                          width: `${Math.max(4, leadsPipelineSummary.percentages.draftPct)}%`,
+                          background: "#f59e0b",
+                        }}
+                        title={`Draft: ${leadsPipelineSummary.draft} (${leadsPipelineSummary.percentages.draftPct}%)`}
+                      />
+                    )}
+                    {leadsPipelineSummary.closed > 0 && (
+                      <div
+                        style={{
+                          width: `${Math.max(4, leadsPipelineSummary.percentages.closedPct)}%`,
+                          background: "#0b3d3b",
+                        }}
+                        title={`Closed: ${leadsPipelineSummary.closed} (${leadsPipelineSummary.percentages.closedPct}%)`}
+                      />
+                    )}
+                    {leadsPipelineSummary.lost > 0 && (
+                      <div
+                        style={{
+                          width: `${Math.max(4, leadsPipelineSummary.percentages.lostPct)}%`,
+                          background: "#ef4444",
+                        }}
+                        title={`Lost: ${leadsPipelineSummary.lost} (${leadsPipelineSummary.percentages.lostPct}%)`}
+                      />
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
+                      gap: 12,
+                    }}
+                  >
+                    {[
+                      {
+                        key: "all",
+                        label: t("Total Leads"),
+                        count: leadsPipelineSummary.total,
+                        pct: 100,
+                        accent: "#0b3d3b",
+                        testId: "pipeline-stat-total",
+                      },
+                      {
+                        key: "active",
+                        label: t("Active"),
+                        count: leadsPipelineSummary.active,
+                        pct: leadsPipelineSummary.percentages.activePct,
+                        accent: "#14b8a6",
+                        testId: "pipeline-stat-active",
+                      },
+                      {
+                        key: "draft",
+                        label: t("Draft"),
+                        count: leadsPipelineSummary.draft,
+                        pct: leadsPipelineSummary.percentages.draftPct,
+                        accent: "#d97706",
+                        testId: "pipeline-stat-draft",
+                      },
+                      {
+                        key: "closed",
+                        label: t("Closed"),
+                        count: leadsPipelineSummary.closed,
+                        pct: leadsPipelineSummary.percentages.closedPct,
+                        accent: "#0f766e",
+                        testId: "pipeline-stat-closed",
+                      },
+                      {
+                        key: "lost",
+                        label: t("Lost"),
+                        count: leadsPipelineSummary.lost,
+                        pct: leadsPipelineSummary.percentages.lostPct,
+                        accent: "#dc2626",
+                        testId: "pipeline-stat-lost",
+                      },
+                    ].map((stat) => {
+                      const isSelected = leadStatusFilter === stat.key;
+                      return (
+                        <button
+                          key={stat.key}
+                          type="button"
+                          data-testid={stat.testId}
+                          onClick={() => setLeadStatusFilter(stat.key)}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            padding: "12px 14px",
+                            borderRadius: 10,
+                            border: isSelected
+                              ? "2px solid #0b3d3b"
+                              : "1px solid #b9e8df",
+                            background: isSelected ? "#e6fffb" : "#f8fffe",
+                            cursor: "pointer",
+                            textAlign: "start",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              width: "100%",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginBottom: 6,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "#376663",
+                              }}
+                            >
+                              {stat.label}
+                            </span>
+                            <span
+                              style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                background: stat.accent,
+                              }}
+                            />
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              width: "100%",
+                              alignItems: "baseline",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <strong
+                              style={{
+                                fontSize: 24,
+                                lineHeight: 1.1,
+                                color: "#0b3d3b",
+                              }}
+                            >
+                              {stat.count}
+                            </strong>
+                            <small
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: "#376663",
+                              }}
+                            >
+                              {stat.key === "all" ? "100%" : `${stat.pct}%`}
+                            </small>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
               <section className="panel">
                 <div className="list-toolbar">
                   <div className="search-field">
@@ -681,10 +1420,43 @@ function App() {
                       </button>
                     )}
                   </div>
-                  <span className="list-note">
-                    <SlidersHorizontal size={15} />
-                    {t("Your permitted records")}
-                  </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {page === "leads" && (
+                      <>
+                        <button
+                          type="button"
+                          className="button secondary"
+                          data-testid="export-leads-csv-btn"
+                          onClick={handleExportLeadsCsv}
+                          disabled={!visibleLeads.length}
+                        >
+                          <Download size={15} />
+                          {t("Export CSV")} ({visibleLeads.length})
+                        </button>
+                        <button
+                          type="button"
+                          className="button secondary"
+                          data-testid="export-leads-pdf-btn"
+                          onClick={handleExportLeadsPdf}
+                          disabled={!visibleLeads.length}
+                        >
+                          <FileText size={15} />
+                          {t("Export PDF")} ({visibleLeads.length})
+                        </button>
+                      </>
+                    )}
+                    <span className="list-note">
+                      <SlidersHorizontal size={15} />
+                      {t("Your permitted records")}
+                    </span>
+                  </div>
                 </div>
                 {page === "followups" && (
                   <div className="filter-bar">
@@ -700,6 +1472,26 @@ function App() {
                         key={id}
                         onClick={() => setFilter(id)}
                         className={filter === id ? "active" : ""}
+                      >
+                        {t(label)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {page === "leads" && (
+                  <div className="filter-bar" data-testid="leads-status-filter-bar">
+                    {[
+                      ["all", "All"],
+                      ["active", "Active"],
+                      ["draft", "Needs details"],
+                      ["closed", "Deal closed"],
+                      ["lost", "Deal lost"],
+                    ].map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setLeadStatusFilter(id)}
+                        className={leadStatusFilter === id ? "active" : ""}
                       >
                         {t(label)}
                       </button>
@@ -727,6 +1519,9 @@ function App() {
                             <ArrowUpRight size={17} />
                           </div>
                           <h3>{customer.name}</h3>
+                          {customer.serial && (
+                            <small className="serial">{customer.serial}</small>
+                          )}
                           <p className="phone" dir="ltr">
                             {customer.phone}
                           </p>
@@ -750,9 +1545,9 @@ function App() {
                     />
                   ))}
                 {page === "leads" &&
-                  (data?.leads.length ? (
+                  (visibleLeads.length ? (
                     <div className="table-scroll">
-                      <table>
+                      <table data-testid="staff-leads-table">
                         <thead>
                           <tr>
                             <th>{t("Customer")}</th>
@@ -763,7 +1558,7 @@ function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {data.leads.map((lead) => (
+                          {visibleLeads.map((lead) => (
                             <tr key={lead.id}>
                               <td>
                                 <strong>
@@ -771,6 +1566,12 @@ function App() {
                                 </strong>
                                 <small className="serial">{lead.serial}</small>
                                 <small dir="ltr">{lead.phone}</small>
+                                {lead.projectName && (
+                                  <small>
+                                    Project: {lead.projectName}{" "}
+                                    {lead.apartmentNumber || ""}
+                                  </small>
+                                )}
                               </td>
                               <td>
                                 <p className="truncate-text">
@@ -836,6 +1637,7 @@ function App() {
                             <strong>{task.title}</strong>
                             <small>
                               {task.assignedBy} · {format(task.deadlineAt)}
+                              {task.projectName ? ` · ${task.projectName}` : ""}
                             </small>
                           </span>
                           {badge(task.priority)}
@@ -894,9 +1696,18 @@ function App() {
                 </p>
               )}
               {page === "team" && manager && (
-                <div className="team-action">
+                <div className="team-action" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     className="button secondary"
+                    data-testid="create-department-btn"
+                    onClick={() => setModal({ kind: "department" })}
+                  >
+                    <Building2 size={17} />
+                    {t("Create department")}
+                  </button>
+                  <button
+                    className="button secondary"
+                    data-testid="create-agent-btn"
                     onClick={() => setModal({ kind: "staff" })}
                   >
                     <UserRound size={17} />
@@ -913,15 +1724,18 @@ function App() {
                   {initials(session.user.name)}
                 </span>
                 <h2>{session.user.name}</h2>
-                <p>{t(manager ? "Management" : "Call center")}</p>
+                <p>{t(roleLabel)}</p>
                 <p>{t("All times in Kabul · UTC+04:30")}</p>
                 <button
                   className="button secondary"
                   onClick={() =>
-                    client.logout().then(() => {
-                      setSession(null);
-                      setData(null);
-                    }).catch(e => setError(e.message))
+                    client
+                      .logout()
+                      .then(() => {
+                        setSession(null);
+                        setData(null);
+                      })
+                      .catch((e) => setError(e.message))
                   }
                 >
                   <LogOut size={16} />
@@ -956,6 +1770,7 @@ function App() {
               detail: "Activity history",
               assign: "Assign task",
               staff: "Create agent",
+              department: "Create department",
             }[modal.kind],
           )}
           close={() => setModal(null)}
@@ -966,6 +1781,7 @@ function App() {
               t={t}
               item={modal.item as Lead | undefined}
               users={data?.assignees || []}
+              projects={data?.projects || []}
               self={session.user}
               done={complete}
             />
@@ -974,14 +1790,26 @@ function App() {
               t={t}
               task={modal.item as Followup}
               users={data?.assignees || []}
+              projects={data?.projects || []}
               self={session.user}
               done={complete}
               format={format}
             />
           ) : modal.kind === "assign" ? (
-            <AssignForm t={t} users={data?.assignees || []} done={complete} />
+            <AssignForm
+              t={t}
+              users={data?.assignees || []}
+              projects={data?.projects || []}
+              done={complete}
+            />
           ) : modal.kind === "staff" ? (
-            <StaffForm t={t} done={complete} />
+            <StaffForm
+              t={t}
+              departments={data?.departments || []}
+              done={complete}
+            />
+          ) : modal.kind === "department" ? (
+            <DepartmentForm t={t} done={complete} />
           ) : modal.kind === "task" ? (
             <TaskDetail
               t={t}
@@ -1007,6 +1835,12 @@ function pageFromPath(): Page {
     "leads",
     "tasks",
     "team",
+    "projects",
+    "contracts",
+    "finance",
+    "marketing",
+    "submissions",
+    "deliverables",
     "profile",
   ].includes(part || "")
     ? (part as Page)
@@ -1137,13 +1971,13 @@ function Agents({
   return (
     <Field label={t("Next agent")}>
       <select name="nextAssigneeId" defaultValue={self.id} required>
-        {[self, ...users.filter(u => u.id !== self.id)]
+        {[self, ...users.filter((u) => u.id !== self.id)]
           .filter(
             (u) =>
               u.id === self.id ||
               (self.role === "callcenter"
                 ? u.role === "sales"
-                : u.role === "callcenter"),
+                : u.role === "callcenter" || u.role === "sales"),
           )
           .map((u) => (
             <option key={u.id} value={u.id}>
@@ -1175,12 +2009,14 @@ function EntryForm({
   t,
   item,
   users,
+  projects,
   self,
   done,
 }: {
   t: Translate;
   item?: Lead;
   users: StaffUser[];
+  projects: InventoryProject[];
   self: StaffUser;
   done: () => Promise<void>;
 }) {
@@ -1197,11 +2033,17 @@ function EntryForm({
           requirements: String(f.get("requirements")),
           nextScheduledAt: toUtc(f.get("nextScheduledAt")),
           nextAssigneeId: Number(f.get("nextAssigneeId")),
+          projectId: f.get("projectId") ? Number(f.get("projectId")) : undefined,
         };
         void submit(body, async (key) => {
           if (!draft.current)
             draft.current = await client.draft(
-              { phone: f.get("phone"), callAt: toUtc(f.get("callAt")) },
+              {
+                phone: f.get("phone"),
+                callAt: toUtc(f.get("callAt")),
+                source: f.get("source") || "manual",
+                projectId: body.projectId,
+              },
               draftKey.current,
             );
           return client.entry(
@@ -1238,14 +2080,37 @@ function EntryForm({
         </Field>
       </div>
       {!item && (
-        <Field label={`${t("Call date and time")} · Kabul`}>
-          <input
-            type="datetime-local"
-            name="callAt"
-            required
-            defaultValue={localInputNow()}
-            readOnly={!!draft.current}
-          />
+        <div className="form-grid">
+          <Field label={`${t("Call date and time")} · Kabul`}>
+            <input
+              type="datetime-local"
+              name="callAt"
+              required
+              defaultValue={localInputNow()}
+              readOnly={!!draft.current}
+            />
+          </Field>
+          <Field label={t("Pre-Sale Project (Optional)")}>
+            <select name="projectId" defaultValue="">
+              <option value="">General Inquiry</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.code} — {p.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      )}
+      {self.role === "sales" && (
+        <Field label={t("Lead Source")}>
+          <select name="source" defaultValue="walk_in">
+            <option value="walk_in">Walk-in</option>
+            <option value="direct_call">Direct Call</option>
+            <option value="company_referral">Company Referral</option>
+            <option value="callcenter">Call Center Handoff</option>
+            <option value="social_media">Social Media</option>
+          </select>
         </Field>
       )}
       <Field label={t("Requirements")}>
@@ -1288,6 +2153,7 @@ function FeedbackForm({
   t,
   task,
   users,
+  projects,
   self,
   done,
   format,
@@ -1295,13 +2161,19 @@ function FeedbackForm({
   t: Translate;
   task: Followup;
   users: StaffUser[];
+  projects: InventoryProject[];
   self: StaffUser;
   done: () => Promise<void>;
   format: (s: string) => string;
 }) {
-  const [outcome, setOutcome] = useState<"followup" | "visit" | "lost">(
-    "followup",
+  const [outcome, setOutcome] = useState<
+    "followup" | "visit" | "closed" | "lost"
+  >("followup");
+  const [selectedProjId, setSelectedProjId] = useState<number>(
+    projects[0]?.id || 1,
   );
+  const selectedProj =
+    projects.find((p) => p.id === selectedProjId) || projects[0];
   const { busy, error, submit } = useSubmission(done);
   return (
     <form
@@ -1313,11 +2185,20 @@ function FeedbackForm({
           version: task.version,
           ...(outcome === "lost"
             ? { reason: String(f.get("notes")) }
-            : {
-                notes: String(f.get("notes")),
-                nextScheduledAt: toUtc(f.get("nextScheduledAt")),
-                nextAssigneeId: Number(f.get("nextAssigneeId")),
-              }),
+            : outcome === "closed"
+              ? {
+                  amount: String(f.get("amount")),
+                  currency: String(f.get("currency")) as "AFN" | "USD",
+                  projectId: Number(f.get("projectId")),
+                  apartmentId: Number(f.get("apartmentId")),
+                  buyerPhotoUrl: String(f.get("buyerPhotoUrl")),
+                  tazkiraPhotoUrl: String(f.get("tazkiraPhotoUrl")),
+                }
+              : {
+                  notes: String(f.get("notes")),
+                  nextScheduledAt: toUtc(f.get("nextScheduledAt")),
+                  nextAssigneeId: Number(f.get("nextAssigneeId")),
+                }),
         };
         void submit(body, (key) => client.feedback(task.id, body, key));
       }}
@@ -1337,30 +2218,87 @@ function FeedbackForm({
         >
           <option value="followup">{t("Follow up")}</option>
           <option value="visit">{t("Visit")}</option>
+          {self.role === "sales" && (
+            <option value="closed">{t("Deal closed")}</option>
+          )}
           <option value="lost">{t("Deal lost")}</option>
         </select>
       </Field>
-      <Field label={t(outcome === "lost" ? "Reason for loss" : "Feedback")}>
-        <textarea name="notes" required rows={4} maxLength={4000} />
-      </Field>
-      {outcome !== "lost" && (
+
+      {outcome === "closed" ? (
         <div className="form-grid">
-          <Field label={`${t("Next follow-up")} · Kabul`}>
+          <Field label={t("Select Pre-Sale Project")}>
+            <select
+              name="projectId"
+              value={selectedProjId}
+              onChange={(e) => setSelectedProjId(Number(e.target.value))}
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.code} — {p.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("Select Apartment Unit")}>
+            <select name="apartmentId">
+              {(selectedProj?.apartments || []).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.unitNumber} ({a.areaSqm} m² • ${a.totalPrice.toLocaleString()})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("Agreed Total Amount")}>
             <input
-              type="datetime-local"
-              name="nextScheduledAt"
-              min={localInputNow()}
+              name="amount"
+              type="number"
+              step="0.01"
+              defaultValue={selectedProj?.apartments[0]?.totalPrice || 120000}
               required
             />
           </Field>
-          <Agents users={users} self={self} t={t} />
+          <Field label={t("Currency")}>
+            <select name="currency" defaultValue="USD">
+              <option value="USD">USD</option>
+              <option value="AFN">AFN</option>
+            </select>
+          </Field>
+          <Field label={t("Buyer 3×4 Portrait Photo URL")}>
+            <input name="buyerPhotoUrl" defaultValue="/logo.png" required />
+          </Field>
+          <Field label={t("Buyer Tazkira Photo URL")}>
+            <input name="tazkiraPhotoUrl" defaultValue="/logo.png" required />
+          </Field>
         </div>
+      ) : (
+        <>
+          <Field label={t(outcome === "lost" ? "Reason for loss" : "Feedback")}>
+            <textarea name="notes" required rows={4} maxLength={4000} />
+          </Field>
+          {outcome !== "lost" && (
+            <div className="form-grid">
+              <Field label={`${t("Next follow-up")} · Kabul`}>
+                <input
+                  type="datetime-local"
+                  name="nextScheduledAt"
+                  min={localInputNow()}
+                  required
+                />
+              </Field>
+              <Agents users={users} self={self} t={t} />
+            </div>
+          )}
+        </>
       )}
+
       <p className="form-note">
         {t(
           outcome === "lost"
             ? "This lead will be completed. No next follow-up is required."
-            : "Feedback is due within 24 hours of the scheduled time.",
+            : outcome === "closed"
+              ? "Generates Deal Closed serial (SA01PRC-Project-Apt-DDMMYY) and sends handoff to HR Contracts."
+              : "Feedback is due within 24 hours of the scheduled time.",
         )}
       </p>
       <FormError message={error} />
@@ -1374,10 +2312,12 @@ function FeedbackForm({
 function AssignForm({
   t,
   users,
+  projects,
   done,
 }: {
   t: Translate;
   users: StaffUser[];
+  projects: InventoryProject[];
   done: () => Promise<void>;
 }) {
   const { busy, error, submit } = useSubmission(done);
@@ -1391,6 +2331,7 @@ function AssignForm({
           instructions: String(f.get("instructions")),
           priority: String(f.get("priority")),
           assigneeId: Number(f.get("assigneeId")),
+          projectId: f.get("projectId") ? Number(f.get("projectId")) : undefined,
           deadlineAt: toUtc(f.get("deadlineAt")),
         };
         void submit(body, (key) => client.createTask(body, key));
@@ -1408,7 +2349,7 @@ function AssignForm({
             <option value="">{t("Select an agent")}</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
-                {u.name}
+                {u.name} ({ROLE_LABELS[u.role] || u.role})
               </option>
             ))}
           </select>
@@ -1423,14 +2364,26 @@ function AssignForm({
           </select>
         </Field>
       </div>
-      <Field label={`${t("Deadline")} · Kabul`}>
-        <input
-          type="datetime-local"
-          name="deadlineAt"
-          required
-          min={localInputNow()}
-        />
-      </Field>
+      <div className="form-grid">
+        <Field label={`${t("Deadline")} · Kabul`}>
+          <input
+            type="datetime-local"
+            name="deadlineAt"
+            required
+            min={localInputNow()}
+          />
+        </Field>
+        <Field label={t("Linked Pre-Sale Project (Optional)")}>
+          <select name="projectId" defaultValue="">
+            <option value="">General Office Task</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.code} — {p.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
       <p className="form-note">
         {t(
           "This task has an explicit deadline, without a 24-hour grace period.",
@@ -1495,7 +2448,7 @@ function TaskDetail({
               className="button secondary"
               disabled={busy}
               onClick={() =>
-                submit({ status: "in_progress" }, key =>
+                submit({ status: "in_progress" }, (key) =>
                   client.taskStatus(task.id, "in_progress", task.version, key),
                 )
               }
@@ -1507,7 +2460,7 @@ function TaskDetail({
             className="button"
             disabled={busy}
             onClick={() =>
-              submit({ status: "completed" }, key =>
+              submit({ status: "completed" }, (key) =>
                 client.taskStatus(task.id, "completed", task.version, key),
               )
             }
@@ -1565,7 +2518,33 @@ function LeadDetail({
             <p dir="ltr">{lead.phone}</p>
             <h4>{t("Requirements")}</h4>
             <p className="preserve-lines">{lead.requirements}</p>
-            {lead.deal && <><h4>{t("Deal closed")}</h4><dl><div><dt>{t("Deal amount")}</dt><dd>{lead.deal.currency} {lead.deal.amount}</dd></div><div><dt>{t("Sales agent")}</dt><dd>{lead.deal.salesAgent}</dd></div><div><dt>{t("Completed")}</dt><dd>{format(lead.deal.closedAt)}</dd></div></dl></>}
+            {lead.deal && (
+              <>
+                <h4>{t("Deal closed")}</h4>
+                <dl>
+                  {lead.deal.dealSerial && (
+                    <div>
+                      <dt>Deal Serial</dt>
+                      <dd>{lead.deal.dealSerial}</dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt>{t("Deal amount")}</dt>
+                    <dd>
+                      {lead.deal.currency} {lead.deal.amount}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{t("Sales agent")}</dt>
+                    <dd>{lead.deal.salesAgent}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("Completed")}</dt>
+                    <dd>{format(lead.deal.closedAt)}</dd>
+                  </div>
+                </dl>
+              </>
+            )}
             <h4>{t("Activity history")}</h4>
             <div className="timeline">
               {lead.activities?.map((a) => (
@@ -1585,7 +2564,48 @@ function LeadDetail({
     </div>
   );
 }
-function StaffForm({ t, done }: { t: Translate; done: () => Promise<void> }) {
+function DepartmentForm({
+  t,
+  done,
+}: {
+  t: Translate;
+  done: () => Promise<void>;
+}) {
+  const { busy, error, submit } = useSubmission(done);
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        const body = {
+          code: String(f.get("code")),
+          name: String(f.get("name")),
+        };
+        void submit(body, () => client.createDepartment(body));
+      }}
+    >
+      <Field label={t("Department Code")}>
+        <input name="code" required maxLength={60} placeholder="legal_affairs" />
+      </Field>
+      <Field label={t("Department Name")}>
+        <input name="name" required maxLength={120} placeholder="Legal & Compliance" />
+      </Field>
+      <FormError message={error} />
+      <button className="button full" disabled={busy}>
+        {t("Save Department")}
+      </button>
+    </form>
+  );
+}
+function StaffForm({
+  t,
+  departments,
+  done,
+}: {
+  t: Translate;
+  departments: Array<{ code: string; name: string }>;
+  done: () => Promise<void>;
+}) {
   const { busy, error, submit } = useSubmission(done);
   return (
     <form
@@ -1599,21 +2619,48 @@ function StaffForm({ t, done }: { t: Translate; done: () => Promise<void> }) {
       <Field label={t("Name")}>
         <input name="name" required maxLength={120} />
       </Field>
-      <p>{t("Create the account in Firebase first, then enter its exact UID and email here.")}</p>
+      <p>
+        {t(
+          "Create the account in Firebase first, then enter its exact UID and email here.",
+        )}
+      </p>
       <Field label={t("Email")}>
-        <input name="username" type="email" autoComplete="off" required maxLength={254} />
+        <input
+          name="username"
+          type="email"
+          autoComplete="off"
+          required
+          maxLength={254}
+        />
       </Field>
       <Field label={t("Firebase UID")}>
-        <input name="firebaseUid" autoComplete="off" required maxLength={128} />
+        <input
+          name="firebaseUid"
+          autoComplete="off"
+          required
+          maxLength={128}
+        />
       </Field>
-      <Field label={t("Role")}>
-        <select name="role">
-          <option value="callcenter">{t("Call center")}</option>
-          <option value="sales">
-            {t("Sales agent")} · {t("Dashboard not released")}
-          </option>
-        </select>
-      </Field>
+      <div className="form-grid">
+        <Field label={t("Department")}>
+          <select name="departmentCode" defaultValue="sales">
+            {departments.map((d) => (
+              <option key={d.code} value={d.code}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label={t("Role")}>
+          <select name="role" defaultValue="callcenter">
+            {SWITCHABLE_ROLES.map((r) => (
+              <option key={r.role} value={r.role}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
       <FormError message={error} />
       <button className="button full" disabled={busy}>
         {t("Create agent")}
@@ -1623,19 +2670,34 @@ function StaffForm({ t, done }: { t: Translate; done: () => Promise<void> }) {
 }
 function PasswordForm({ t }: { t: Translate; done: () => void }) {
   const [sent, setSent] = useState(false);
-  const { busy, error, submit } = useSubmission(async () => { setSent(true); });
-  return <form className="panel profile-card" onSubmit={e => {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    void submit({}, () => client.resetPassword(String(form.get("email"))));
-  }}>
-    <h2>{t("Security")}</h2>
-    <p>{t("Reset your password by email.")}</p>
-    <Field label={t("Email")}><input name="email" type="email" autoComplete="email" required /></Field>
-    <FormError message={error} />
-    {sent && <p role="status">{t("If the account exists, a password reset email has been sent.")}</p>}
-    <button className="button" disabled={busy}>{t("Send reset email")}</button>
-  </form>;
+  const { busy, error, submit } = useSubmission(async () => {
+    setSent(true);
+  });
+  return (
+    <form
+      className="panel profile-card"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const form = new FormData(e.currentTarget);
+        void submit({}, () => client.resetPassword(String(form.get("email"))));
+      }}
+    >
+      <h2>{t("Security")}</h2>
+      <p>{t("Reset your password by email.")}</p>
+      <Field label={t("Email")}>
+        <input name="email" type="email" autoComplete="email" required />
+      </Field>
+      <FormError message={error} />
+      {sent && (
+        <p role="status">
+          {t("If the account exists, a password reset email has been sent.")}
+        </p>
+      )}
+      <button className="button" disabled={busy}>
+        {t("Send reset email")}
+      </button>
+    </form>
+  );
 }
 function Login({
   t,
@@ -1653,7 +2715,7 @@ function Login({
   return (
     <div className="login-screen">
       <div className="login-brand">
-        <img src={logo} alt="Attaie Properties" />
+        <AttaieLogoEntrance mode="header" variant="teal" />
         <span>{t("Workspace")}</span>
       </div>
       <main className="login-card">
@@ -1663,9 +2725,11 @@ function Login({
         <div className="eyebrow">ATTAIE PROPERTIES</div>
         <h1>{t(management ? "Staff management" : "Welcome back.")}</h1>
         <p>
-          {t(management
-            ? "Sign in to support your team."
-            : "Sign in to your call center workspace.")}
+          {t(
+            management
+              ? "Sign in to support your team."
+              : "Sign in to your call center workspace.",
+          )}
         </p>
         <form
           onSubmit={async (e) => {
@@ -1688,7 +2752,12 @@ function Login({
           }}
         >
           <Field label={t("Email")}>
-            <input name="username" type="email" autoComplete="username" required />
+            <input
+              name="username"
+              type="email"
+              autoComplete="username"
+              required
+            />
           </Field>
           <Field label={t("Password")}>
             <input
@@ -1704,7 +2773,10 @@ function Login({
             <ArrowRight size={16} />
           </button>
         </form>
-        <details><summary>{t("Forgot password?")}</summary><PasswordForm t={t} done={() => {}} /></details>
+        <details>
+          <summary>{t("Forgot password?")}</summary>
+          <PasswordForm t={t} done={() => {}} />
+        </details>
         {__STAFF_PREVIEW_ALLOWED__ && (
           <a className="preview-link" href={`${base}/?preview=1`}>
             Explore sample workspace <ArrowUpRight size={14} />

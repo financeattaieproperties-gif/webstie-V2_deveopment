@@ -53,5 +53,7 @@ INSERT INTO core_permissions VALUES
  ('callcenter.access','callcenter','Access scoped call-center workspace'),
  ('callcenter.manage','callcenter','Read call-center records for management');
 INSERT INTO core_role_permissions VALUES
- ('callcenter','callcenter.access'),('sales','callcenter.access'),
+ ('callcenter','callcenter.access'),('sales','callcenter.access'),('sales_leader','callcenter.access'),
+ ('manager','callcenter.access'),('manager','callcenter.manage'),
  ('ceo','callcenter.access'),('admin','callcenter.access'),('ceo','callcenter.manage'),('admin','callcenter.manage');
+

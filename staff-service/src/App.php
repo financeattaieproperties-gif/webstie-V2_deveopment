@@ -87,7 +87,8 @@ final class App {
         if ($method === 'GET') {
             if ($route === 'dashboard') return $this->workspace();
             if (preg_match('#^leads/(\d+)$#', $route, $m)) return $this->leadDetails((int)$m[1]);
-            if ($route === 'staff') { $this->permission('core.staff.manage'); return $this->query("SELECT id,name,username,role,active FROM core_users WHERE role IN ('callcenter','sales','admin','ceo') ORDER BY id LIMIT 100"); }
+            if ($route === 'staff') { $this->permission('core.staff.manage'); return $this->query("SELECT id,name,username,role,active FROM core_users WHERE role <> 'customer' ORDER BY id LIMIT 200"); }
+            if ($route === 'departments') { return $this->query("SELECT code,name FROM core_departments WHERE code <> 'customers' ORDER BY name"); }
             throw new HttpError(404, 'Route not found.');
         }
         $body = $this->body();
@@ -99,6 +100,7 @@ final class App {
             if (preg_match('#^tasks/(\d+)$#',$route,$m) && $method === 'PATCH') return $this->updateTask((int)$m[1],$body);
             if ($route === 'staff' && $method === 'POST') return $this->createStaff($body);
             if (preg_match('#^staff/(\d+)$#',$route,$m) && $method === 'PATCH') return $this->setStaffActive((int)$m[1],$body);
+            if ($route === 'departments' && $method === 'POST') return $this->createDepartment($body);
             throw new HttpError(404, 'Route not found.');
         });
     }
@@ -138,7 +140,7 @@ final class App {
     private function hasPermission(string $code): bool { return (bool)$this->one('SELECT 1 FROM core_role_permissions WHERE role_code=? AND permission_code=?',[$this->user['role'],$code]); }
     private function workspace(): array {
         $view=$_GET['view'] ?? 'overview';
-        if (!in_array($view,['overview','followups','customers','leads','tasks','team'],true)) throw new InvalidArgumentException('Unknown dashboard view.');
+        if (!in_array($view,['overview','followups','customers','leads','tasks','team','projects','contracts','finance','marketing','submissions','deliverables'],true)) throw new InvalidArgumentException('Unknown dashboard view.');
         if ($view==='tasks') $this->permission('core.tasks.read_own');
         if ($view==='team') $this->permission('core.tasks.assign');
         $search=trim((string)($_GET['q'] ?? ''));
@@ -167,7 +169,7 @@ final class App {
         $counts['due']=(int)$counts['due']-(int)$counts['overtime'];
         $counts['newLeads']=(int)$this->one("SELECT COUNT(*) AS n FROM cc_leads l WHERE $access AND l.status='draft'")['n'];
         $counts['tasks']=(int)$this->one("SELECT COUNT(*) AS n FROM core_management_tasks WHERE assignee_id=? AND status IN ('todo','in_progress')",[$this->uid()])['n'];
-        $roles=$this->isManager() ? "('callcenter','sales','admin','ceo')" : "('callcenter','sales')";
+        $roles=$this->isManager() ? "('manager','hr_manager','callcenter','sales_leader','sales','marketing_manager','production_manager','editor','videographer','photographer','finance_manager','finance_assistant','architect','graphic_designer','visual_designer_3d','ceo')" : "('callcenter','sales','sales_leader')";
         $assignees=$this->query("SELECT id,name,role,active FROM core_users WHERE active=1 AND role IN $roles ORDER BY name LIMIT 100");
         return ['leads'=>array_map([$this,'leadDto'],$leads),'followups'=>array_map([$this,'followupDto'],$followups),'customers'=>$customers,'tasks'=>array_map([$this,'taskDto'],$tasks),'assignees'=>array_map([$this,'publicUser'],$assignees),'counts'=>array_map('intval',$counts),'page'=>$page,'integration'=>['enabled'=>false,'message'=>'Etisalat automatic capture is not connected. Manual call entries are labeled.'],'serverTime'=>Domain::iso($this->now)];
     }
@@ -236,7 +238,7 @@ final class App {
         $this->permission('core.tasks.assign'); $title=Domain::text($body['title'] ?? null,200); $instructions=Domain::text($body['instructions'] ?? null);
         if (!in_array($body['priority'] ?? '',['low','normal','high','urgent'],true)) throw new InvalidArgumentException('Choose task priority.');
         $assignee=$this->activeUser((int)($body['assigneeId'] ?? 0)); $deadline=Domain::future($body['deadlineAt'] ?? null);
-        if (!in_array($assignee['role'],['callcenter','sales','admin','ceo'],true) || !$this->one('SELECT 1 FROM core_role_permissions WHERE role_code=? AND permission_code=?',[$assignee['role'],'core.tasks.read_own'])) throw new InvalidArgumentException('Select an active operational staff member.');
+        if ($assignee['role']==='customer' || !$this->one('SELECT 1 FROM core_role_permissions WHERE role_code=? AND permission_code=?',[$assignee['role'],'core.tasks.read_own'])) throw new InvalidArgumentException('Select an active operational staff member.');
         $this->execute('INSERT INTO core_management_tasks(title,instructions,priority,assignee_id,assigned_by,deadline_at) VALUES (?,?,?,?,?,?)',[$title,$instructions,$body['priority'],$assignee['id'],$this->uid(),$deadline]);
         $id=(int)$this->db->lastInsertId(); $this->audit('task.assigned',$id,json_encode(['assigneeId'=>(int)$assignee['id']])); return ['id'=>$id];
     }
@@ -250,6 +252,15 @@ final class App {
         $this->execute('UPDATE core_management_tasks SET status=?,completed_at=?,version=version+1 WHERE id=?',[$body['status'],$body['status']==='completed' ? $this->now : null,$id]);
         $this->audit('task.'.$body['status'],$id); return ['success'=>true];
     }
+    private function createDepartment(array $body): array {
+        $this->permission('core.departments.manage');
+        $code=strtolower(preg_replace('/[^a-zA-Z0-9_]/','',Domain::text($body['code']??null,60)));
+        $name=Domain::text($body['name']??null,120);
+        if ($code==='') throw new InvalidArgumentException('Enter a valid department code.');
+        $this->execute('INSERT INTO core_departments(code,name) VALUES (?,?) ON DUPLICATE KEY UPDATE name=VALUES(name)',[$code,$name]);
+        $this->audit('department.saved',0,json_encode(['code'=>$code,'name'=>$name]));
+        return ['code'=>$code,'name'=>$name];
+    }
     private function createStaff(array $body): array {
         $this->permission('core.staff.manage');
         $name=Domain::text($body['name']??null,120);
@@ -257,7 +268,8 @@ final class App {
         if (!filter_var($username,FILTER_VALIDATE_EMAIL)) throw new InvalidArgumentException('Enter the Firebase account email.');
         $uid=Domain::text($body['firebaseUid']??null,128);
         if (!preg_match('/^[\x21-\x7e]{1,128}$/D',$uid)) throw new InvalidArgumentException('Enter the exact Firebase UID.');
-        if (!in_array($body['role']??'',['callcenter','sales'],true)) throw new InvalidArgumentException('Only operational agent accounts may be created here.');
+        $allowedRoles=['callcenter','sales','sales_leader','hr_manager','marketing_manager','production_manager','editor','videographer','photographer','finance_manager','finance_assistant','architect','graphic_designer','visual_designer_3d'];
+        if (!in_array($body['role']??'',$allowedRoles,true)) throw new InvalidArgumentException('Select an internal operational staff role.');
         if ($this->one('SELECT id FROM core_users WHERE username=? OR firebase_uid=?',[$username,$uid])) throw new HttpError(409,'That email or Firebase UID is already provisioned.');
         $this->execute('INSERT INTO core_users(name,username,firebase_uid,role) VALUES (?,?,?,?)',[$name,$username,$uid,$body['role']]);
         $id=(int)$this->db->lastInsertId(); $this->audit('staff.created',$id); return ['id'=>$id];
@@ -266,7 +278,7 @@ final class App {
         $this->permission('core.staff.manage'); if ($id===$this->uid()) throw new HttpError(403,'You cannot deactivate your own account.');
         if (!is_bool($body['active'] ?? null)) throw new InvalidArgumentException('An active flag is required.');
         $target=$this->one('SELECT role FROM core_users WHERE id=? FOR UPDATE',[$id]);
-        if (!$target || !in_array($target['role'],['callcenter','sales'],true)) throw new HttpError(403,'Privileged staff changes require private administration.');
+        if (!$target || in_array($target['role'],['ceo','admin','manager'],true)) throw new HttpError(403,'Privileged staff changes require private administration.');
         if (!$body['active'] && ($this->one("SELECT id FROM cc_leads WHERE assignee_id=? AND status IN ('draft','active') LIMIT 1 FOR UPDATE",[$id]) || $this->one("SELECT id FROM core_management_tasks WHERE assignee_id=? AND status IN ('todo','in_progress') LIMIT 1 FOR UPDATE",[$id]))) throw new HttpError(409,'This agent still has active work. Resolve assignments before deactivation.');
         $this->execute('UPDATE core_users SET active=?,auth_version=auth_version+1 WHERE id=?',[(int)$body['active'],$id]); $this->audit('staff.active_changed',$id); return ['success'=>true];
     }
