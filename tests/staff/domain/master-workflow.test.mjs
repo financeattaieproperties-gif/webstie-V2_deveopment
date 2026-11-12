@@ -27,7 +27,7 @@ import {
   validateProjectInventory,
 } from '../../../packages/staff-contracts/workflow.mjs';
 
-test('Phase 1: UDR-001..003 three-database isolation and Manager authority', () => {
+test('Phase 1: UDR-001..003 three-database isolation and CEO authority', () => {
   // Admin can access website and submissions, NEVER internal crm
   assert.equal(canAccessDatabase('admin', 'website'), true);
   assert.equal(canAccessDatabase('admin', 'submissions'), 'review_and_publish');
@@ -45,17 +45,18 @@ test('Phase 1: UDR-001..003 three-database isolation and Manager authority', () 
   assert.equal(canAccessDatabase('architect', 'submissions'), false);
 
   // Manager role & department/user management
-  assert.equal(isManagerRole('manager'), true);
+  assert.equal(isManagerRole('manager'), false);
   assert.equal(isManagerRole('ceo'), true);
-  assert.equal(canManageDepartmentsAndUsers('manager'), true);
+  assert.equal(canManageDepartmentsAndUsers('manager'), false);
+  assert.equal(canManageDepartmentsAndUsers('ceo'), true);
   assert.equal(canManageDepartmentsAndUsers('admin'), false);
   assert.equal(canManageDepartmentsAndUsers('sales_leader'), false);
 
   // Task assignment rules
   assert.equal(
     canAssignTask(
-      { id: 1, role: 'manager' },
-      { id: 10, role: 'architect', active: true }
+      { id: 1, role: 'ceo', active: true, branchId: null },
+      { id: 10, role: 'architect', active: true, branchId: 2 }
     ),
     true
   );
@@ -99,7 +100,7 @@ test('Phase 1 & 3: UDR-004 agent lead privacy and referral sharing', () => {
     sharedAgentIds: [],
   };
 
-  assert.equal(canViewLead({ id: 1, role: 'manager' }, lead), true);
+  assert.equal(canViewLead({ id: 1, role: 'ceo', active: true, branchId: null }, lead), true);
   assert.equal(canViewLead({ id: 3, role: 'sales_leader' }, lead, [4, 5]), true);
   assert.equal(canViewLead({ id: 2, role: 'callcenter' }, lead), true);
   assert.equal(canViewLead({ id: 4, role: 'sales' }, lead), true);
@@ -146,7 +147,7 @@ test('Phase 2: Manager project inventory validation and floor apartment batch ge
       apartments: batch,
     },
     [],
-    'manager'
+    'ceo'
   );
   assert.equal(validProject.code, 'KP12');
 
@@ -164,7 +165,7 @@ test('Phase 2: Manager project inventory validation and floor apartment batch ge
           apartments: [...batch, { ...batch[0] }],
         },
         [],
-        'manager'
+          'ceo'
       ),
     /Duplicate apartment number/
   );
@@ -290,7 +291,7 @@ test('Phase 4: HR contract 100% installment reconciliation, direct issuance, and
   };
 
   const issued = issueContractSnapshot({
-    actorRole: 'hr_manager',
+    actorRole: 'manager',
     project,
     apartment,
     buyers: [
@@ -461,7 +462,7 @@ test('Phase 5: Marketing production stages, Posted -> Submission DB handoff, and
   assert.equal(published.websitePropertyId, 99);
 });
 
-test('Phase 6: Engineering versioned deliverables and Manager review', () => {
+test('Phase 6: Engineering versioned deliverables and CEO review', () => {
   const initialDeliverable = {
     id: 1,
     projectId: 1,
@@ -483,8 +484,8 @@ test('Phase 6: Engineering versioned deliverables and Manager review', () => {
   assert.equal(v1.versions[0].versionNumber, 1);
 
   const revisionReq = reviewDeliverableVersion(v1, {
-    actorRole: 'manager',
-    reviewerName: 'Ahmad (Manager)',
+    actorRole: 'ceo',
+    reviewerName: 'Ahmad (CEO)',
     versionNumber: 1,
     decision: 'revision_requested',
     comment: 'Widen corridor on Floor 4 by 30cm',
@@ -505,8 +506,8 @@ test('Phase 6: Engineering versioned deliverables and Manager review', () => {
   assert.equal(v2.versions[1].versionNumber, 2);
 
   const approvedV2 = reviewDeliverableVersion(v2, {
-    actorRole: 'manager',
-    reviewerName: 'Ahmad (Manager)',
+    actorRole: 'ceo',
+    reviewerName: 'Ahmad (CEO)',
     versionNumber: 2,
     decision: 'approved',
     comment: 'Approved for construction package',
@@ -579,6 +580,5 @@ test('Leads Management Export: formatLeadsToCsv and generateLeadsPdfDocument exp
   assert.equal(summary.percentages.closedPct, 20);
   assert.equal(summary.percentages.lostPct, 20);
 });
-
 
 

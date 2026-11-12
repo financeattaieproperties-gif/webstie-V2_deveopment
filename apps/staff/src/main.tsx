@@ -135,16 +135,13 @@ const labels: Record<string, string> = {
 
 const ROLE_LABELS: Record<string, string> = {
   manager: "Manager",
-  ceo: "Manager (CEO)",
-  hr_manager: "HR Manager",
+  ceo: "CEO",
   sales_leader: "Sales Team Leader",
   sales: "Sales Agent",
   callcenter: "Call Center Agent",
   marketing_manager: "Marketing Manager",
-  production_manager: "Production Manager",
   editor: "Editor",
   videographer: "Videographer",
-  photographer: "Videographer",
   finance_manager: "Finance Manager",
   architect: "Architect",
   graphic_designer: "Graphic Designer",
@@ -152,8 +149,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const SWITCHABLE_ROLES: { role: Role; label: string }[] = [
-  { role: "manager", label: "Manager (Full Internal CRM Authority)" },
-  { role: "hr_manager", label: "HR Manager (Deal Contracts & A4 Print)" },
+  { role: "ceo", label: "CEO (Global Internal CRM Authority)" },
+  { role: "manager", label: "Manager (Branch Contracts & Operations)" },
   { role: "sales_leader", label: "Sales Team Leader" },
   { role: "sales", label: "Sales Agent (Pipeline & Deal Closure)" },
   { role: "callcenter", label: "Call Center Agent" },
@@ -203,7 +200,7 @@ function App() {
   } | null>(null);
   const generation = useRef(0);
 
-  const activeRole: Role = session?.user?.role || (management ? "manager" : "callcenter");
+  const activeRole: Role = session?.user?.role || (management ? "ceo" : "callcenter");
   const isCallCenterOnly = activeRole === "callcenter" && !isDashboardPath && !management;
 
   useEffect(() => {
@@ -316,19 +313,15 @@ function App() {
     <span className={`badge ${value}`}>{t(labels[value] || value)}</span>
   );
 
-  const manager =
-    !!session &&
-    (isManagerRole(session.user.role) || session.user.role === "admin");
+  const manager = !!session && isManagerRole(session.user.role);
 
   const canAssignTasks =
     !!session &&
     [
       "manager",
       "ceo",
-      "branch_manager",
       "sales_leader",
       "marketing_manager",
-      "production_manager",
       "finance_manager",
     ].includes(session.user.role);
 
@@ -348,7 +341,7 @@ function App() {
   const hasProjectsAccess = [
     "manager",
     "ceo",
-    "hr_manager",
+    "manager",
     "sales_leader",
     "sales",
     "callcenter",
@@ -358,7 +351,6 @@ function App() {
     "visual_designer_3d",
   ].includes(activeRole);
   const hasContractsAccess = [
-    "hr_manager",
     "manager",
     "ceo",
     "finance_manager",

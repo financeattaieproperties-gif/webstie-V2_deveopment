@@ -51,7 +51,7 @@ export function HrContractsWorkspace({
   onNotice,
   onError,
 }: HrContractsWorkspaceProps) {
-  const canIssue = actorRole === 'hr_manager';
+  const canIssue = actorRole === 'manager';
   const t = (en: string, fa: string) => lang === 'fa' ? fa : en;
   const [busy, setBusy] = useState(false);
   const [qrImage, setQrImage] = useState('');

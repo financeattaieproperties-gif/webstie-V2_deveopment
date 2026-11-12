@@ -10,9 +10,9 @@ test('preview starts with empty project and unit catalogs and fictional identiti
   assert.ok(store.assignees.every(u => u.name.startsWith('Fictional') && u.username.endsWith('@example.invalid')));
 });
 
-test('manager preview saves unprepared inventory, allocates distinct unit IDs and checks edit version', async () => {
-  const manager = previewClient(true, 'manager');
-  const project = await manager.saveProject({
+test('CEO preview saves unprepared inventory while Manager owns contract preparation', async () => {
+  const ceo = previewClient(true, 'ceo');
+  const project = await ceo.saveProject({
     code:'TEST1', name:'Fictional Building',location:'Fictional address',description:'',status:'draft',
     totalAreaSqm:200,floors:2,commercialFloors:[],residentialFloors:[1,2],corridorCount:1,
     coverPhotoUrl:'',assignedTeamLeaderId:null,assignedSalesAgentIds:[],sellers:[],
@@ -21,8 +21,10 @@ test('manager preview saves unprepared inventory, allocates distinct unit IDs an
   });
   assert.notEqual(project.apartments[0].id, project.apartments[1].id);
   assert.ok(project.apartments.every(a => a.projectId === project.id));
-  await assert.rejects(manager.saveProject({...project,version:0}), /changed/);
+  await assert.rejects(ceo.saveProject({...project,version:0}), /changed/);
+  const manager = previewClient(true, 'manager');
+  await assert.rejects(manager.saveProject(project), /Only CEO/);
   const sales = previewClient(false,'sales');
-  await assert.rejects(sales.saveProject(project), /Only Manager/);
-  await assert.rejects(sales.saveProjectPreparation(project.id,{version:project.version,sellers:[],constructionCompany:project.constructionCompany,apartments:[]}), /Only HR Manager/);
+  await assert.rejects(sales.saveProject(project), /Only CEO/);
+  await assert.rejects(sales.saveProjectPreparation(project.id,{version:project.version,sellers:[],constructionCompany:project.constructionCompany,apartments:[]}), /Only Manager/);
 });

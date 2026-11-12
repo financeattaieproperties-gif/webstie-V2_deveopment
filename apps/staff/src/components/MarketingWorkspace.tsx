@@ -59,20 +59,17 @@ export function MarketingWorkspace({
   const [postPhotos, setPostPhotos] = useState<string[]>([]);
 
   const videographers = staffUsers.filter(
-    (u) => u.role === 'videographer' || u.role === 'photographer'
+    (u) => u.role === 'videographer'
   );
 
   const canScheduleFilming = [
     'marketing_manager',
-    'production_manager',
     'manager',
     'ceo',
   ].includes(actorRole);
   const canCompleteFilming = [
     'videographer',
-    'photographer',
     'marketing_manager',
-    'production_manager',
   ].includes(actorRole);
   const isEditor = actorRole === 'editor';
 

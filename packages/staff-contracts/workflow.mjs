@@ -1,3 +1,9 @@
+import {
+  ACTIVE_INTERNAL_ROLES,
+  canReadBranch,
+  isGlobalRole,
+} from './branch-policy.mjs';
+
 export const DAY = 86_400_000;
 
 export function feedbackDeadline(scheduledAt) {
@@ -155,28 +161,10 @@ export function validateFeedback(input, role, now = new Date().toISOString()) {
 // Phase 1: Three-Database Access Boundaries & Role Permissions (UDR-001..004)
 // ============================================================================
 
-const INTERNAL_CRM_ROLES = new Set([
-  "manager",
-  "ceo",
-  "branch_manager",
-  "hr_manager",
-  "sales_leader",
-  "sales",
-  "callcenter",
-  "marketing_manager",
-  "production_manager",
-  "editor",
-  "videographer",
-  "photographer",
-  "finance_manager",
-  "architect",
-  "graphic_designer",
-  "visual_designer_3d",
-  "assistant_manager",
-]);
+const INTERNAL_CRM_ROLES = new Set(ACTIVE_INTERNAL_ROLES);
 
 export function isManagerRole(role) {
-  return ["manager", "ceo", "branch_manager"].includes(role);
+  return isGlobalRole(role);
 }
 
 export function canAccessDatabase(role, database) {
@@ -192,19 +180,16 @@ export function canAccessDatabase(role, database) {
     if (
       [
         "marketing_manager",
-        "production_manager",
         "editor",
         "videographer",
-        "photographer",
       ].includes(role)
     ) {
       return "submit_and_read";
     }
     if (
       [
-        "manager",
         "ceo",
-        "branch_manager",
+        "manager",
         "finance_manager",
         "sales_leader",
         "sales",
@@ -219,14 +204,17 @@ export function canAccessDatabase(role, database) {
 }
 
 export function canManageDepartmentsAndUsers(role) {
-  return isManagerRole(role);
+  return isGlobalRole(role);
 }
 
 export function canAssignTask(actor, targetUser) {
   if (!actor || !targetUser || !targetUser.active) return false;
   if (!INTERNAL_CRM_ROLES.has(actor.role) || !INTERNAL_CRM_ROLES.has(targetUser.role)) return false;
   if (actor.role === "admin" || targetUser.role === "admin") return false;
-  if (isManagerRole(actor.role)) return true;
+  if (isGlobalRole(actor.role)) return true;
+  if (actor.role === "manager") {
+    return canReadBranch(actor, targetUser.branchId);
+  }
   if (actor.role === "sales_leader") {
     return (
       targetUser.role === "sales" &&
@@ -234,15 +222,12 @@ export function canAssignTask(actor, targetUser) {
     );
   }
   if (
-    actor.role === "marketing_manager" ||
-    actor.role === "production_manager"
+    actor.role === "marketing_manager"
   ) {
     return [
       "editor",
       "videographer",
-      "photographer",
       "marketing_manager",
-      "production_manager",
     ].includes(targetUser.role);
   }
   if (actor.role === "finance_manager") {
@@ -254,7 +239,8 @@ export function canAssignTask(actor, targetUser) {
 export function canViewLead(actor, lead, assignedSalesAgentIds = []) {
   if (!actor || !lead) return false;
   if (actor.role === "admin") return false;
-  if (isManagerRole(actor.role)) return true;
+  if (isGlobalRole(actor.role)) return true;
+  if (actor.role === "manager") return canReadBranch(actor, lead.branchId);
   if (actor.role === "sales_leader") {
     const teamSet = new Set(assignedSalesAgentIds);
     return (
@@ -323,9 +309,9 @@ export function generateFloorApartmentBatch({
   return batch;
 }
 
-export function validateProjectInventory(projectInput, existingProjects = [], actorRole = "manager") {
-  if (!isManagerRole(actorRole)) {
-    throw new Error("Only Manager may add or update project inventory.");
+export function validateProjectInventory(projectInput, existingProjects = [], actorRole = "ceo") {
+  if (!isGlobalRole(actorRole)) {
+    throw new Error("Only CEO may add or update project inventory.");
   }
   const code = String(projectInput.code || "").trim().toUpperCase();
   const name = String(projectInput.name || "").trim();
@@ -542,11 +528,11 @@ export function issueContractSnapshot({
   clauses = [],
   notes = "",
   existingContracts = [],
-  issuedBy = "HR Manager",
+  issuedBy = "Manager",
   now = new Date().toISOString(),
 }) {
-  if (actorRole !== "hr_manager") {
-    throw new Error("Only HR Manager may create and issue deal contracts.");
+  if (actorRole !== "manager") {
+    throw new Error("Only Manager may create and issue deal contracts.");
   }
   if (!project || !apartment) {
     throw new Error("Select a valid project and apartment from Manager inventory.");
@@ -722,12 +708,9 @@ export function validateMarketingEntryCreation(input, actorRole) {
     "callcenter",
     "manager",
     "ceo",
-    "branch_manager",
     "marketing_manager",
-    "production_manager",
     "editor",
     "videographer",
-    "photographer",
   ];
   if (!allowed.includes(actorRole)) {
     throw new Error("This role cannot submit marketing property entries.");
@@ -746,7 +729,7 @@ export function validateMarketingEntryCreation(input, actorRole) {
 
 export function advanceMarketingProduction(entry, action, payload = {}, actorRole) {
   if (action === "schedule_filming") {
-    if (!["marketing_manager", "production_manager", "manager", "ceo"].includes(actorRole)) {
+    if (!["marketing_manager", "manager", "ceo"].includes(actorRole)) {
       throw new Error("Only Marketing Manager can schedule filming.");
     }
     if (!payload.filmingDate || !payload.videographerId) {
@@ -761,7 +744,7 @@ export function advanceMarketingProduction(entry, action, payload = {}, actorRol
     };
   }
   if (action === "complete_filming") {
-    if (!["videographer", "photographer", "marketing_manager", "production_manager"].includes(actorRole)) {
+    if (!["videographer", "marketing_manager"].includes(actorRole)) {
       throw new Error("Only Videographer or Marketing Manager can record filming completion.");
     }
     return {
@@ -772,7 +755,7 @@ export function advanceMarketingProduction(entry, action, payload = {}, actorRol
     };
   }
   if (action === "schedule_editing") {
-    if (!["editor", "marketing_manager", "production_manager"].includes(actorRole)) {
+    if (!["editor", "marketing_manager"].includes(actorRole)) {
       throw new Error("Only Editor can set the editing completion date.");
     }
     if (!entry.filmingCompletedAt) {
@@ -939,8 +922,8 @@ export function reviewDeliverableVersion(
   deliverable,
   { actorRole, reviewerName = "Manager", versionNumber, decision, comment = "", reviewedAt = new Date().toISOString() },
 ) {
-  if (!isManagerRole(actorRole)) {
-    throw new Error("Only Manager can approve or request revisions on Engineering deliverables.");
+  if (!isGlobalRole(actorRole)) {
+    throw new Error("Only CEO can approve or request revisions on Engineering deliverables.");
   }
   if (!["approved", "revision_requested"].includes(decision)) {
     throw new Error("Decision must be approved or revision_requested.");
@@ -1252,5 +1235,4 @@ export function summarizeLeadsPipeline(leads = []) {
     },
   };
 }
-
 

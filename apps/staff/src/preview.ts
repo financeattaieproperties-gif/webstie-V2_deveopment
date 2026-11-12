@@ -54,19 +54,19 @@ export const INITIAL_DEPARTMENTS: Department[] = [
 ];
 
 export const INITIAL_STAFF_USERS: StaffUser[] = [
-  { id: 1, name: "Fictional 7 Staff", username: "sample7@example.invalid", role: "callcenter", departmentCode: "callcenter", active: true },
-  { id: 2, name: "Fictional 9 Staff", username: "sample9@example.invalid", role: "sales", departmentCode: "sales", teamLeaderId: 4, active: true },
-  { id: 3, name: "Fictional 11 Staff", username: "sample11@example.invalid", role: "manager", departmentCode: "management", active: true },
-  { id: 4, name: "Fictional 13 Staff", username: "sample13@example.invalid", role: "sales_leader", departmentCode: "sales", active: true },
-  { id: 5, name: "Fictional 15 Staff", username: "sample15@example.invalid", role: "hr_manager", departmentCode: "hr", active: true },
-  { id: 6, name: "Fictional 17 Staff", username: "sample17@example.invalid", role: "marketing_manager", departmentCode: "production", active: true },
-  { id: 7, name: "Fictional 19 Staff", username: "sample19@example.invalid", role: "editor", departmentCode: "production", active: true },
-  { id: 8, name: "Fictional 21 Staff", username: "sample21@example.invalid", role: "videographer", departmentCode: "production", active: true },
-  { id: 9, name: "Fictional 23 Staff", username: "sample23@example.invalid", role: "finance_manager", departmentCode: "finance", active: true },
-  { id: 11, name: "Fictional 25 Staff", username: "sample25@example.invalid", role: "architect", departmentCode: "engineering", active: true },
-  { id: 12, name: "Fictional 27 Staff", username: "sample27@example.invalid", role: "graphic_designer", departmentCode: "engineering", active: true },
-  { id: 13, name: "Fictional 29 Staff", username: "sample29@example.invalid", role: "visual_designer_3d", departmentCode: "engineering", active: true },
-  { id: 14, name: "Fictional 31 Staff", username: "sample31@example.invalid", role: "sales", departmentCode: "sales", teamLeaderId: 4, active: true },
+  { id: 1, name: "Fictional 7 Staff", username: "sample7@example.invalid", role: "callcenter", departmentCode: "callcenter", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 2, name: "Fictional 9 Staff", username: "sample9@example.invalid", role: "sales", departmentCode: "sales", teamLeaderId: 4, branchId: 1, branchName: "Central Branch", active: true },
+  { id: 3, name: "Fictional 11 Staff", username: "sample11@example.invalid", role: "ceo", departmentCode: "management", branchId: null, active: true },
+  { id: 4, name: "Fictional 13 Staff", username: "sample13@example.invalid", role: "sales_leader", departmentCode: "sales", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 5, name: "Fictional 15 Staff", username: "sample15@example.invalid", role: "manager", departmentCode: "management", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 6, name: "Fictional 17 Staff", username: "sample17@example.invalid", role: "marketing_manager", departmentCode: "production", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 7, name: "Fictional 19 Staff", username: "sample19@example.invalid", role: "editor", departmentCode: "production", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 8, name: "Fictional 21 Staff", username: "sample21@example.invalid", role: "videographer", departmentCode: "production", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 9, name: "Fictional 23 Staff", username: "sample23@example.invalid", role: "finance_manager", departmentCode: "finance", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 11, name: "Fictional 25 Staff", username: "sample25@example.invalid", role: "architect", departmentCode: "engineering", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 12, name: "Fictional 27 Staff", username: "sample27@example.invalid", role: "graphic_designer", departmentCode: "engineering", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 13, name: "Fictional 29 Staff", username: "sample29@example.invalid", role: "visual_designer_3d", departmentCode: "engineering", branchId: 1, branchName: "Central Branch", active: true },
+  { id: 14, name: "Fictional 31 Staff", username: "sample31@example.invalid", role: "sales", departmentCode: "sales", teamLeaderId: 4, branchId: 1, branchName: "Central Branch", active: true },
 ];
 
 const INITIAL_PROJECTS: InventoryProject[] = [];
@@ -188,6 +188,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
           id: 99,
           name: `Attaie ${role.replace(/_/g, " ")}`,
           role,
+          branchId: role === "ceo" ? null : 1,
           active: true,
         };
       }
@@ -216,7 +217,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         .filter((l) => {
           const visible =
             isManagerRole(activeUser.role) ||
-            activeUser.role === "hr_manager" ||
+            activeUser.role === "manager" ||
             canViewLead(activeUser, l, teamAgentIds);
           return (
             visible &&
@@ -492,7 +493,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
     },
     async createDepartment(body: { code: string; name: string }) {
       if (!isManagerRole(activeUser.role)) {
-        throw new Error("Only Manager can create departments.");
+        throw new Error("Only CEO can create departments.");
       }
       const code = body.code.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
       const name = body.name.trim();
@@ -507,7 +508,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
     },
     async createStaff(body: unknown, _key: string) {
       if (!isManagerRole(activeUser.role)) {
-        throw new Error("Only Manager can create staff user accounts.");
+        throw new Error("Only CEO can create staff user accounts.");
       }
       const input = body as {
         name: string;
@@ -516,6 +517,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         role: Role;
         departmentCode?: string;
         teamLeaderId?: number;
+        branchId?: number;
       };
       if (!input.name?.trim() || !input.username?.trim() || !input.firebaseUid?.trim()) {
         throw new Error("Name, email, and Firebase UID are required.");
@@ -527,13 +529,14 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         role: input.role,
         departmentCode: input.departmentCode || "sales",
         teamLeaderId: input.teamLeaderId ? Number(input.teamLeaderId) : null,
+        branchId: Number(input.branchId) || 1,
         active: true,
       };
       data.assignees.push(newUser);
       return { id: newUser.id, user: newUser };
     },
     async saveProject(projectInput: Partial<InventoryProject>) {
-      if (!isManagerRole(activeUser.role)) throw new Error("Only Manager can save inventory.");
+      if (!isManagerRole(activeUser.role)) throw new Error("Only CEO can save inventory.");
       const code = projectInput.code?.trim().toUpperCase();
       if (!code || !projectInput.name?.trim() || !projectInput.location?.trim() || !(Number(projectInput.totalAreaSqm) > 0)) throw new Error("Project code, name, address and positive building area are required.");
       if (data.projects?.some(p => p.code === code && p.id !== projectInput.id)) throw new Error("Project code already exists.");
@@ -572,7 +575,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       return {contractSerial: contract.contractSerial, status: contract.status, amendmentVersion: contract.amendmentVersion};
     },
     async saveProjectPreparation(projectId: number, body: ProjectPreparationInput) {
-      if (activeUser.role !== "hr_manager") throw new Error("Only HR Manager can prepare project details.");
+      if (activeUser.role !== "manager") throw new Error("Only Manager can prepare project details.");
       const project = data.projects?.find(p => p.id === projectId);
       if (!project || project.version !== body.version) throw new Error("Project changed. Refresh and try again.");
       if (body.apartments.some(b => !project.apartments.some(a => a.id === b.id))) throw new Error("Apartment not found.");
@@ -618,7 +621,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         clauses: payload.clauses,
         notes: payload.notes,
         existingContracts: (data.hrContracts || []).filter(c => c.status !== "draft" && c.id !== draft?.id),
-        issuedBy: `${activeUser.name} (HR Manager)`,
+        issuedBy: `${activeUser.name} (Manager)`,
         now: iso(0),
       });
       const created: HrContract = {
@@ -636,7 +639,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       return created;
     },
     async amendContract(id: number, body: ContractAmendInput) {
-      if (activeUser.role !== "hr_manager") throw new Error("Only HR Manager can amend agreements.");
+      if (activeUser.role !== "manager") throw new Error("Only Manager can amend agreements.");
       const contract = data.hrContracts?.find(c => c.id === id);
       if (!contract || !["issued", "amended"].includes(contract.status) || contract.version !== body.version) throw new Error("Contract changed. Refresh and try again.");
       if (!body.reason.trim()) throw new Error("Amendment reason is required.");

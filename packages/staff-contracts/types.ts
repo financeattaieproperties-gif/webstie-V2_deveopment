@@ -1,23 +1,26 @@
 export type Role =
-  | "callcenter"
-  | "sales"
-  | "admin"
   | "ceo"
   | "manager"
-  | "hr_manager"
+  | "callcenter"
   | "sales_leader"
-  | "production_manager"
+  | "sales"
   | "marketing_manager"
   | "editor"
-  | "photographer"
   | "videographer"
-  | "branch_manager"
-  | "assistant_manager"
   | "finance_manager"
   | "architect"
   | "graphic_designer"
-  | "visual_designer_3d"
-  | "customer";
+  | "visual_designer_3d";
+
+export type RetiredInternalRole =
+  | "admin"
+  | "hr_manager"
+  | "branch_manager"
+  | "assistant_manager"
+  | "production_manager"
+  | "photographer"
+  | "customer"
+  | "finance_assistant";
 
 export type DepartmentCode =
   | "administration"
@@ -47,7 +50,28 @@ export interface StaffUser {
   firebaseUid?: string;
   teamLeaderId?: number | null;
   assignedProjectIds?: number[];
+  branchId: number | null;
+  branchName?: string | null;
   active?: boolean;
+}
+
+export interface Branch {
+  id: number;
+  code: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  active: boolean;
+  version: number;
+}
+
+export interface BranchAssignment {
+  branchId: number;
+  userId: number;
+  role: Exclude<Role, "ceo">;
+  assignedBy: number;
+  assignedAt: string;
 }
 
 export interface Customer {
