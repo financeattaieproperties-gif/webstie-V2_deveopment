@@ -359,6 +359,24 @@ function FeaturedProjectMotionCarousel({ projects }: { projects: Project[] }) {
 
   const total = safeProjects.length;
 
+  const paginate = useCallback(
+    (newDirection: number) => {
+      if (total <= 1) return;
+      setDirection(newDirection);
+      setActiveIndex((prev) => (prev + newDirection + total) % total);
+    },
+    [total]
+  );
+
+  // Auto-advance every 5.5 seconds when not hovered
+  useEffect(() => {
+    if (isPaused || total <= 1) return;
+    const timer = setInterval(() => {
+      paginate(1);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [isPaused, total, paginate]);
+
   if (total === 0) {
     return (
       <div className="w-full h-full rounded-2xl overflow-hidden bg-gradient-to-br from-brand-ivory via-white to-brand-gold-lt/30 border border-brand-navy/10 shadow-brand-md p-6 sm:p-8 flex flex-col justify-between min-h-[230px] relative">
@@ -389,24 +407,6 @@ function FeaturedProjectMotionCarousel({ projects }: { projects: Project[] }) {
   }
 
   const currentProject = safeProjects[activeIndex % total] || safeProjects[0];
-
-  const paginate = useCallback(
-    (newDirection: number) => {
-      if (total <= 1) return;
-      setDirection(newDirection);
-      setActiveIndex((prev) => (prev + newDirection + total) % total);
-    },
-    [total]
-  );
-
-  // Auto-advance every 5.5 seconds when not hovered
-  useEffect(() => {
-    if (isPaused || total <= 1) return;
-    const timer = setInterval(() => {
-      paginate(1);
-    }, 5500);
-    return () => clearInterval(timer);
-  }, [isPaused, total, paginate]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
