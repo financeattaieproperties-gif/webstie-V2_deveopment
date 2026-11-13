@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { getProject, type Project, type ProjectUnit } from '@/lib/dbService';
+import { SIGNATURE_PROJECTS } from '@/lib/signatureProjects';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/Button';
@@ -55,7 +56,9 @@ const PROJECT_FEATURES = [
   'Central heating & acoustic double glazing',
 ];
 
-const FALLBACK_PROJECTS: Record<number, Project> = {};
+const FALLBACK_PROJECTS: Record<number, Project> = Object.fromEntries(
+  SIGNATURE_PROJECTS.map((p) => [p.id, p])
+);
 
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -82,8 +85,12 @@ export function ProjectDetailPage() {
           setProject(null);
         }
       })
-      .catch(() => {
-        setProject(null);
+      .catch((err: Error & { isJsonApi?: boolean }) => {
+        if (err?.isJsonApi) {
+          setProject(null);
+        } else {
+          setProject(FALLBACK_PROJECTS[numericId] ?? null);
+        }
       })
       .finally(() => {
         setLoading(false);

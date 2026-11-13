@@ -198,5 +198,13 @@
   "Total Leads": "مجموع سرنخ‌ها",
   "Draft": "پیش‌نویس",
   "Closed": "معامله بسته شده",
-  "Lost": "از دست رفته"
+  "Lost": "از دست رفته",
+  "Command": "فرماندهی",
+  "Sales & Client CRM": "فروش و ارتباط با مشتریان",
+  "Operations & Finance": "عملیات و مالی",
+  "Tasks & Account": "وظایف و حساب کاربری",
+  "All Modules": "همه بخش‌ها",
+  "Role Lens": "نقش کاری",
+  "Expand full sidebar": "باز کردن فهرست کامل",
+  "Compact icon-only sidebar": "نمای فشرده آیکون"
 }

@@ -56,16 +56,16 @@ const S = {
     flexShrink: 0,
   } as const,
   title: {
-    fontSize: '1.45rem',
+    fontSize: '1.35rem',
     fontWeight: 700,
-    color: '#1A2335',
+    color: '#0F172A',
     margin: 0,
     display: 'flex',
     alignItems: 'center',
     gap: '0.6rem',
   } as const,
   sub: {
-    color: '#6B7280',
+    color: '#64748B',
     fontSize: '0.82rem',
     marginTop: '0.2rem',
     marginBottom: 0,
@@ -78,11 +78,10 @@ const S = {
     flexShrink: 0,
   } as const,
   alertBanner: {
-    background: 'linear-gradient(90deg, #1A2335 0%, #24324C 100%)',
-    color: '#FFFFFF',
-    borderRadius: 12,
-    border: '1.5px solid #B8944A',
-    boxShadow: '0 8px 24px rgba(26, 35, 53, 0.22)',
+    background: '#FFFFFF',
+    color: '#0F172A',
+    borderRadius: 8,
+    border: '1px solid #E2E8F0',
     padding: '0.8rem 1.1rem',
     display: 'flex',
     alignItems: 'center',
@@ -94,12 +93,12 @@ const S = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.35rem',
-    background: '#B8944A',
+    background: '#0F172A',
     color: '#FFFFFF',
     fontSize: '0.68rem',
-    fontWeight: 800,
+    fontWeight: 700,
     padding: '0.18rem 0.55rem',
-    borderRadius: 999,
+    borderRadius: 6,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
   } as const,
@@ -110,29 +109,29 @@ const S = {
     marginBottom: '0.95rem',
     flexShrink: 0,
   } as const,
-  kpiCard: (accentColor: string): React.CSSProperties => ({
+  kpiCard: (_accentColor: string): React.CSSProperties => ({
     background: '#FFFFFF',
-    borderRadius: 10,
-    border: '1px solid #E5E7EB',
-    borderLeft: `4px solid ${accentColor}`,
-    padding: '0.72rem 1rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+    borderRadius: 8,
+    border: '1px solid #E2E8F0',
+    padding: '0.78rem 1rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.15rem',
+    fontVariantNumeric: 'tabular-nums',
   }),
   kpiLabel: {
     fontSize: '0.7rem',
-    fontWeight: 700,
-    color: '#6B7280',
+    fontWeight: 600,
+    color: '#64748B',
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
   } as const,
   kpiValue: {
     fontSize: '1.35rem',
-    fontWeight: 800,
-    color: '#1A2335',
+    fontWeight: 700,
+    color: '#0F172A',
     lineHeight: 1.2,
+    fontVariantNumeric: 'tabular-nums',
   } as const,
   shell: {
     display: 'grid',
@@ -143,9 +142,8 @@ const S = {
   } as const,
   sidebarCard: {
     background: '#FFFFFF',
-    borderRadius: 12,
-    border: '1px solid #E5E7EB',
-    boxShadow: '0 1px 4px rgba(0,0,0,.06)',
+    borderRadius: 8,
+    border: '1px solid #E2E8F0',
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
@@ -153,21 +151,21 @@ const S = {
   } as const,
   filterBar: {
     padding: '0.85rem',
-    borderBottom: '1px solid #F3F4F6',
-    background: '#F9FAFB',
+    borderBottom: '1px solid #E2E8F0',
+    background: '#F8FAFC',
     flexShrink: 0,
   } as const,
   searchInput: {
     width: '100%',
     padding: '0.5rem 0.75rem',
-    border: '1.5px solid #D1D5DB',
-    borderRadius: 8,
+    border: '1px solid #CBD5E1',
+    borderRadius: 6,
     fontSize: '0.82rem',
     outline: 'none',
     boxSizing: 'border-box' as const,
     marginBottom: '0.6rem',
     background: '#FFFFFF',
-    color: '#111827',
+    color: '#0F172A',
   } as const,
   tabsRow: {
     display: 'flex',
@@ -177,11 +175,11 @@ const S = {
   tabBtn: (active: boolean): React.CSSProperties => ({
     padding: '0.3rem 0.6rem',
     borderRadius: 6,
-    border: active ? '1px solid #B8944A' : '1px solid #E5E7EB',
-    background: active ? '#FFF8EE' : '#FFFFFF',
-    color: active ? '#B8944A' : '#4B5563',
+    border: active ? '1px solid #0F172A' : '1px solid #E2E8F0',
+    background: active ? '#0F172A' : '#FFFFFF',
+    color: active ? '#FFFFFF' : '#475569',
     fontSize: '0.72rem',
-    fontWeight: 700,
+    fontWeight: 600,
     cursor: 'pointer',
   }),
   convList: {
@@ -190,32 +188,25 @@ const S = {
   } as const,
   convItem: (selected: boolean, unread: boolean, highlighted: boolean): React.CSSProperties => ({
     padding: '0.85rem 0.95rem',
-    borderBottom: '1px solid #F3F4F6',
-    borderLeft: selected
-      ? '4px solid #B8944A'
-      : highlighted
-        ? '4px solid #10B981'
-        : unread
-          ? '4px solid #2563EB'
-          : '4px solid transparent',
+    borderBottom: '1px solid #F1F5F9',
     background: highlighted
       ? '#ECFDF5'
       : selected
-        ? '#FFF8EE'
+        ? '#F1F5F9'
         : unread
           ? '#F8FAFC'
           : '#FFFFFF',
     cursor: 'pointer',
-    transition: 'background 0.25s ease',
+    transition: 'background 0.2s ease',
   }),
   avatar: (selected: boolean): React.CSSProperties => ({
     width: 34,
     height: 34,
     borderRadius: 999,
-    background: selected ? '#B8944A' : '#1A2335',
+    background: selected ? '#0F172A' : '#334155',
     color: '#FFFFFF',
     fontSize: '0.76rem',
-    fontWeight: 800,
+    fontWeight: 700,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -224,38 +215,38 @@ const S = {
   convName: {
     fontSize: '0.86rem',
     fontWeight: 700,
-    color: '#1A2335',
+    color: '#0F172A',
   } as const,
   unreadBadge: {
     background: '#DC2626',
     color: '#FFFFFF',
     fontSize: '0.68rem',
-    fontWeight: 800,
+    fontWeight: 700,
     padding: '0.1rem 0.45rem',
-    borderRadius: 999,
+    borderRadius: 6,
+    fontVariantNumeric: 'tabular-nums',
   } as const,
   statusTag: (resolved: boolean): React.CSSProperties => ({
     fontSize: '0.65rem',
-    fontWeight: 700,
+    fontWeight: 600,
     padding: '0.12rem 0.45rem',
-    borderRadius: 999,
+    borderRadius: 6,
     textTransform: 'uppercase',
     background: resolved ? '#ECFDF5' : '#FEF3C7',
     color: resolved ? '#065F46' : '#92400E',
   }),
   sourceTag: {
     fontSize: '0.64rem',
-    fontWeight: 700,
+    fontWeight: 600,
     padding: '0.1rem 0.4rem',
     borderRadius: 6,
-    background: '#F3F4F6',
-    color: '#4B5563',
+    background: '#F1F5F9',
+    color: '#475569',
   } as const,
   threadCard: {
     background: '#FFFFFF',
-    borderRadius: 12,
-    border: '1px solid #E5E7EB',
-    boxShadow: '0 1px 4px rgba(0,0,0,.06)',
+    borderRadius: 8,
+    border: '1px solid #E2E8F0',
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
@@ -263,8 +254,8 @@ const S = {
   } as const,
   threadHeader: {
     padding: '0.95rem 1.25rem',
-    borderBottom: '1px solid #E5E7EB',
-    background: '#F9FAFB',
+    borderBottom: '1px solid #E2E8F0',
+    background: '#F8FAFC',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -305,11 +296,11 @@ const S = {
   } as const,
   btnGold: {
     padding: '0.6rem 1.25rem',
-    background: '#B8944A',
+    background: '#0F172A',
     color: '#FFFFFF',
     border: 'none',
     borderRadius: 8,
-    fontWeight: 700,
+    fontWeight: 600,
     fontSize: '0.84rem',
     cursor: 'pointer',
   } as const,
@@ -902,23 +893,14 @@ export default function ChatInbox() {
                 alignItems: 'center',
                 gap: '0.35rem',
                 fontSize: '0.7rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 background: '#ECFDF5',
                 color: '#065F46',
                 border: '1px solid #A7F3D0',
                 padding: '0.18rem 0.55rem',
-                borderRadius: 999,
+                borderRadius: 6,
               }}
             >
-              <span
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: 999,
-                  background: '#10B981',
-                  display: 'inline-block',
-                }}
-              />
               Live Listener Active
             </span>
             {totalUnread > 0 && (
@@ -929,7 +911,7 @@ export default function ChatInbox() {
           </h1>
           <p style={S.sub}>
             Real-time notification listener for incoming customer messages.
-            {lastSynced && <span style={{ marginLeft: '0.5rem', color: '#9CA3AF' }}>• Synced {lastSynced}</span>}
+            {lastSynced && <span style={{ marginLeft: '0.5rem', color: '#64748B', fontVariantNumeric: 'tabular-nums' }}>• Synced {lastSynced}</span>}
           </p>
         </div>
 
@@ -940,7 +922,7 @@ export default function ChatInbox() {
             onClick={toggleSound}
             title="Toggle audio chime when a new customer message arrives"
           >
-            {soundEnabled ? '🔔 Sound On' : '🔕 Sound Muted'}
+            {soundEnabled ? 'Sound On' : 'Sound Muted'}
           </button>
           <button
             type="button"
@@ -948,7 +930,7 @@ export default function ChatInbox() {
             onClick={handleSimulateIncomingMessage}
             title="Simulate an incoming customer message to test the real-time visual alert"
           >
-            ⚡ Test Incoming Alert
+            Test Incoming Alert
           </button>
           <button
             type="button"
@@ -962,7 +944,7 @@ export default function ChatInbox() {
             style={S.btnSecondary}
             onClick={() => void loadConversations()}
           >
-            ↻ Refresh
+            Refresh
           </button>
         </div>
       </div>
@@ -975,17 +957,17 @@ export default function ChatInbox() {
               <div style={{ flex: 1, minWidth: 240 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
                   <span style={S.alertPill}>
-                    🔔 New Customer Message
+                    New Customer Message
                   </span>
-                  <strong style={{ fontSize: '0.9rem', color: '#FFFFFF' }}>
+                  <strong style={{ fontSize: '0.9rem', color: '#0F172A' }}>
                     {alert.customerName}
                   </strong>
-                  <span style={{ fontSize: '0.76rem', color: '#D1D5DB' }}>
-                    📞 {alert.customerPhone}
+                  <span style={{ fontSize: '0.76rem', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>
+                    {alert.customerPhone}
                   </span>
                   {alert.pageContext && (
-                    <span style={{ fontSize: '0.73rem', color: '#FDE68A' }}>
-                      📍 {alert.pageContext}
+                    <span style={{ fontSize: '0.73rem', color: '#64748B' }}>
+                      {alert.pageContext}
                     </span>
                   )}
                 </div>
@@ -993,7 +975,7 @@ export default function ChatInbox() {
                   dir={isRtlText(alert.messageText) ? 'rtl' : 'ltr'}
                   style={{
                     fontSize: '0.82rem',
-                    color: '#F3F4F6',
+                    color: '#334155',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -1019,10 +1001,10 @@ export default function ChatInbox() {
                 <button
                   type="button"
                   style={{
-                    background: 'rgba(255,255,255,0.12)',
-                    color: '#FFFFFF',
-                    border: '1px solid rgba(255,255,255,0.22)',
-                    borderRadius: 7,
+                    background: '#F8FAFC',
+                    color: '#475569',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 6,
                     padding: '0.42rem 0.7rem',
                     fontSize: '0.74rem',
                     fontWeight: 600,
@@ -1042,17 +1024,17 @@ export default function ChatInbox() {
 
       {/* KPI Summary Cards */}
       <div style={S.kpiGrid}>
-        <div style={S.kpiCard('#B8944A')}>
+        <div style={S.kpiCard('#0F172A')}>
           <span style={S.kpiLabel}>Active Conversations</span>
           <span style={S.kpiValue}>{openCount}</span>
         </div>
         <div style={S.kpiCard('#DC2626')}>
           <span style={S.kpiLabel}>Unread Customer Messages</span>
-          <span style={{ ...S.kpiValue, color: totalUnread > 0 ? '#DC2626' : '#1A2335' }}>
+          <span style={{ ...S.kpiValue, color: totalUnread > 0 ? '#DC2626' : '#0F172A' }}>
             {totalUnread}
           </span>
         </div>
-        <div style={S.kpiCard('#2563EB')}>
+        <div style={S.kpiCard('#0F172A')}>
           <span style={S.kpiLabel}>Total Messages Exchanged</span>
           <span style={S.kpiValue}>{totalMessages}</span>
         </div>
@@ -1067,9 +1049,9 @@ export default function ChatInbox() {
         <form
           onSubmit={handleCreateNewThread}
           style={{
-            background: '#FFFDF9',
-            border: '1.5px solid #B8944A',
-            borderRadius: 12,
+            background: '#FFFFFF',
+            border: '1px solid #0F172A',
+            borderRadius: 10,
             padding: '1rem 1.25rem',
             marginBottom: '1rem',
             display: 'grid',
@@ -1215,19 +1197,19 @@ export default function ChatInbox() {
                           <span style={{ ...S.convName, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {conv.customer_name}
                           </span>
-                          <span style={{ fontSize: '0.68rem', color: '#9CA3AF', flexShrink: 0 }}>
+                          <span style={{ fontSize: '0.68rem', color: '#64748B', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
                             {updatedTime}
                           </span>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.35rem', marginBottom: '0.25rem' }}>
-                          <span style={{ fontSize: '0.74rem', color: '#4B5563' }}>
-                            📞 {conv.customer_phone}
+                          <span style={{ fontSize: '0.74rem', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>
+                            {conv.customer_phone}
                           </span>
                           <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
                             {isUnread && <span style={S.unreadBadge}>{conv.unread_admin}</span>}
                             <span style={S.sourceTag}>
-                              💬 Live Chat
+                              Live Chat
                             </span>
                             <span style={S.statusTag(conv.status === 'resolved')}>
                               {conv.status === 'resolved' ? 'Resolved' : 'Active'}
@@ -1239,14 +1221,14 @@ export default function ChatInbox() {
                           <div
                             style={{
                               fontSize: '0.7rem',
-                              color: '#9A7835',
+                              color: '#64748B',
                               marginBottom: '0.22rem',
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                             }}
                           >
-                            📍 {conv.page_context}
+                            {conv.page_context}
                           </div>
                         )}
 
@@ -1261,7 +1243,7 @@ export default function ChatInbox() {
                               gap: '0.35rem',
                             }}
                           >
-                            <span>✍ Customer is typing...</span>
+                            <span>Customer is typing...</span>
                           </div>
                         ) : (
                           lastMsg && (
@@ -1316,28 +1298,28 @@ export default function ChatInbox() {
               <div style={S.threadHeader}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
-                    <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1A2335', margin: 0 }}>
+                    <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
                       {activeConv.customer_name}
                     </h2>
                     <span style={S.statusTag(activeConv.status === 'resolved')}>
                       {activeConv.status === 'resolved' ? 'Resolved' : 'Active Conversation'}
                     </span>
-                    <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#64748B', fontVariantNumeric: 'tabular-nums' }}>
                       ID: <code>{activeConv.id}</code>
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', fontSize: '0.78rem', color: '#4B5563' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', fontSize: '0.78rem', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>
                     <span>
-                      📞 <strong>{activeConv.customer_phone}</strong>
+                      <strong>{activeConv.customer_phone}</strong>
                     </span>
-                    {activeConv.customer_email && <span>✉ {activeConv.customer_email}</span>}
-                    {activeConv.page_context && <span>📍 {activeConv.page_context}</span>}
+                    {activeConv.customer_email && <span>{activeConv.customer_email}</span>}
+                    {activeConv.page_context && <span>{activeConv.page_context}</span>}
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                   <a href={`tel:${activeConv.customer_phone}`} style={S.btnSecondary}>
-                    📞 Call
+                    Call
                   </a>
                   <a
                     href={`https://wa.me/${activeConv.customer_phone.replace(/[^0-9]/g, '')}`}
@@ -1345,11 +1327,11 @@ export default function ChatInbox() {
                     rel="noopener noreferrer"
                     style={S.btnSecondary}
                   >
-                    💬 WhatsApp
+                    WhatsApp
                   </a>
                   {activeConv.customer_email && (
                     <a href={`mailto:${activeConv.customer_email}`} style={S.btnSecondary}>
-                      ✉ Email
+                      Email
                     </a>
                   )}
                   <button
@@ -1357,7 +1339,7 @@ export default function ChatInbox() {
                     style={S.btnSecondary}
                     onClick={() => void handleToggleStatus()}
                   >
-                    {activeConv.status === 'resolved' ? '↺ Reopen Thread' : '✓ Mark Resolved'}
+                    {activeConv.status === 'resolved' ? 'Reopen Thread' : 'Mark Resolved'}
                   </button>
                   <button
                     type="button"
@@ -1393,10 +1375,10 @@ export default function ChatInbox() {
                           color: '#065F46',
                           fontSize: '0.73rem',
                           padding: '0.35rem 0.85rem',
-                          borderRadius: 999,
+                          borderRadius: 6,
                         }}
                       >
-                        ✓ {msg.text}
+                        {msg.text}
                       </div>
                     );
                   }
@@ -1414,13 +1396,14 @@ export default function ChatInbox() {
                         style={{
                           fontSize: '0.7rem',
                           fontWeight: 600,
-                          color: '#6B7280',
+                          color: '#64748B',
                           marginBottom: '0.2rem',
+                          fontVariantNumeric: 'tabular-nums',
                         }}
                       >
                         {isAdmin
-                          ? `👨‍💼 ${msg.sender_name || 'Attaie Advisor'} (Admin)`
-                          : `👤 ${activeConv.customer_name}`}{' '}
+                          ? `${msg.sender_name || 'Attaie Advisor'} (Admin)`
+                          : activeConv.customer_name}{' '}
                         • {timestamp}
                       </span>
                       <div
@@ -1428,15 +1411,14 @@ export default function ChatInbox() {
                         style={{
                           maxWidth: '75%',
                           padding: '0.75rem 1rem',
-                          borderRadius: 12,
+                          borderRadius: 8,
                           fontSize: '0.85rem',
                           lineHeight: 1.5,
                           whiteSpace: 'pre-wrap',
                           wordBreak: 'break-word',
-                          background: isAdmin ? '#1A2335' : '#FFFFFF',
-                          color: isAdmin ? '#FFFFFF' : '#111827',
-                          border: isAdmin ? 'none' : '1px solid #E5E7EB',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          background: isAdmin ? '#0F172A' : '#FFFFFF',
+                          color: isAdmin ? '#FFFFFF' : '#0F172A',
+                          border: isAdmin ? 'none' : '1px solid #E2E8F0',
                           textAlign: rtl ? 'right' : 'left',
                         }}
                       >
@@ -1449,18 +1431,18 @@ export default function ChatInbox() {
                           marginTop: '0.22rem',
                           color: isAdmin
                             ? msg.read_status === 'read'
-                              ? '#B8944A'
-                              : '#9CA3AF'
+                              ? '#0F172A'
+                              : '#64748B'
                             : '#059669',
                         }}
                       >
                         {isAdmin
                           ? msg.read_status === 'read'
-                            ? '✓✓ Read by customer'
-                            : '✓ Sent'
+                            ? 'Read by customer'
+                            : 'Sent'
                           : msg.read_status === 'read'
-                            ? '✓✓ Read'
-                            : '✓ Received'}
+                            ? 'Read'
+                            : 'Received'}
                       </span>
                     </div>
                   );
@@ -1483,12 +1465,12 @@ export default function ChatInbox() {
                         marginBottom: '0.2rem',
                       }}
                     >
-                      👤 {activeConv.customer_name}
+                      {activeConv.customer_name}
                     </span>
                     <div
                       style={{
                         padding: '0.6rem 0.95rem',
-                        borderRadius: 12,
+                        borderRadius: 8,
                         background: '#ECFDF5',
                         border: '1px solid #A7F3D0',
                         color: '#065F46',
@@ -1499,7 +1481,7 @@ export default function ChatInbox() {
                         gap: '0.45rem',
                       }}
                     >
-                      <span>✍ {activeConv.customer_name} is typing...</span>
+                      <span>{activeConv.customer_name} is typing...</span>
                     </div>
                   </div>
                 )}
@@ -1527,14 +1509,14 @@ export default function ChatInbox() {
                 )}
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.74rem', color: '#4B5563' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.74rem', color: '#475569' }}>
                     <span>Reply as:</span>
                     <input
                       value={adminName}
                       onChange={e => setAdminName(e.target.value)}
                       style={{
                         padding: '0.22rem 0.5rem',
-                        border: '1px solid #D1D5DB',
+                        border: '1px solid #CBD5E1',
                         borderRadius: 6,
                         fontSize: '0.74rem',
                         width: 135,
@@ -1561,8 +1543,8 @@ export default function ChatInbox() {
                     style={{
                       flex: 1,
                       padding: '0.6rem 0.85rem',
-                      border: '1.5px solid #D1D5DB',
-                      borderRadius: 8,
+                      border: '1px solid #CBD5E1',
+                      borderRadius: 6,
                       fontSize: '0.85rem',
                       fontFamily: 'inherit',
                       resize: 'vertical',
@@ -1574,7 +1556,7 @@ export default function ChatInbox() {
                     style={S.btnGold}
                     disabled={sending || !replyText.trim()}
                   >
-                    {sending ? 'Sending…' : 'Send Reply ➤'}
+                    {sending ? 'Sending…' : 'Send Reply →'}
                   </button>
                 </div>
               </form>

@@ -6,14 +6,14 @@ import ImageUpload from '../components/ImageUpload';
 const blank: AgentInput = { name: '', role: '', background: '', portrait_url: '', phone: '', email: '', whatsapp: null, published: false };
 const S = {
   page: { maxWidth: 760 }, top: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' as const },
-  title: { fontSize: '1.5rem', margin: 0 }, card: { background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,.08)', overflow: 'hidden' },
+  title: { fontSize: '1.35rem', margin: 0, color: '#0F172A' }, card: { background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden' },
   section: { padding: '1.5rem' }, grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '1rem' },
   full: { gridColumn: '1 / -1' }, label: { display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' },
-  input: { width: '100%', padding: '0.65rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.9rem', boxSizing: 'border-box' as const },
-  area: { width: '100%', minHeight: 150, padding: '0.65rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.9rem', boxSizing: 'border-box' as const, resize: 'vertical' as const },
-  footer: { padding: '1.25rem 1.5rem', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' as const },
-  save: { padding: '0.7rem 1.4rem', background: '#B8944A', color: '#fff', border: 0, borderRadius: 8, fontWeight: 700, cursor: 'pointer' },
-  cancel: { padding: '0.7rem 1rem', background: '#e2e8f0', color: '#334155', border: 0, borderRadius: 8, fontWeight: 600, cursor: 'pointer' },
+  input: { width: '100%', padding: '0.58rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.88rem', boxSizing: 'border-box' as const, color: '#0F172A' },
+  area: { width: '100%', minHeight: 150, padding: '0.58rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.88rem', boxSizing: 'border-box' as const, resize: 'vertical' as const, color: '#0F172A' },
+  footer: { padding: '1.25rem 1.5rem', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' as const },
+  save: { padding: '0.62rem 1.4rem', background: '#0F172A', color: '#FFFFFF', border: 0, borderRadius: 6, fontWeight: 600, cursor: 'pointer' },
+  cancel: { padding: '0.62rem 1rem', background: '#FFFFFF', color: '#334155', border: '1px solid #E2E8F0', borderRadius: 6, fontWeight: 600, cursor: 'pointer' },
 };
 
 export default function AgentForm() {

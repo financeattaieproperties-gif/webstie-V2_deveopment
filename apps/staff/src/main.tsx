@@ -32,6 +32,11 @@ import {
   Send,
   Compass,
   Download,
+  LayoutGrid,
+  Briefcase,
+  Layers,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import type {
   DashboardData,
@@ -54,6 +59,13 @@ import {
   summarizeLeadsPipeline,
   taskState,
 } from "../../../packages/staff-contracts/workflow.mjs";
+import {
+  getRoleDashboardLayout,
+  readPreferredWorkspaceRole,
+  resolvePageForRole,
+  resolveWorkspaceRoleOnSignIn,
+  writePreferredWorkspaceRole,
+} from "../../../packages/staff-contracts/role-preference.mjs";
 import { api } from "./api";
 import { AttaieLogoEntrance } from "./components/AttaieLogoEntrance";
 import { ProjectInventoryWizard } from "./components/ProjectInventoryWizard";
@@ -65,7 +77,6 @@ import {
   SubmissionsStatusView,
 } from "./components/MarketingWorkspace";
 import { EngineeringWorkspace } from "./components/EngineeringWorkspace";
-import logo from "./assets/logo.png";
 import "./styles.css";
 import "./callcenter-theme.css";
 
@@ -95,6 +106,11 @@ const management = __STAFF_PREVIEW_ALLOWED__
   : __STAFF_ROLE__ === "management" || __STAFF_ROLE__ === "dashboard";
 
 const initialRoleParam = searchParams.get("role") as Role | null;
+const initialPreferredRole = resolveWorkspaceRoleOnSignIn({
+  urlRoleParam: initialRoleParam,
+  management,
+}) as Role;
+
 document.documentElement.dataset.staffRole = isDashboardPath
   ? "dashboard"
   : management
@@ -109,7 +125,7 @@ const base = isDashboardPath
 
 const client: Client = isPreview
   ? await import("./preview").then((m) =>
-      m.previewClient(management, initialRoleParam || undefined),
+      m.previewClient(management, initialPreferredRole || undefined),
     )
   : api;
 
@@ -167,6 +183,16 @@ const fa: Record<string, string> = management
   ? (await import("./i18n/fa.json")).default
   : {};
 
+const STAFF_SIDEBAR_COMPACT_KEY = "attaie_staff_sidebar_compact";
+
+function readStaffSidebarCompact(): boolean {
+  try {
+    return typeof window !== "undefined" && window.localStorage?.getItem(STAFF_SIDEBAR_COMPACT_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 function App() {
   const [language, setLanguage] = useState<"en" | "fa">(() =>
     management && localStorage.getItem("staff-language") === "fa" ? "fa" : "en",
@@ -185,8 +211,21 @@ function App() {
   const [query, setQuery] = useState("");
   const [number, setNumber] = useState(0);
   const [menu, setMenu] = useState(false);
+  const [isCompact, setIsCompact] = useState<boolean>(() => readStaffSidebarCompact());
   const [filter, setFilter] = useState("today");
   const [notice, setNotice] = useState("");
+
+  const handleToggleCompact = () => {
+    setIsCompact((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage?.setItem(STAFF_SIDEBAR_COMPACT_KEY, next ? "true" : "false");
+      } catch {
+        // Ignore storage write errors
+      }
+      return next;
+    });
+  };
   const [modal, setModal] = useState<{
     kind:
       | "entry"
@@ -213,7 +252,29 @@ function App() {
   useEffect(() => {
     client
       .session()
-      .then((s) => setSession(s.user ? {...s, user: s.user} : null))
+      .then((s) => {
+        if (!s.user) {
+          setSession(null);
+          return;
+        }
+        const preferredRole = resolveWorkspaceRoleOnSignIn({
+          urlRoleParam: initialRoleParam,
+          sessionRole: s.user.role,
+          management,
+        }) as Role;
+        let resolvedUser = s.user;
+        if (preferredRole && preferredRole !== s.user.role) {
+          const switched = client.setActiveRole(preferredRole);
+          if (switched) {
+            resolvedUser = switched;
+          } else if (isDashboardPath || isPreview) {
+            resolvedUser = { ...s.user, role: preferredRole };
+          }
+        }
+        writePreferredWorkspaceRole(resolvedUser.role);
+        setSession({ ...s, user: resolvedUser });
+        setPage((current) => resolvePageForRole(resolvedUser.role, current, false) as Page);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setStarting(false));
     const expire = () => {
@@ -290,12 +351,23 @@ function App() {
   };
 
   const handleSwitchRole = async (nextRole: Role) => {
-    const updatedUser = client.setActiveRole(nextRole);
+    writePreferredWorkspaceRole(nextRole);
+    const updatedUser =
+      client.setActiveRole(nextRole) ||
+      (session ? { ...session.user, role: nextRole } : null);
     if (updatedUser && session) {
       setSession({ ...session, user: updatedUser });
-      setNotice(`Switched active workspace role to ${ROLE_LABELS[nextRole] || nextRole}.`);
+      const resolvedPage = resolvePageForRole(nextRole, page, false) as Page;
+      if (resolvedPage !== page) {
+        navigate(resolvedPage);
+      }
+      setNotice(
+        `Switched active workspace role to ${ROLE_LABELS[nextRole] || nextRole} (saved to browser preferences).`,
+      );
       const s = await client.session();
-      setSession(s.user ? {...s, user: s.user} : null);
+      if (s.user) {
+        setSession({ ...s, user: updatedUser });
+      }
       await refresh();
     }
   };
@@ -618,9 +690,21 @@ function App() {
       <Login
         t={t}
         error={error}
-        onLogin={(s) => {
+        onLogin={(s, preferredRole) => {
+          const targetRole = preferredRole || s.user.role;
+          writePreferredWorkspaceRole(targetRole);
+          const switched =
+            targetRole !== s.user.role ? client.setActiveRole(targetRole) : null;
+          const effectiveUser = switched || { ...s.user, role: targetRole };
           setPlayingEntrance(true);
-          setSession(s);
+          setSession({ ...s, user: effectiveUser });
+          setPage((current) =>
+            resolvePageForRole(
+              effectiveUser.role,
+              current,
+              current === "overview",
+            ) as Page,
+          );
           setError("");
         }}
         management={management}
@@ -631,7 +715,7 @@ function App() {
     return (
       <AttaieLogoEntrance
         mode="login-transition"
-        variant="teal"
+        variant="navy"
         onComplete={() => setPlayingEntrance(false)}
       />
     );
@@ -668,8 +752,71 @@ function App() {
     ROLE_LABELS[session.user.role] ||
     (manager ? "Management" : "Call Center");
 
+  const pillarDefinitions: {
+    id: "command" | "sales" | "operations" | "tasks";
+    label: string;
+    shortTag: string;
+    icon: React.ElementType;
+    pages: Page[];
+  }[] = [
+    {
+      id: "command",
+      label: "Command",
+      shortTag: "Core",
+      icon: LayoutGrid,
+      pages: ["overview", "projects"],
+    },
+    {
+      id: "sales",
+      label: "Sales & Client CRM",
+      shortTag: "CRM",
+      icon: Briefcase,
+      pages: ["followups", "customers", "leads"],
+    },
+    {
+      id: "operations",
+      label: "Operations & Finance",
+      shortTag: "Ops",
+      icon: Layers,
+      pages: ["contracts", "finance", "marketing", "deliverables", "submissions"],
+    },
+    {
+      id: "tasks",
+      label: "Tasks & Account",
+      shortTag: "Work",
+      icon: ClipboardList,
+      pages: ["tasks", "team", "profile"],
+    },
+  ];
+
+  const tabById = new Map(tabs.map((tab) => [tab.id, tab]));
+  const profileTab: { id: Page; label: string; icon: React.ElementType } = {
+    id: "profile",
+    label: "Profile",
+    icon: UserRound,
+  };
+
+  const pillars = pillarDefinitions
+    .map((pillar) => {
+      const items = pillar.pages
+        .map((id) => (id === "profile" ? profileTab : tabById.get(id)))
+        .filter((item): item is { id: Page; label: string; icon: React.ElementType } => Boolean(item));
+      return { ...pillar, items };
+    })
+    .filter((pillar) => pillar.items.length > 0);
+
+  const activePillar =
+    pillars.find((pillar) => pillar.items.some((item) => item.id === page)) ||
+    pillars[0];
+
+  const shortTagForPage = (id: Page) =>
+    pillars.find((p) => p.items.some((i) => i.id === id))?.shortTag || "Core";
+
   return (
-    <div className="staff-shell">
+    <div
+      className={`staff-shell ${isCompact ? "is-compact" : ""}`}
+      data-sidebar-mode={isCompact ? "compact" : "expanded"}
+    >
       {menu && (
         <button
           className="nav-shade"
@@ -678,63 +825,139 @@ function App() {
         />
       )}
       <aside className={`sidebar ${menu ? "is-open" : ""}`}>
-        <a className="brand" href={`${base}/${isPreview ? "?preview=1" : ""}`}>
-          <img src={logo} alt="Attaie Properties" />
-          <span>
-            {t("Workspace")}
-            <span className="brand-dot" />
-          </span>
-        </a>
-        <div className="workspace-tag">
-          <span className="workspace-icon">
-            <Headphones size={18} />
-          </span>
-          <span>
-            <strong>
-              {t(
-                !isDashboardPath
-                  ? manager
-                    ? "Management"
-                    : "Call Center"
-                  : roleLabel,
-              )}
-            </strong>
-            <small>ATTAIE PROPERTIES</small>
-          </span>
-        </div>
-        <p className="nav-caption">{t("WORKSPACE")}</p>
-        <nav aria-label={t("Workspace")}>
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              data-testid={`nav-tab-${id}`}
-              className={`nav-item ${page === id ? "selected" : ""}`}
-              onClick={() => navigate(id)}
-            >
-              <Icon size={19} />
-              <span>{t(label)}</span>
-              {id === "followups" && (data?.counts.overtime || 0) > 0 && (
-                <span className="nav-count">{data!.counts.overtime}</span>
-              )}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="help-card">
-            <ShieldCheck size={19} />
-            <p>
-              {t("Private staff workspace")}
-              <small>{t("Your work stays within your team.")}</small>
-            </p>
+        <div className="pillar-rail" aria-label={t("Workspace")}>
+          <a
+            className="pillar-brand"
+            href={`${base}/${isPreview ? "?preview=1" : ""}`}
+            title={t("Attaie Properties")}
+            aria-label={t("Attaie Properties")}
+          >
+            <Building2 size={18} />
+          </a>
+          <div className="pillar-rail-nav">
+            {pillars.map((pillar) => {
+              const PillarIcon = pillar.icon;
+              const isActive = activePillar?.id === pillar.id;
+              return (
+                <button
+                  key={pillar.id}
+                  type="button"
+                  title={t(pillar.label)}
+                  aria-label={t(pillar.label)}
+                  className={`pillar-btn ${isActive ? "active" : ""}`}
+                  onClick={() => {
+                    const firstItem = pillar.items[0];
+                    if (firstItem && !pillar.items.some((item) => item.id === page)) {
+                      navigate(firstItem.id);
+                    }
+                  }}
+                >
+                  <PillarIcon size={18} />
+                </button>
+              );
+            })}
           </div>
-          <button className="account" onClick={() => navigate("profile")}>
-            <span className="avatar gold">{initials(session.user.name)}</span>
-            <span>
-              <strong>{session.user.name}</strong>
-              <small>{t(roleLabel)}</small>
-            </span>
-            <ChevronDown size={15} />
-          </button>
+          <div className="pillar-rail-foot">
+            <button
+              type="button"
+              data-testid="staff-sidebar-compact-toggle"
+              aria-pressed={isCompact}
+              aria-expanded={!isCompact}
+              title={t(isCompact ? "Expand full sidebar" : "Compact icon-only sidebar")}
+              aria-label={t(isCompact ? "Expand full sidebar" : "Compact icon-only sidebar")}
+              className={`pillar-btn pillar-collapse-btn ${isCompact ? "active" : ""}`}
+              onClick={handleToggleCompact}
+            >
+              {isCompact ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+            </button>
+            <button
+              type="button"
+              title={t("Profile")}
+              aria-label={t("Profile")}
+              className={`pillar-btn ${page === "profile" ? "active" : ""}`}
+              onClick={() => navigate("profile")}
+            >
+              <UserRound size={17} />
+            </button>
+          </div>
+        </div>
+
+        <div className="sub-drawer">
+          <div className="sub-drawer-head">
+            <div>
+              <div className="sub-drawer-kicker">{t("Attaie Properties")}</div>
+              <div className="sub-drawer-title">
+                {t(activePillar?.label || "Workspace")}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="mobile-drawer-close"
+              aria-label={t("Close")}
+              onClick={() => setMenu(false)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="sub-drawer-scroll">
+            <nav aria-label={t(activePillar?.label || "Workspace")}>
+              {(activePillar?.items || []).map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`nav-item ${page === id ? "selected" : ""}`}
+                  onClick={() => navigate(id)}
+                >
+                  <Icon size={16} />
+                  <span>{t(label)}</span>
+                  {id === "followups" && (data?.counts.overtime || 0) > 0 && (
+                    <span className="nav-count">{data!.counts.overtime}</span>
+                  )}
+                </button>
+              ))}
+            </nav>
+
+            <div className="sub-drawer-all">
+              <p className="nav-caption">{t("All Modules")}</p>
+              <nav aria-label={t("All Modules")}>
+                {tabs.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={`quick-${id}`}
+                    type="button"
+                    data-testid={`nav-tab-${id}`}
+                    className={`nav-item quick-jump-item ${page === id ? "selected" : ""}`}
+                    onClick={() => navigate(id)}
+                  >
+                    <Icon size={14} />
+                    <span>{t(label)}</span>
+                    {id === "followups" && (data?.counts.overtime || 0) > 0 ? (
+                      <span className="nav-count">{data!.counts.overtime}</span>
+                    ) : (
+                      <span className="quick-jump-tag">
+                        {shortTagForPage(id)}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+
+          <div className="sidebar-bottom">
+            <button
+              type="button"
+              className="account"
+              onClick={() => navigate("profile")}
+            >
+              <span className="avatar gold">{initials(session.user.name)}</span>
+              <span>
+                <strong>{session.user.name}</strong>
+                <small>{t(roleLabel)}</small>
+              </span>
+              <ChevronDown size={15} />
+            </button>
+          </div>
         </div>
       </aside>
       <div className="workspace-main">
@@ -747,15 +970,7 @@ function App() {
             >
               <Menu size={20} />
             </button>
-            <span>
-              {t(
-                !isDashboardPath
-                  ? manager
-                    ? "Management"
-                    : "Call Center"
-                  : roleLabel,
-              )}
-            </span>
+            <span>{t(activePillar?.label || (!isDashboardPath ? (manager ? "Management" : "Call Center") : roleLabel))}</span>
             <span className="crumb-divider">/</span>
             <strong>{t(headings[page][0])}</strong>
           </div>
@@ -998,7 +1213,7 @@ function App() {
                 </section>
               </div>
               <div className="integration-note">
-                <span className="status-dot" />
+                <AlertCircle size={15} />
                 <span>
                   <strong>{t("Etisalat not connected")}</strong> ·{" "}
                   {t(
@@ -1214,185 +1429,168 @@ function App() {
                     </span>
                   </div>
 
-                  {/* Proportional Pipeline Health Bar */}
-                  <div
-                    style={{
-                      display: "flex",
-                      height: 10,
-                      borderRadius: 6,
-                      overflow: "hidden",
-                      background: "#e6fffb",
-                      border: "1px solid #b9e8df",
-                      marginBottom: 14,
-                    }}
-                    aria-label="Pipeline status distribution bar"
-                  >
-                    {leadsPipelineSummary.active > 0 && (
-                      <div
-                        style={{
-                          width: `${Math.max(4, leadsPipelineSummary.percentages.activePct)}%`,
-                          background: "#14b8a6",
-                        }}
-                        title={`Active: ${leadsPipelineSummary.active} (${leadsPipelineSummary.percentages.activePct}%)`}
-                      />
-                    )}
-                    {leadsPipelineSummary.draft > 0 && (
-                      <div
-                        style={{
-                          width: `${Math.max(4, leadsPipelineSummary.percentages.draftPct)}%`,
-                          background: "#f59e0b",
-                        }}
-                        title={`Draft: ${leadsPipelineSummary.draft} (${leadsPipelineSummary.percentages.draftPct}%)`}
-                      />
-                    )}
-                    {leadsPipelineSummary.closed > 0 && (
-                      <div
-                        style={{
-                          width: `${Math.max(4, leadsPipelineSummary.percentages.closedPct)}%`,
-                          background: "#0b3d3b",
-                        }}
-                        title={`Closed: ${leadsPipelineSummary.closed} (${leadsPipelineSummary.percentages.closedPct}%)`}
-                      />
-                    )}
-                    {leadsPipelineSummary.lost > 0 && (
-                      <div
-                        style={{
-                          width: `${Math.max(4, leadsPipelineSummary.percentages.lostPct)}%`,
-                          background: "#ef4444",
-                        }}
-                        title={`Lost: ${leadsPipelineSummary.lost} (${leadsPipelineSummary.percentages.lostPct}%)`}
-                      />
-                    )}
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
-                      gap: 12,
-                    }}
-                  >
-                    {[
-                      {
-                        key: "all",
-                        label: t("Total Leads"),
-                        count: leadsPipelineSummary.total,
-                        pct: 100,
-                        accent: "#0b3d3b",
-                        testId: "pipeline-stat-total",
-                      },
-                      {
-                        key: "active",
-                        label: t("Active"),
-                        count: leadsPipelineSummary.active,
-                        pct: leadsPipelineSummary.percentages.activePct,
-                        accent: "#14b8a6",
-                        testId: "pipeline-stat-active",
-                      },
-                      {
-                        key: "draft",
-                        label: t("Draft"),
-                        count: leadsPipelineSummary.draft,
-                        pct: leadsPipelineSummary.percentages.draftPct,
-                        accent: "#d97706",
-                        testId: "pipeline-stat-draft",
-                      },
-                      {
-                        key: "closed",
-                        label: t("Closed"),
-                        count: leadsPipelineSummary.closed,
-                        pct: leadsPipelineSummary.percentages.closedPct,
-                        accent: "#0f766e",
-                        testId: "pipeline-stat-closed",
-                      },
-                      {
-                        key: "lost",
-                        label: t("Lost"),
-                        count: leadsPipelineSummary.lost,
-                        pct: leadsPipelineSummary.percentages.lostPct,
-                        accent: "#dc2626",
-                        testId: "pipeline-stat-lost",
-                      },
-                    ].map((stat) => {
-                      const isSelected = leadStatusFilter === stat.key;
-                      return (
-                        <button
-                          key={stat.key}
-                          type="button"
-                          data-testid={stat.testId}
-                          onClick={() => setLeadStatusFilter(stat.key)}
+                  <div style={{ padding: "16px 24px 20px" }}>
+                    {/* Proportional Pipeline Health Bar */}
+                    <div
+                      style={{
+                        display: "flex",
+                        height: 8,
+                        borderRadius: 6,
+                        overflow: "hidden",
+                        background: "#F1F5F9",
+                        border: "1px solid #E2E8F0",
+                        marginBottom: 16,
+                      }}
+                      aria-label="Pipeline status distribution bar"
+                    >
+                      {leadsPipelineSummary.active > 0 && (
+                        <div
                           style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            justifyContent: "space-between",
-                            padding: "12px 14px",
-                            borderRadius: 10,
-                            border: isSelected
-                              ? "2px solid #0b3d3b"
-                              : "1px solid #b9e8df",
-                            background: isSelected ? "#e6fffb" : "#f8fffe",
-                            cursor: "pointer",
-                            textAlign: "start",
+                            width: `${Math.max(4, leadsPipelineSummary.percentages.activePct)}%`,
+                            background: "#0F172A",
                           }}
-                        >
-                          <div
+                          title={`Active: ${leadsPipelineSummary.active} (${leadsPipelineSummary.percentages.activePct}%)`}
+                        />
+                      )}
+                      {leadsPipelineSummary.draft > 0 && (
+                        <div
+                          style={{
+                            width: `${Math.max(4, leadsPipelineSummary.percentages.draftPct)}%`,
+                            background: "#D97706",
+                          }}
+                          title={`Draft: ${leadsPipelineSummary.draft} (${leadsPipelineSummary.percentages.draftPct}%)`}
+                        />
+                      )}
+                      {leadsPipelineSummary.closed > 0 && (
+                        <div
+                          style={{
+                            width: `${Math.max(4, leadsPipelineSummary.percentages.closedPct)}%`,
+                            background: "#059669",
+                          }}
+                          title={`Closed: ${leadsPipelineSummary.closed} (${leadsPipelineSummary.percentages.closedPct}%)`}
+                        />
+                      )}
+                      {leadsPipelineSummary.lost > 0 && (
+                        <div
+                          style={{
+                            width: `${Math.max(4, leadsPipelineSummary.percentages.lostPct)}%`,
+                            background: "#DC2626",
+                          }}
+                          title={`Lost: ${leadsPipelineSummary.lost} (${leadsPipelineSummary.percentages.lostPct}%)`}
+                        />
+                      )}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
+                        gap: 12,
+                      }}
+                    >
+                      {[
+                        {
+                          key: "all",
+                          label: t("Total Leads"),
+                          count: leadsPipelineSummary.total,
+                          pct: 100,
+                          testId: "pipeline-stat-total",
+                        },
+                        {
+                          key: "active",
+                          label: t("Active"),
+                          count: leadsPipelineSummary.active,
+                          pct: leadsPipelineSummary.percentages.activePct,
+                          testId: "pipeline-stat-active",
+                        },
+                        {
+                          key: "draft",
+                          label: t("Draft"),
+                          count: leadsPipelineSummary.draft,
+                          pct: leadsPipelineSummary.percentages.draftPct,
+                          testId: "pipeline-stat-draft",
+                        },
+                        {
+                          key: "closed",
+                          label: t("Closed"),
+                          count: leadsPipelineSummary.closed,
+                          pct: leadsPipelineSummary.percentages.closedPct,
+                          testId: "pipeline-stat-closed",
+                        },
+                        {
+                          key: "lost",
+                          label: t("Lost"),
+                          count: leadsPipelineSummary.lost,
+                          pct: leadsPipelineSummary.percentages.lostPct,
+                          testId: "pipeline-stat-lost",
+                        },
+                      ].map((stat) => {
+                        const isSelected = leadStatusFilter === stat.key;
+                        return (
+                          <button
+                            key={stat.key}
+                            type="button"
+                            data-testid={stat.testId}
+                            onClick={() => setLeadStatusFilter(stat.key)}
                             style={{
                               display: "flex",
-                              width: "100%",
+                              flexDirection: "column",
+                              alignItems: "flex-start",
                               justifyContent: "space-between",
-                              alignItems: "center",
-                              marginBottom: 6,
+                              padding: "12px 14px",
+                              borderRadius: 6,
+                              border: isSelected
+                                ? "1.5px solid #0F172A"
+                                : "1px solid #E2E8F0",
+                              background: isSelected ? "#F1F5F9" : "#FFFFFF",
+                              cursor: "pointer",
+                              textAlign: "start",
+                              fontVariantNumeric: "tabular-nums",
                             }}
                           >
-                            <span
+                            <div
                               style={{
-                                fontSize: 12,
-                                fontWeight: 700,
-                                color: "#376663",
+                                display: "flex",
+                                width: "100%",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                marginBottom: 6,
                               }}
                             >
-                              {stat.label}
-                            </span>
-                            <span
-                              style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: "50%",
-                                background: stat.accent,
-                              }}
-                            />
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              width: "100%",
-                              alignItems: "baseline",
-                              justifyContent: "space-between",
-                            }}
-                          >
+                              <span
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  color: "#64748B",
+                                }}
+                              >
+                                {stat.label}
+                              </span>
+                              <small
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  color: "#64748B",
+                                  fontVariantNumeric: "tabular-nums",
+                                }}
+                              >
+                                {stat.key === "all" ? "100%" : `${stat.pct}%`}
+                              </small>
+                            </div>
                             <strong
                               style={{
-                                fontSize: 24,
+                                fontSize: 22,
                                 lineHeight: 1.1,
-                                color: "#0b3d3b",
+                                color: "#0F172A",
+                                fontVariantNumeric: "tabular-nums",
                               }}
                             >
                               {stat.count}
                             </strong>
-                            <small
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                color: "#376663",
-                              }}
-                            >
-                              {stat.key === "all" ? "100%" : `${stat.pct}%`}
-                            </small>
-                          </div>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </section>
               )}
@@ -1726,6 +1924,24 @@ function App() {
                 <h2>{session.user.name}</h2>
                 <p>{t(roleLabel)}</p>
                 <p>{t("All times in Kabul · UTC+04:30")}</p>
+                <div style={{ marginBlock: 16 }}>
+                  <Field label={t("Preferred Workspace Role")}>
+                    <select
+                      data-testid="profile-preferred-role-select"
+                      value={session.user.role}
+                      onChange={(e) => void handleSwitchRole(e.target.value as Role)}
+                    >
+                      {SWITCHABLE_ROLES.map((r) => (
+                        <option key={r.role} value={r.role}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <small style={{ display: "block", marginTop: 6, color: "#64748B", fontSize: 11 }}>
+                    {t("Saved in localStorage — automatically loads the matching dashboard layout on sign-in.")}
+                  </small>
+                </div>
                 <button
                   className="button secondary"
                   onClick={() =>
@@ -2707,15 +2923,24 @@ function Login({
 }: {
   t: Translate;
   error: string;
-  onLogin: (s: Session) => void;
+  onLogin: (s: Session, preferredRole: Role) => void;
   management: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
+  const [preferredRole, setPreferredRole] = useState<Role>(
+    () =>
+      (readPreferredWorkspaceRole(
+        undefined,
+        management ? "manager" : "sales",
+      ) as Role) || (management ? "manager" : "sales"),
+  );
+  const preferredLayout = getRoleDashboardLayout(preferredRole);
+
   return (
     <div className="login-screen">
       <div className="login-brand">
-        <AttaieLogoEntrance mode="header" variant="teal" />
+        <AttaieLogoEntrance mode="header" variant="navy" />
         <span>{t("Workspace")}</span>
       </div>
       <main className="login-card">
@@ -2737,13 +2962,13 @@ function Login({
             const f = new FormData(e.currentTarget);
             setBusy(true);
             setFailure("");
+            writePreferredWorkspaceRole(preferredRole);
             try {
-              onLogin(
-                await client.login(
-                  String(f.get("username")),
-                  String(f.get("password")),
-                ),
+              const loggedIn = await client.login(
+                String(f.get("username")),
+                String(f.get("password")),
               );
+              onLogin(loggedIn, preferredRole);
             } catch (err) {
               setFailure((err as Error).message);
             } finally {
@@ -2751,6 +2976,24 @@ function Login({
             }
           }}
         >
+          <Field label={t("Preferred Workspace Role")}>
+            <select
+              name="preferredRole"
+              data-testid="login-preferred-role-select"
+              value={preferredRole}
+              onChange={(e) => {
+                const next = e.target.value as Role;
+                setPreferredRole(next);
+                writePreferredWorkspaceRole(next);
+              }}
+            >
+              {SWITCHABLE_ROLES.map((r) => (
+                <option key={r.role} value={r.role}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label={t("Email")}>
             <input
               name="username"
@@ -2778,8 +3021,13 @@ function Login({
           <PasswordForm t={t} done={() => {}} />
         </details>
         {__STAFF_PREVIEW_ALLOWED__ && (
-          <a className="preview-link" href={`${base}/?preview=1`}>
-            Explore sample workspace <ArrowUpRight size={14} />
+          <a
+            className="preview-link"
+            data-testid="login-preview-role-link"
+            href={`${base}/${preferredLayout.defaultPage === "overview" ? "" : preferredLayout.defaultPage}?preview=1&role=${preferredRole}`}
+          >
+            Explore {ROLE_LABELS[preferredRole] || preferredRole} workspace{" "}
+            <ArrowUpRight size={14} />
           </a>
         )}
         <p className="login-private">

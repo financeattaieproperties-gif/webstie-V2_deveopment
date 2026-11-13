@@ -5,27 +5,27 @@ import { api, type Property } from '../api';
 type Status = Property['status'];
 
 const statusColor = (s: Status): React.CSSProperties => ({
-  padding: '0.2rem 0.7rem', borderRadius: 20, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-  border: 'none', outline: 'none',
-  background: s === 'available' ? '#d1fae5' : s === 'pending' ? '#fef9c3' : s === 'rented' ? '#dbeafe' : '#fee2e2',
-  color:      s === 'available' ? '#065f46' : s === 'pending' ? '#92400e' : s === 'rented' ? '#1e40af' : '#991b1b',
+  padding: '0.22rem 0.6rem', borderRadius: 6, fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer',
+  border: '1px solid transparent', outline: 'none',
+  background: s === 'available' ? '#DCFCE7' : s === 'pending' ? '#FEF9C3' : s === 'rented' ? '#DBEAFE' : '#FEE2E2',
+  color:      s === 'available' ? '#166534' : s === 'pending' ? '#854D0E' : s === 'rented' ? '#1E40AF' : '#991B1B',
 });
 
 const STATUSES: Status[] = ['available', 'pending', 'sold', 'rented'];
 const nextStatus = (s: Status): Status => STATUSES[(STATUSES.indexOf(s) + 1) % STATUSES.length];
 
 const S = {
-  header:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' } as const,
-  title:   { fontSize: '1.5rem', fontWeight: 700, margin: 0 } as const,
-  btn:     { padding: '0.6rem 1.4rem', background: '#b8960c', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' } as const,
-  table:   { width: '100%', borderCollapse: 'collapse' as const, background: '#fff', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,.08)' },
-  th:      { padding: '0.75rem 1rem', background: '#f8fafc', textAlign: 'left' as const, fontSize: '0.75rem', fontWeight: 700, color: '#64748b', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
-  td:      { padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem', verticalAlign: 'middle' as const },
-  thumb:   { width: 52, height: 40, objectFit: 'cover' as const, borderRadius: 6, display: 'block' },
-  noThumb: { width: 52, height: 40, background: '#e2e8f0', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' } as const,
+  header:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap' as const, gap: '0.75rem' } as const,
+  title:   { fontSize: '1.35rem', fontWeight: 700, margin: 0, color: '#0F172A', fontVariantNumeric: 'tabular-nums' } as const,
+  btn:     { padding: '0.55rem 1.15rem', background: '#0F172A', color: '#FFFFFF', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: '0.84rem', whiteSpace: 'nowrap' as const } as const,
+  table:   { width: '100%', borderCollapse: 'collapse' as const, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden', border: '1px solid #E2E8F0' },
+  th:      { padding: '0.7rem 1rem', background: '#F8FAFC', textAlign: 'left' as const, fontSize: '0.7rem', fontWeight: 600, color: '#64748B', borderBottom: '1px solid #E2E8F0', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+  td:      { padding: '0.75rem 1rem', borderBottom: '1px solid #F1F5F9', fontSize: '0.85rem', verticalAlign: 'middle' as const, color: '#0F172A', fontVariantNumeric: 'tabular-nums' },
+  thumb:   { width: 52, height: 40, objectFit: 'cover' as const, borderRadius: 6, display: 'block', border: '1px solid #E2E8F0' },
+  noThumb: { width: 52, height: 40, background: '#F1F5F9', color: '#64748B', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.04em' } as const,
   actions: { display: 'flex', gap: '0.4rem' } as const,
-  editBtn: { padding: '0.3rem 0.8rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 } as const,
-  delBtn:  { padding: '0.3rem 0.8rem', background: 'transparent', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 } as const,
+  editBtn: { padding: '0.32rem 0.75rem', background: '#0F172A', color: '#FFFFFF', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 } as const,
+  delBtn:  { padding: '0.32rem 0.75rem', background: '#FFFFFF', color: '#DC2626', border: '1px solid #FECACA', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 } as const,
 };
 
 export default function Properties() {
@@ -82,16 +82,16 @@ export default function Properties() {
               <td style={{ ...S.td, width: 68, paddingRight: 0 }}>
                 {p.image_url
                   ? <img src={p.image_url} alt="" style={S.thumb} />
-                  : <div style={S.noThumb}>🏠</div>}
+                  : <div style={S.noThumb}>PROP</div>}
               </td>
               <td style={S.td}>
-                <div style={{ color: '#0145F2', fontWeight: 700, fontSize: '.78rem', marginBottom: '.2rem' }}>{p.serial_number}</div>
+                <div style={{ color: '#0F172A', fontWeight: 600, fontSize: '0.74rem', marginBottom: '0.18rem', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{p.serial_number}</div>
                 <div style={{ fontWeight: 600, marginBottom: '0.1rem' }}>{p.title}</div>
-                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{p.location}</div>
+                <div style={{ color: '#64748B', fontSize: '0.8rem' }}>{p.location}</div>
               </td>
               <td style={S.td}>
                 <div style={{ fontWeight: 600 }}>${Number(p.price).toLocaleString()}</div>
-                <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
+                <div style={{ color: '#64748B', fontSize: '0.78rem' }}>
                   {p.listing_type === 'rent' ? '/mo' : 'sale'}
                 </div>
               </td>
@@ -105,11 +105,11 @@ export default function Properties() {
                 >
                   {p.status}
                 </button>
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem' }}>click to change</div>
+                <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '0.2rem' }}>click to change</div>
               </td>
               <td style={S.td}>
                 <div style={S.actions}>
-                  <button style={S.editBtn} onClick={() => navigate(`/properties/${p.id}/edit`)}>✏ Edit</button>
+                  <button style={S.editBtn} onClick={() => navigate(`/properties/${p.id}/edit`)}>Edit</button>
                   <button style={S.delBtn}  onClick={() => remove(p.id, p.title)}>Delete</button>
                 </div>
               </td>

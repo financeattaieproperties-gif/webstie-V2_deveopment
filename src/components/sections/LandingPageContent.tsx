@@ -1,11 +1,8 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   motion,
   AnimatePresence,
-  useMotionValue,
-  useSpring,
-  useTransform,
 } from 'motion/react';
 import {
   MapPin,
@@ -15,16 +12,10 @@ import {
   Search,
   ShieldCheck,
   Users,
-  Home,
-  Store,
-  Layers,
   ArrowRight,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   MessageCircle,
   Phone,
-  Calendar,
   RotateCcw,
   Check,
 } from 'lucide-react';
@@ -36,19 +27,16 @@ import { ServicesSection } from './ServicesSection';
 import { HotDealsSection } from './HotDealsSection';
 import { NewsletterBanner } from './NewsletterBanner';
 import { PropertyCard } from '../ui/PropertyCard';
-import { ProjectCard } from '../ui/ProjectCard';
 import { PropertyCardSkeleton } from '../ui/PropertyCardSkeleton';
-import { ProjectCardSkeleton } from '../ui/ProjectCardSkeleton';
 import { SectionHeader } from '../ui/SectionHeader';
 import { ClickToCallButton } from '../ui/ClickToCallButton';
+import { ExpandingCards } from '../ui/expanding-cards';
+import { mapProjectsToExpandingCards } from '../ui/demo';
 import { getProperties, getProjects, type Property, type Project } from '../../lib/dbService';
-import defaultExteriorImg from '../../assets/images/project_exterior_elevation_1793995966183.jpg';
+import { SIGNATURE_PROJECTS } from '../../lib/signatureProjects';
 import stitchHeroImg from '../../assets/images/stitch_hero_kabul_panorama.jpg';
 import stitchInteriorImg from '../../assets/images/stitch_apartment_interior.jpg';
 import stitchVillaImg from '../../assets/images/stitch_villa_exterior.jpg';
-import categoryHousesImg from '../../assets/images/category_houses_villa_1794037428658.jpg';
-import categoryCommercialImg from '../../assets/images/category_commercial_plaza_1794037429778.jpg';
-import categoryProjectsImg from '../../assets/images/category_master_projects_1794037429266.jpg';
 import { LandingHeroBackground } from './LandingHeroBackground';
 
 const WHATSAPP_NUMBER = '93782222279';
@@ -100,7 +88,7 @@ const FALLBACK_SHOWCASE_PROPERTIES: Property[] = [
   }
 ];
 
-const FALLBACK_PREVIEW_PROJECTS: Project[] = [];
+const FALLBACK_PREVIEW_PROJECTS: Project[] = SIGNATURE_PROJECTS;
 
 const FEATURED_PROPERTIES_LIMIT = 6;
 const FEATURED_PROJECTS_LIMIT = 8;
@@ -121,20 +109,6 @@ function toPropertyCardProps(p: Property) {
     listingType: p.listing_type,
     image: p.image_url,
     galleryImages: p.gallery_images,
-  };
-}
-
-function toProjectCardProps(p: Project) {
-  return {
-    id: String(p.id),
-    name: p.name,
-    location: p.location,
-    deliveryDate: p.delivery_date ?? undefined,
-    status: p.status,
-    availableUnits: p.available_units,
-    totalUnits: p.total_units,
-    description: p.description,
-    image: p.image_url,
   };
 }
 
@@ -316,293 +290,11 @@ function HeroCustomSelect({
   );
 }
 
-/**
- * 21st.dev + motion.dev Interactive Featured Project Carousel Card
- * Dynamically cycles through projects fetched from the database with spring physics,
- * pointer parallax, swipe gestures, and animated progress indicators.
- */
-function FeaturedProjectMotionCarousel({ projects }: { projects: Project[] }) {
-  const safeProjects = projects.length > 0 ? projects : FALLBACK_PREVIEW_PROJECTS;
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const [isPaused, setIsPaused] = useState(false);
-
-  // Motion values for 21st.dev subtle 3D pointer parallax
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const smoothX = useSpring(mouseX, { stiffness: 260, damping: 26 });
-  const smoothY = useSpring(mouseY, { stiffness: 260, damping: 26 });
-  const imgX = useTransform(smoothX, [-0.5, 0.5], ['6px', '-6px']);
-  const imgY = useTransform(smoothY, [-0.5, 0.5], ['6px', '-6px']);
-
-  const total = safeProjects.length;
-
-  const paginate = useCallback(
-    (newDirection: number) => {
-      if (total <= 1) return;
-      setDirection(newDirection);
-      setActiveIndex((prev) => (prev + newDirection + total) % total);
-    },
-    [total]
-  );
-
-  // Auto-advance every 5.5 seconds when not hovered
-  useEffect(() => {
-    if (isPaused || total <= 1) return;
-    const timer = setInterval(() => {
-      paginate(1);
-    }, 5500);
-    return () => clearInterval(timer);
-  }, [isPaused, total, paginate]);
-
-  if (total === 0) {
-    return (
-      <div className="w-full h-full rounded-2xl overflow-hidden bg-gradient-to-br from-brand-ivory via-white to-brand-gold-lt/30 border border-brand-navy/10 shadow-brand-md p-6 sm:p-8 flex flex-col justify-between min-h-[230px] relative">
-        <div className="absolute inset-0 islamic-pattern-light opacity-30 pointer-events-none" />
-        <div className="relative z-10">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-gold/15 text-brand-gold font-bold text-xs uppercase tracking-wider mb-3">
-            <Building2 size={13} />
-            Master-Planned Developments
-          </span>
-          <h3 className="text-xl font-display font-bold text-brand-navy mb-2">
-            New Flagship Projects Coming Soon
-          </h3>
-          <p className="text-xs text-neutral-600 leading-relaxed max-w-sm">
-            Exclusive multi-unit residential towers and commercial centers across Kabul are currently in development. Connect with our advisory desk for private off-market previews.
-          </p>
-        </div>
-        <div className="relative z-10 pt-4">
-          <Link
-            to="/contact"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-navy hover:bg-brand-gold text-white font-bold text-xs transition-colors shadow-xs"
-          >
-            <span>Inquire for Early Access</span>
-            <ArrowRight size={14} />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const currentProject = safeProjects[activeIndex % total] || safeProjects[0];
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const nx = (e.clientX - rect.left) / rect.width - 0.5;
-    const ny = (e.clientY - rect.top) / rect.height - 0.5;
-    mouseX.set(nx);
-    mouseY.set(ny);
-  };
-
-  const handleMouseLeave = () => {
-    setIsPaused(false);
-    mouseX.set(0);
-    mouseY.set(0);
-  };
-
-  const slideVariants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? 48 : -48,
-      opacity: 0,
-      scale: 0.97,
-      filter: 'blur(4px)',
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      filter: 'blur(0px)',
-    },
-    exit: (dir: number) => ({
-      x: dir > 0 ? -48 : 48,
-      opacity: 0,
-      scale: 0.97,
-      filter: 'blur(4px)',
-    }),
-  };
-
-  return (
-    <motion.div
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="w-full h-full rounded-2xl overflow-hidden bg-gradient-to-br from-brand-ivory via-white to-brand-gold-lt/40 border border-brand-navy/10 shadow-brand-md relative flex flex-col justify-between min-h-[230px] select-none group"
-    >
-      {/* Subtle Islamic geometric pattern accent */}
-      <div className="absolute inset-0 islamic-pattern-light opacity-30 pointer-events-none" />
-
-      <AnimatePresence initial={false} custom={direction} mode="wait">
-        <motion.div
-          key={currentProject.id}
-          custom={direction}
-          variants={slideVariants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{
-            x: { type: 'spring', stiffness: 320, damping: 32 },
-            opacity: { duration: 0.25 },
-            scale: { duration: 0.3 },
-            filter: { duration: 0.25 },
-          }}
-          drag={total > 1 ? 'x' : false}
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.2}
-          onDragEnd={(_e, { offset }) => {
-            if (offset.x < -45) paginate(1);
-            else if (offset.x > 45) paginate(-1);
-          }}
-          className="relative flex-1 flex items-center min-h-[195px]"
-        >
-          {/* Right Side Architectural Visual with 21st.dev Spring Parallax */}
-          <div className="w-[48%] sm:w-[46%] h-full absolute right-0 top-0 bottom-0 overflow-hidden">
-            <motion.img
-              src={currentProject.image_url || defaultExteriorImg}
-              onError={(e) => {
-                e.currentTarget.src = defaultExteriorImg;
-              }}
-              alt={currentProject.name}
-              referrerPolicy="no-referrer"
-              style={{ x: imgX, y: imgY, scale: 1.07 }}
-              className="w-full h-full object-cover object-center transition-transform duration-500"
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  'linear-gradient(90deg, var(--color-brand-ivory) 0%, rgba(237,241,245,0.35) 38%, transparent 100%)',
-              }}
-            />
-            {/* Status pill badge in top-right of image */}
-            {currentProject.status && (
-              <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-brand-navy/85 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider shadow-xs">
-                {currentProject.status}
-              </span>
-            )}
-          </div>
-
-          {/* Left Side Project Information */}
-          <div className="relative z-10 p-6 sm:p-7 max-w-[64%] flex flex-col justify-between h-full">
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="eyebrow tracking-[0.2em]">FEATURED PROJECT</span>
-                {total > 1 && (
-                  <span className="text-[10px] font-bold text-brand-navy/50 tabular-nums">
-                    {String(activeIndex + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-                  </span>
-                )}
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-display font-extrabold text-brand-navy leading-tight line-clamp-2">
-                {currentProject.name}
-              </h3>
-
-              <p className="text-xs font-semibold text-neutral-700 mt-1.5 flex items-center gap-1.5 truncate">
-                <MapPin size={14} strokeWidth={2.2} className="text-brand-gold shrink-0" />
-                <span className="truncate">
-                  {currentProject.location || 'Residential & Commercial'}
-                </span>
-              </p>
-
-              {/* Micro specs row */}
-              <div className="flex flex-wrap items-center gap-3 mt-3 text-[11px] font-semibold text-brand-navy">
-                {currentProject.available_units !== undefined && (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-brand-gold/10 border border-brand-gold/20">
-                    <Building2 size={13} strokeWidth={2.2} className="text-brand-gold shrink-0" />
-                    <span className="tabular-nums font-bold text-brand-navy">
-                      {currentProject.available_units}
-                    </span>{' '}
-                    Units Open
-                  </span>
-                )}
-                {currentProject.delivery_date && (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-brand-navy/5 border border-brand-navy/10">
-                    <Calendar size={13} strokeWidth={2.2} className="text-brand-gold shrink-0" />
-                    <span>{currentProject.delivery_date}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-4 pt-1 flex items-center gap-2">
-              <Link
-                to={`/projects/${currentProject.id}`}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-brand-navy font-bold text-xs shadow-brand-sm border border-brand-navy/10 hover:bg-brand-gold hover:text-white hover:border-brand-gold transition-all"
-              >
-                <span>View Apartments</span>
-                <ArrowRight size={15} strokeWidth={2.2} />
-              </Link>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Bottom 21st.dev Carousel Navigation Bar */}
-      {total > 1 && (
-        <div className="relative z-20 px-6 pb-3.5 pt-2 border-t border-brand-navy/8 bg-white/70 backdrop-blur-xs flex items-center justify-between gap-3">
-          {/* Animated Pill Dots */}
-          <div className="flex items-center gap-1.5" role="tablist" aria-label="Featured projects">
-            {safeProjects.map((proj, idx) => {
-              const isActive = idx === activeIndex;
-              return (
-                <button
-                  key={proj.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-label={`Show project ${proj.name}`}
-                  onClick={() => {
-                    setDirection(idx > activeIndex ? 1 : -1);
-                    setActiveIndex(idx);
-                  }}
-                  className={`relative h-1.5 rounded-full overflow-hidden transition-all duration-300 cursor-pointer ${
-                    isActive ? 'w-7 bg-brand-gold/25' : 'w-2 bg-brand-navy/20 hover:bg-brand-navy/40'
-                  }`}
-                >
-                  {isActive && (
-                    <motion.span
-                      layoutId="featured-project-active-dot"
-                      className="absolute inset-0 bg-brand-gold rounded-full"
-                      transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Prev / Next Controls */}
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => paginate(-1)}
-              aria-label="Previous featured project"
-              className="w-8 h-8 rounded-xl bg-white border border-brand-navy/15 text-brand-navy hover:bg-brand-gold hover:text-white hover:border-brand-gold flex items-center justify-center transition-colors cursor-pointer shadow-xs"
-            >
-              <ChevronLeft size={16} strokeWidth={2.4} />
-            </button>
-            <button
-              type="button"
-              onClick={() => paginate(1)}
-              aria-label="Next featured project"
-              className="w-8 h-8 rounded-xl bg-white border border-brand-navy/15 text-brand-navy hover:bg-brand-gold hover:text-white hover:border-brand-gold flex items-center justify-center transition-colors cursor-pointer shadow-xs"
-            >
-              <ChevronRight size={16} strokeWidth={2.4} />
-            </button>
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
 export const LandingPageContent = () => {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All');
-  const [activeCategory, setActiveCategory] = useState<string>('Apartments');
   const [properties, setProperties] = useState<Property[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Project[]>(FALLBACK_PREVIEW_PROJECTS);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
 
   // Hero Search Bar state
@@ -624,20 +316,15 @@ export const LandingPageContent = () => {
       getProjects().catch(() => null),
     ])
       .then(([props, projs]) => {
-        // Use live database properties directly
-        if (Array.isArray(props)) {
+        if (Array.isArray(props) && props.length > 0) {
           setProperties(props.slice(0, FEATURED_PROPERTIES_LIMIT));
         } else {
-          setProperties([]);
+          setProperties(FALLBACK_SHOWCASE_PROPERTIES);
         }
 
-        // Use live database projects directly without merging mockups
         if (Array.isArray(projs) && projs.length > 0) {
           setProjects(projs.slice(0, FEATURED_PROJECTS_LIMIT));
-        } else if (Array.isArray(projs)) {
-          setProjects([]);
         } else {
-          // If offline development or API unavailable, show default previews
           setProjects(FALLBACK_PREVIEW_PROJECTS.slice(0, FEATURED_PROJECTS_LIMIT));
         }
       })
@@ -657,7 +344,10 @@ export const LandingPageContent = () => {
   };
 
   const featuredProperties = properties.map(toPropertyCardProps);
-  const featuredProjects = projects.map(toProjectCardProps);
+  const expandingProjectItems = React.useMemo(
+    () => mapProjectsToExpandingCards(projects),
+    [projects]
+  );
 
   const filteredProperties = featuredProperties.filter((p) => {
     if (activeFilter === 'All') return true;
@@ -666,38 +356,6 @@ export const LandingPageContent = () => {
     if (activeFilter === 'Commercial') return p.type === 'Commercial';
     return true;
   });
-
-  // All 4 Category Cards now feature bespoke architectural photography
-  const categories = [
-    {
-      id: 'Apartments',
-      label: 'Apartments',
-      href: '/properties?type=Apartment',
-      icon: Building2,
-      image: defaultExteriorImg,
-    },
-    {
-      id: 'Houses',
-      label: 'Houses',
-      href: '/properties?type=House',
-      icon: Home,
-      image: categoryHousesImg,
-    },
-    {
-      id: 'Commercial',
-      label: 'Commercial',
-      href: '/properties?purpose=commercial&type=Commercial',
-      icon: Store,
-      image: categoryCommercialImg,
-    },
-    {
-      id: 'Projects',
-      label: 'Projects',
-      href: '/projects',
-      icon: Layers,
-      image: categoryProjectsImg,
-    },
-  ];
 
   return (
     <>
@@ -868,78 +526,19 @@ export const LandingPageContent = () => {
         </div>
       </section>
 
-      {/* ── 2. MIDDLE SPLIT SECTION: EXPLORE BY CATEGORY + DYNAMIC FEATURED PROJECT CAROUSEL ── */}
-      <section className="py-10 bg-brand-cream">
+      {/* ── 2. SIGNATURE PROJECTS EXPANDING CARDS SECTION ── */}
+      <section
+        className="py-12 md:py-16 bg-brand-cream"
+        data-testid="signature-projects-expanding-section"
+      >
         <div className="container-custom">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-            {/* Left Column: Explore by Category (all 4 cards with architectural photography) */}
-            <div className="lg:col-span-7 flex flex-col justify-between lg:pr-6 lg:border-r border-neutral-200/80">
-              <h2 className="text-2xl md:text-3xl font-display font-bold text-brand-navy mb-5">
-                Explore by Category
-              </h2>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
-                {categories.map((cat) => {
-                  const Icon = cat.icon;
-                  const isHighlighted = activeCategory === cat.id;
-
-                  return (
-                    <motion.div
-                      key={cat.id}
-                      whileHover={{ y: -4 }}
-                      transition={{ type: 'spring', stiffness: 360, damping: 24 }}
-                      className="h-full"
-                    >
-                      <Link
-                        to={cat.href}
-                        onMouseEnter={() => setActiveCategory(cat.id)}
-                        className={`group h-full rounded-2xl overflow-hidden bg-white transition-all duration-300 flex flex-col justify-between ${
-                          isHighlighted
-                            ? 'border-2 border-brand-gold shadow-brand-md'
-                            : 'border border-brand-navy/10 hover:border-brand-gold shadow-brand-sm'
-                        }`}
-                      >
-                        <div className="relative h-28 w-full overflow-hidden bg-brand-navy">
-                          <img
-                            src={cat.image}
-                            alt={cat.label}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/45 via-transparent to-transparent" />
-                          <span
-                            className={`absolute bottom-2 left-2.5 w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-md shadow-md border transition-all ${
-                              isHighlighted
-                                ? 'bg-brand-gold text-white border-brand-gold shadow-gold-sm'
-                                : 'bg-white/95 text-brand-navy border-white/60 group-hover:bg-brand-gold group-hover:text-white group-hover:border-brand-gold'
-                            }`}
-                          >
-                            <Icon size={18} strokeWidth={2.2} />
-                          </span>
-                        </div>
-                        <div className="py-3.5 px-3 text-center bg-white flex items-center justify-center">
-                          <span
-                            className={`font-display font-bold text-sm transition-colors ${
-                              isHighlighted
-                                ? 'text-brand-gold'
-                                : 'text-brand-navy group-hover:text-brand-gold'
-                            }`}
-                          >
-                            {cat.label}
-                          </span>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Right Column: Dynamic 21st.dev + motion.dev Featured Project Carousel */}
-            <div className="lg:col-span-5 flex">
-              <FeaturedProjectMotionCarousel projects={projects} />
-            </div>
-          </div>
+          <SectionHeader
+            eyebrow="Developments"
+            title="Signature Projects"
+            subtitle="Explore Kabul's most ambitious residential and commercial developments. Hover or click on a project card to unveil its story."
+            cta={{ label: 'View all projects', href: '/projects' }}
+          />
+          <ExpandingCards items={expandingProjectItems} defaultActiveIndex={0} />
         </div>
       </section>
 
@@ -1065,54 +664,6 @@ export const LandingPageContent = () => {
       <ServicesSection />
 
       <HotDealsSection />
-
-      {/* ── Signature Projects (Swiper) ──────────────────────────────────── */}
-      <section className="section-padding" style={{ background: 'var(--color-brand-cream)' }}>
-        <div className="container-custom">
-          <SectionHeader
-            eyebrow="Developments"
-            title="Signature Projects"
-            subtitle="Multi-unit residential developments offering off-plan and ready units across Kabul's growth corridors."
-            cta={{ label: 'View all projects', href: '/projects' }}
-          />
-
-          {loadingFeatured && featuredProjects.length === 0 ? (
-            <div
-              role="status"
-              aria-busy="true"
-              aria-label="Loading signature projects"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12"
-            >
-              {Array.from({ length: 3 }).map((_, idx) => (
-                <ProjectCardSkeleton key={idx} />
-              ))}
-            </div>
-          ) : featuredProjects.length > 0 ? (
-            <Swiper
-              modules={[Navigation, Pagination]}
-              spaceBetween={24}
-              slidesPerView={1}
-              navigation
-              pagination={{ clickable: true }}
-              breakpoints={{
-                768: { slidesPerView: 2 },
-                1024: { slidesPerView: 3 },
-              }}
-              className="pb-12"
-            >
-              {featuredProjects.map((proj) => (
-                <SwiperSlide key={proj.id} className="h-auto">
-                  <ProjectCard {...proj} />
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          ) : (
-            <div className="py-20 text-center text-neutral-400 text-sm">
-              No projects available yet.
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* ── CTA Strip ────────────────────────────────────────────────────── */}
       <section

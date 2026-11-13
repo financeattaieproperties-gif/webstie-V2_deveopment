@@ -8,19 +8,19 @@ const S = {
   page:     { maxWidth: 840 } as const,
   topBar:   { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' } as const,
   title:    { fontSize: '1.5rem', fontWeight: 700, margin: 0 } as const,
-  card:     { background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,.08)', overflow: 'hidden', marginBottom: '1.5rem' } as const,
-  section:  { padding: '1.5rem 2rem' } as const,
-  divider:  { borderTop: '1px solid #f1f5f9' } as const,
-  secTitle: { fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: '1rem' } as const,
+  card:     { background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', marginBottom: '1.25rem' } as const,
+  section:  { padding: '1.5rem 1.75rem' } as const,
+  divider:  { borderTop: '1px solid #F1F5F9' } as const,
+  secTitle: { fontSize: '0.72rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: '1rem' } as const,
   grid:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' } as const,
   full:     { gridColumn: '1 / -1' } as const,
   label:    { display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' } as const,
-  input:    { width: '100%', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' as const } as const,
-  select:   { width: '100%', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.9rem', outline: 'none', background: '#fff', boxSizing: 'border-box' as const } as const,
-  textarea: { width: '100%', padding: '0.6rem 0.8rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.9rem', minHeight: 120, resize: 'vertical' as const, outline: 'none', boxSizing: 'border-box' as const } as const,
-  footer:   { padding: '1.25rem 2rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.75rem', alignItems: 'center' } as const,
-  save:     { padding: '0.7rem 1.8rem', background: '#b8960c', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' } as const,
-  cancel:   { padding: '0.7rem 1.4rem', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' } as const,
+  input:    { width: '100%', padding: '0.58rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const, color: '#0F172A' } as const,
+  select:   { width: '100%', padding: '0.58rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.88rem', outline: 'none', background: '#FFFFFF', boxSizing: 'border-box' as const, color: '#0F172A' } as const,
+  textarea: { width: '100%', padding: '0.58rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.88rem', minHeight: 120, resize: 'vertical' as const, outline: 'none', boxSizing: 'border-box' as const, color: '#0F172A' } as const,
+  footer:   { padding: '1.25rem 1.75rem', borderTop: '1px solid #F1F5F9', display: 'flex', gap: '0.75rem', alignItems: 'center' } as const,
+  save:     { padding: '0.62rem 1.5rem', background: '#0F172A', color: '#FFFFFF', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' } as const,
+  cancel:   { padding: '0.62rem 1.2rem', background: '#FFFFFF', color: '#334155', border: '1px solid #E2E8F0', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' } as const,
   toast:    (ok: boolean): React.CSSProperties => ({
     padding: '0.65rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600,
     background: ok ? '#d1fae5' : '#fee2e2',
@@ -437,8 +437,8 @@ export default function ProjectForm() {
                 </thead>
                 <tbody>
                   {isEdit ? units.map(u => (
-                    <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '0.6rem 0.75rem', fontWeight: 700, color: '#0145F2' }}>{u.unit_number}</td>
+                    <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9', fontVariantNumeric: 'tabular-nums' }}>
+                      <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600, color: '#0F172A', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>{u.unit_number}</td>
                       <td style={{ padding: '0.6rem 0.75rem' }}>{u.title || '—'}</td>
                       <td style={{ padding: '0.6rem 0.75rem', color: '#475569' }}>
                         {[
@@ -456,7 +456,7 @@ export default function ProjectForm() {
                             color: u.image_url ? '#166534' : '#94a3b8',
                             fontWeight: 600,
                           }}>
-                            {u.image_url ? '✓ 2D Furnished' : '— Furnished'}
+                            {u.image_url ? '2D Furnished' : '— Furnished'}
                           </span>
                           <span style={{
                             fontSize: '0.7rem', padding: '0.15rem 0.45rem', borderRadius: 4,
@@ -464,7 +464,7 @@ export default function ProjectForm() {
                             color: u.technical_plan_url ? '#1e40af' : '#94a3b8',
                             fontWeight: 600,
                           }}>
-                            {u.technical_plan_url ? '✓ 2D Technical' : '— Technical'}
+                            {u.technical_plan_url ? '2D Technical' : '— Technical'}
                           </span>
                         </div>
                       </td>
@@ -492,8 +492,8 @@ export default function ProjectForm() {
                       </td>
                     </tr>
                   )) : stagedUnits.map(su => (
-                    <tr key={su._tempId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '0.6rem 0.75rem', fontWeight: 700, color: '#0145F2' }}>{su.unit_number}</td>
+                    <tr key={su._tempId} style={{ borderBottom: '1px solid #f1f5f9', fontVariantNumeric: 'tabular-nums' }}>
+                      <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600, color: '#0F172A', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>{su.unit_number}</td>
                       <td style={{ padding: '0.6rem 0.75rem' }}>{su.title || '—'}</td>
                       <td style={{ padding: '0.6rem 0.75rem', color: '#475569' }}>
                         {[
@@ -511,7 +511,7 @@ export default function ProjectForm() {
                             color: su.image_url ? '#166534' : '#94a3b8',
                             fontWeight: 600,
                           }}>
-                            {su.image_url ? '✓ 2D Furnished' : '— Furnished'}
+                            {su.image_url ? '2D Furnished' : '— Furnished'}
                           </span>
                           <span style={{
                             fontSize: '0.7rem', padding: '0.15rem 0.45rem', borderRadius: 4,
@@ -519,7 +519,7 @@ export default function ProjectForm() {
                             color: su.technical_plan_url ? '#1e40af' : '#94a3b8',
                             fontWeight: 600,
                           }}>
-                            {su.technical_plan_url ? '✓ 2D Technical' : '— Technical'}
+                            {su.technical_plan_url ? '2D Technical' : '— Technical'}
                           </span>
                         </div>
                       </td>
@@ -648,7 +648,7 @@ export default function ProjectForm() {
               {/* 2D Furnished Plan */}
               <div>
                 <label style={S.label}>
-                  🎨 2D Furnished Floor Plan (Interactive 3D / Furnished Layout)
+                  2D Furnished Floor Plan (Interactive 3D / Furnished Layout)
                 </label>
                 <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 0, marginBottom: '0.4rem' }}>
                   Colored or furnished 2D/3D floor plan with interior furniture layout.
@@ -663,7 +663,7 @@ export default function ProjectForm() {
               {/* 2D Technical Blueprint */}
               <div>
                 <label style={S.label}>
-                  📐 2D Technical Blueprint (Architectural CAD / Engineering Layout)
+                  2D Technical Blueprint (Architectural CAD / Engineering Layout)
                 </label>
                 <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 0, marginBottom: '0.4rem' }}>
                   Architectural line blueprint, CAD, wall dimensions & MEP technical layout.
@@ -687,7 +687,7 @@ export default function ProjectForm() {
             </div>
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '1rem' }}>
               <button type="submit" style={S.save} disabled={unitBusy}>
-                {unitBusy ? 'Saving…' : editingUnitId ? '✓ Update Apartment' : '+ Add Apartment'}
+                {unitBusy ? 'Saving…' : editingUnitId ? 'Update Apartment' : '+ Add Apartment'}
               </button>
               {editingUnitId && (
                 <button

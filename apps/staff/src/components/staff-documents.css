@@ -1,13 +1,29 @@
-.party-portrait { display:block; width:45px; height:60px; object-fit:cover; margin-block:4px; border-radius:3px; }
-[data-testid="hr-project-preparation"] summary { cursor:pointer; min-height:44px; padding-block:10px; }
-[data-testid="hr-project-preparation"] fieldset { min-width:0; border:1px solid var(--line); border-radius:10px; padding:14px; margin-block:14px; }
+.party-portrait { display:block; width:45px; height:60px; object-fit:cover; margin-block:4px; border-radius:4px; border:1px solid #E2E8F0; }
+[data-testid="hr-project-preparation"] { margin-bottom:18px; }
+[data-testid="hr-project-preparation"] summary { cursor:pointer; min-height:44px; padding:16px 24px; color:#0F172A; font-size:13px; border-bottom:1px solid transparent; }
+[data-testid="hr-project-preparation"][open] summary { border-bottom-color:#E2E8F0; background:#F8FAFC; }
+[data-testid="hr-project-preparation"] > form { padding:20px 24px; }
+[data-testid="hr-project-preparation"] fieldset { min-width:0; border:1px solid #E2E8F0; border-radius:8px; padding:16px; margin-block:14px; background:#F8FAFC; }
+[data-testid="hr-project-preparation"] legend { font-size:12px; font-weight:700; color:#0F172A; padding-inline:6px; }
+[data-testid="hr-contracts-workspace"] section.panel > div:not(.panel-heading):not(.table-scroll),
+[data-testid="hr-contracts-workspace"] section.panel > form { padding-inline:24px; }
+[data-testid="hr-contracts-workspace"] section.panel > form { padding-bottom:20px; }
+[data-testid="finance-workspace"] section.panel > .field,
+[data-testid="finance-workspace"] section.panel > .finance-summary,
+[data-testid="finance-workspace"] section.panel > form,
+[data-testid="finance-workspace"] section.panel > p { padding-inline:24px; }
+[data-testid="finance-workspace"] section.panel > .field { margin-top:16px; }
+[data-testid="finance-workspace"] section.panel > .finance-progress { display:block; width:calc(100% - 48px); margin:0 24px 16px; height:8px; border-radius:6px; accent-color:#0F172A; }
+[data-testid="finance-workspace"] section.panel > form { padding-bottom:20px; }
 .finance-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-block:16px; }
-.finance-summary article { background:var(--surface,#f0fdfa); border:1px solid var(--line); border-radius:12px; padding:16px; min-width:0; }
-.finance-summary article strong { display:block; font-size:1.4rem; overflow-wrap:anywhere; }
-.receipt-sheet { background:white; color:#112f2d; border:1px solid var(--line); padding:24px; max-width:640px; margin-inline:auto; }
-.receipt-sheet dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
-.receipt-sheet dd { margin:0; overflow-wrap:anywhere; }
-.finance-progress { width:100%; accent-color:#0b3d3b; }
+.finance-summary article { background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:16px; min-width:0; }
+.finance-summary article small { display:block; font-size:11px; font-weight:600; color:#64748B; margin-bottom:6px; }
+.finance-summary article strong { display:block; font-size:1.35rem; color:#0F172A; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.receipt-sheet { background:#FFFFFF; color:#0F172A; border:1px solid #E2E8F0; border-radius:8px; padding:24px; max-width:640px; margin:20px auto; font-variant-numeric:tabular-nums; }
+.receipt-sheet dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; border-top:1px solid #E2E8F0; border-bottom:1px solid #E2E8F0; padding-block:14px; margin-block:14px; }
+.receipt-sheet dt { font-size:11px; font-weight:600; color:#64748B; }
+.receipt-sheet dd { margin:0; font-size:13px; font-weight:600; color:#0F172A; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.finance-progress { width:100%; accent-color:#0F172A; }
 @media(max-width:600px) { .finance-summary { grid-template-columns:1fr; } .contract-header-grid { grid-template-columns:1fr!important; } .contract-page { max-width:100%; box-sizing:border-box; } }
 @media print {
   .staff-print-root, .receipt-sheet { overflow:visible!important; }

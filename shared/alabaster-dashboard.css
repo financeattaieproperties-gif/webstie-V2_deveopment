@@ -1,0 +1,116 @@
+/* Canonical Design Tokens & Layout Blueprint
+ * Option 2: Alabaster Architectural Split-Rail (Attaie Properties Unified Dashboard Standard)
+ * Apply to all existing and future Admin CRM, Staff Workspace, and standalone dashboards.
+ */
+:root {
+  --alabaster-bg: #F7F8FA;
+  --alabaster-surface: #FFFFFF;
+  --alabaster-rail-bg: #FBFBFD;
+  --alabaster-subtle: #F8FAFC;
+  --alabaster-hover: #F1F5F9;
+  --alabaster-border: #E2E8F0;
+  --alabaster-border-soft: #CBD5E1;
+  --alabaster-primary: #0F172A;
+  --alabaster-primary-hover: #1E293B;
+  --alabaster-secondary-text: #475569;
+  --alabaster-muted: #64748B;
+  --alabaster-subtle-text: #94A3B8;
+
+  /* Semantic Status Colors (clean text & soft surfaces, zero dark/neon slop) */
+  --alabaster-success: #047857;
+  --alabaster-success-bg: #ECFDF5;
+  --alabaster-warning: #B45309;
+  --alabaster-warning-bg: #FFFBEB;
+  --alabaster-info: #1D4ED8;
+  --alabaster-info-bg: #EFF6FF;
+  --alabaster-danger: #B91C1C;
+  --alabaster-danger-bg: #FEF2F2;
+
+  /* Geometry */
+  --alabaster-rail-width: 64px;
+  --alabaster-drawer-width: 224px;
+  --alabaster-topbar-height: 56px;
+  --alabaster-radius-sm: 6px;
+  --alabaster-radius-md: 8px;
+  --alabaster-radius-lg: 10px;
+}
+
+.alabaster-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.alabaster-shell {
+  display: flex;
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--alabaster-bg);
+  color: var(--alabaster-primary);
+}
+
+.alabaster-split-rail {
+  display: flex;
+  flex-shrink: 0;
+  background: var(--alabaster-surface);
+  border-inline-end: 1px solid var(--alabaster-border);
+}
+
+.alabaster-pillar-rail {
+  width: var(--alabaster-rail-width);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 0;
+  background: var(--alabaster-rail-bg);
+  border-inline-end: 1px solid var(--alabaster-border);
+  flex-shrink: 0;
+}
+
+.alabaster-sub-drawer {
+  width: var(--alabaster-drawer-width);
+  display: flex;
+  flex-direction: column;
+  background: var(--alabaster-surface);
+  min-width: 0;
+}
+
+.alabaster-shell.is-compact .alabaster-sub-drawer {
+  display: none;
+}
+
+.alabaster-topbar {
+  min-height: var(--alabaster-topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--alabaster-surface);
+  border-bottom: 1px solid var(--alabaster-border);
+}
+
+.alabaster-card {
+  background: var(--alabaster-surface);
+  border: 1px solid var(--alabaster-border);
+  border-radius: var(--alabaster-radius-md);
+}
+
+.alabaster-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--alabaster-radius-sm);
+  border: 1px solid var(--alabaster-primary);
+  background: var(--alabaster-primary);
+  color: var(--alabaster-surface);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.alabaster-btn-primary:hover {
+  background: var(--alabaster-primary-hover);
+  border-color: var(--alabaster-primary-hover);
+}

@@ -271,6 +271,40 @@ function createMockPhpApiPlugin(): Plugin {
     updated_at: new Date().toISOString(),
   };
 
+  const DEFAULT_SEO_KEYWORDS = [
+    'Attaie Properties',
+    'Kabul real estate',
+    'properties for sale in Kabul',
+    'properties for rent in Kabul',
+    'luxury villas Kabul',
+    'apartments in Kabul',
+    'Afghanistan property agency',
+  ];
+
+  let seoKeywords: Array<{
+    id: number;
+    keyword: string;
+    enabled: boolean;
+    created_at: string;
+    updated_at: string;
+  }> = DEFAULT_SEO_KEYWORDS.map((keyword, idx) => ({
+    id: idx + 1,
+    keyword,
+    enabled: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
+
+  const syncActiveSeoKeywordsString = () => {
+    const active = seoKeywords.filter((k) => k.enabled).map((k) => k.keyword).join(', ');
+    seoSettings = {
+      ...seoSettings,
+      keywords: active,
+      updated_at: new Date().toISOString(),
+    };
+    return active;
+  };
+
   let leads: any[] = [
     {
       id: 1,
@@ -1100,6 +1134,89 @@ function createMockPhpApiPlugin(): Plugin {
           seoSettings = { ...seoSettings, ...body, updated_at: new Date().toISOString() };
           buildLiveSitemap(seoSettings.canonical_base_url);
           return sendJson(res, seoSettings);
+        }
+      }
+
+      if (pathname === '/api/admin/seo-keywords.php') {
+        if (method === 'GET') {
+          const active = seoKeywords.filter((k) => k.enabled).map((k) => k.keyword).join(', ');
+          return sendJson(res, { keywords: seoKeywords, active_keywords: active });
+        }
+        if (method === 'POST') {
+          const body = await readBody(req);
+          if (body.action === 'restore_defaults') {
+            const now = new Date().toISOString();
+            seoKeywords = DEFAULT_SEO_KEYWORDS.map((keyword, idx) => ({
+              id: idx + 1,
+              keyword,
+              enabled: true,
+              created_at: now,
+              updated_at: now,
+            }));
+            const active = syncActiveSeoKeywordsString();
+            return sendJson(res, { success: true, keywords: seoKeywords, active_keywords: active });
+          }
+          const rawKeyword = String(body.keyword ?? '').trim();
+          if (!rawKeyword) {
+            return sendJson(res, { error: 'Keyword is required' }, 400);
+          }
+          const enabled = body.enabled === undefined ? true : Boolean(body.enabled);
+          let added = 0;
+          const now = new Date().toISOString();
+          for (const part of rawKeyword.split(/[,\n]+/)) {
+            const clean = part.replace(/\s+/g, ' ').trim();
+            if (!clean) continue;
+            if (seoKeywords.some((k) => k.keyword.toLowerCase() === clean.toLowerCase())) continue;
+            const nextId = seoKeywords.reduce((m, k) => Math.max(m, k.id), 0) + 1;
+            seoKeywords.push({
+              id: nextId,
+              keyword: clean,
+              enabled,
+              created_at: now,
+              updated_at: now,
+            });
+            added++;
+          }
+          const active = syncActiveSeoKeywordsString();
+          return sendJson(res, { success: true, added, keywords: seoKeywords, active_keywords: active }, 201);
+        }
+        if (method === 'PUT' || method === 'PATCH') {
+          const body = await readBody(req);
+          const now = new Date().toISOString();
+          if (body.action === 'set_all' && body.enabled !== undefined) {
+            const nextEnabled = Boolean(body.enabled);
+            seoKeywords = seoKeywords.map((k) => ({ ...k, enabled: nextEnabled, updated_at: now }));
+            const active = syncActiveSeoKeywordsString();
+            return sendJson(res, { success: true, keywords: seoKeywords, active_keywords: active });
+          }
+          if (body.enabled === undefined) {
+            return sendJson(res, { error: 'The enabled boolean field is required' }, 400);
+          }
+          const nextEnabled = Boolean(body.enabled);
+          const targetId = Number(body.id || 0);
+          const targetKw = String(body.keyword || '').trim().toLowerCase();
+          if (targetId > 0) {
+            seoKeywords = seoKeywords.map((k) =>
+              k.id === targetId ? { ...k, enabled: nextEnabled, updated_at: now } : k
+            );
+          } else if (targetKw) {
+            seoKeywords = seoKeywords.map((k) =>
+              k.keyword.toLowerCase() === targetKw ? { ...k, enabled: nextEnabled, updated_at: now } : k
+            );
+          } else {
+            return sendJson(res, { error: 'Either id or keyword is required' }, 400);
+          }
+          const active = syncActiveSeoKeywordsString();
+          return sendJson(res, { success: true, keywords: seoKeywords, active_keywords: active });
+        }
+        if (method === 'DELETE') {
+          const id = Number(parsedUrl.searchParams.get('id') || 0);
+          if (id <= 0) {
+            return sendJson(res, { error: 'Valid keyword id is required' }, 400);
+          }
+          seoKeywords = seoKeywords.filter((k) => k.id !== id);
+          const active = syncActiveSeoKeywordsString();
+          return sendJson(res, { success: true, keywords: seoKeywords, active_keywords: active });
         }
       }
 

@@ -1,32 +1,54 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import vm from 'node:vm';
-import ts from 'typescript';
 
-test('featured carousel keeps hook order when projects load and disappear', () => {
-  const source = fs.readFileSync(new URL('../src/components/sections/LandingPageContent.tsx', import.meta.url), 'utf8');
-  const start = source.indexOf('function FeaturedProjectMotionCarousel(');
-  const end = source.indexOf('  const handleMouseMove', start);
-  // Execute the actual initialization and empty-state branch without a browser.
-  const code = ts.transpileModule(source.slice(start, end) + '\nreturn null;\n}', {
-    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
-  }).outputText;
-  let hooks = [];
-  const hook = name => (...args) => { hooks.push(name); return name === 'state' ? [args[0], () => {}] : args[0]; };
-  const context = {
-    exports: {}, require: () => ({ jsx: () => null, jsxs: () => null }),
-    FALLBACK_PREVIEW_PROJECTS: [], Building2: () => null, Link: () => null, ArrowRight: () => null,
-    useState: hook('state'), useMotionValue: hook('motion'), useSpring: hook('spring'),
-    useTransform: hook('transform'), useCallback: hook('callback'), useEffect: hook('effect'),
-  };
-  vm.createContext(context);
-  vm.runInContext(code, context);
-  const sequences = [[], [{ id: 1 }], []].map(projects => {
-    hooks = [];
-    context.FeaturedProjectMotionCarousel({ projects });
-    return [...hooks];
-  });
-  assert.deepEqual(sequences[1], sequences[0]);
-  assert.deepEqual(sequences[2], sequences[0]);
+test('landing page replaces category and master-planned cards with ExpandingCards signature projects', () => {
+  const landingSource = fs.readFileSync(
+    new URL('../src/components/sections/LandingPageContent.tsx', import.meta.url),
+    'utf8'
+  );
+
+  // Verify old Explore by Category and Master-Planned Developments cards are completely removed
+  assert.equal(landingSource.includes('Explore by Category'), false);
+  assert.equal(landingSource.includes('Master-Planned Developments'), false);
+  assert.equal(landingSource.includes('FeaturedProjectMotionCarousel'), false);
+
+  // Verify ExpandingCards is rendered in the Signature Projects section
+  assert.equal(landingSource.includes('ExpandingCards'), true);
+  assert.equal(landingSource.includes('mapProjectsToExpandingCards'), true);
+});
+
+test('signatureProjects defines all 5 canonical V2 developments with valid assets', () => {
+  const sigSource = fs.readFileSync(
+    new URL('../src/lib/signatureProjects.ts', import.meta.url),
+    'utf8'
+  );
+
+  for (const name of [
+    'Kabul Plaza Saljuqi',
+    'Moon Residency',
+    'Kabul Plaza Burj',
+    'Kabul Plaza 12',
+    'Kabul Plaza 09 (ABC)',
+  ]) {
+    assert.equal(sigSource.includes(name), true, `Expected ${name} in signatureProjects.ts`);
+  }
+});
+
+test('ExpandingCards resolves dynamic project detail links and keeps all cards in full color without grayscale', () => {
+  const expandingSource = fs.readFileSync(
+    new URL('../src/components/ui/expanding-cards.tsx', import.meta.url),
+    'utf8'
+  );
+  const demoSource = fs.readFileSync(
+    new URL('../src/components/ui/demo.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.equal(expandingSource.includes('export function resolveProjectDetailHref'), true);
+  assert.equal(expandingSource.includes('`/projects/${encodeURIComponent(String(item.id))}`'), true);
+  assert.equal(expandingSource.includes('data-project-href={projectDetailHref}'), true);
+  assert.equal(expandingSource.includes('View project details for ${item.title}'), true);
+  assert.equal(expandingSource.includes('grayscale'), false, 'Inactive cards must not be grayscale');
+  assert.equal(demoSource.includes('linkHref: `/projects/${project.id}`'), true);
 });

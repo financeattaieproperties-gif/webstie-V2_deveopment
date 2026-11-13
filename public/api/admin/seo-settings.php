@@ -67,7 +67,9 @@ if ($method === 'POST' || $method === 'PUT') {
     $default_title       = trim((string) ($b['default_title'] ?? ''));
     $title_template      = trim((string) ($b['title_template'] ?? '%s | Attaie Properties'));
     $default_description = trim((string) ($b['default_description'] ?? ''));
-    $keywords            = trim((string) ($b['keywords'] ?? '')) ?: null;
+    $keywords            = array_key_exists('keywords', $b) && $b['keywords'] !== null
+        ? trim((string) $b['keywords'])
+        : null;
     $og_image            = trim((string) ($b['og_image'] ?? '')) ?: '/logo.png';
     $twitter_image       = trim((string) ($b['twitter_image'] ?? '')) ?: null;
     $twitter_card_raw    = trim((string) ($b['twitter_card'] ?? 'summary_large_image'));

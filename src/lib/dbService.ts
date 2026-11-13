@@ -205,12 +205,25 @@ export async function searchProperties(
 export async function getProjects(): Promise<Project[]> {
   const res = await fetch(`${API}/get-projects.php`);
   if (!res.ok) throw new Error('Failed to fetch projects');
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('STATIC_PREVIEW_NON_JSON');
+  }
   return res.json();
 }
 
 export async function getProject(id: number): Promise<Project> {
   const res = await fetch(`${API}/get-project.php?id=${id}`);
-  if (!res.ok) throw new Error('Project not found');
+  const contentType = res.headers.get('content-type') || '';
+  if (!res.ok) {
+    const err = new Error('Project not found') as Error & { status?: number; isJsonApi?: boolean };
+    err.status = res.status;
+    err.isJsonApi = contentType.includes('application/json');
+    throw err;
+  }
+  if (!contentType.includes('application/json')) {
+    throw new Error('STATIC_PREVIEW_NON_JSON');
+  }
   return res.json();
 }
 

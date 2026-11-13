@@ -266,6 +266,26 @@ INSERT IGNORE INTO seo_settings (
   1
 );
 
+-- ── 12b. Site-Wide SEO Keywords Toggle Catalog ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS seo_keywords (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  keyword    VARCHAR(180) NOT NULL,
+  enabled    TINYINT(1)   NOT NULL DEFAULT 1,
+  created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_seo_keyword (keyword),
+  INDEX idx_seo_keywords_enabled (enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO seo_keywords (keyword, enabled) VALUES
+  ('Attaie Properties', 1),
+  ('Kabul real estate', 1),
+  ('properties for sale in Kabul', 1),
+  ('properties for rent in Kabul', 1),
+  ('luxury villas Kabul', 1),
+  ('apartments in Kabul', 1),
+  ('Afghanistan property agency', 1);
+
 -- ── 13. Careers & Job Applications ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS career_jobs (
   id              INT AUTO_INCREMENT PRIMARY KEY,

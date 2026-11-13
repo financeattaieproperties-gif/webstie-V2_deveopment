@@ -117,5 +117,5 @@ for(const file of walk(dist)) {
 for(const required of ['index.html','.htaccess','.user.ini','admin/index.html','dashboard/index.html','management/index.html','callcenter/index.html','staff-api/index.php','staff-api/paths.php','api/db.php'])if(!fs.existsSync(path.join(dist,required)))throw new Error(`Missing required public file: ${required}`);
 const manifest=walk(output).map(file=>({path:path.relative(output,file).replaceAll('\\','/'),bytes:fs.statSync(file).size,sha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}));
 write('manifest.json',JSON.stringify(manifest,null,2));
-run('python',['scripts/zip-v2-release.py',output]);
+run(process.platform==='win32'?'python':'python3',['scripts/zip-v2-release.py',output]);
 console.log(`Prepared ${output}. Firebase public key configured: ${firebaseConfigured}. No upload or database operation occurred.`);

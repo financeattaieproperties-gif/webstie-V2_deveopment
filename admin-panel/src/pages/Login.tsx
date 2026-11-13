@@ -3,15 +3,15 @@ import { useAuth } from '../context/AuthContext';
 import { AttaieLogoEntrance } from '../components/AttaieLogoEntrance';
 
 const S = {
-  page:  { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5EFE6', padding: '1.5rem' } as const,
-  card:  { background: '#fff', borderRadius: 16, padding: '2.25rem', width: '100%', maxWidth: 420, boxShadow: '0 8px 40px rgba(0,0,0,.10)', border: '1px solid #E5E7EB' } as const,
+  page:  { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F8FA', padding: '1.5rem' } as const,
+  card:  { background: '#FFFFFF', borderRadius: 10, padding: '2.25rem', width: '100%', maxWidth: 420, boxShadow: '0 1px 3px rgba(15,23,42,.05)', border: '1px solid #E2E8F0' } as const,
   logoWrap: { display: 'flex', justifyContent: 'center', marginBottom: '1rem' } as const,
-  title: { fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem', color: '#0f172a', textAlign: 'center' as const } as const,
-  sub:   { fontSize: '0.85rem', color: '#64748b', marginBottom: '1.75rem', textAlign: 'center' as const } as const,
+  title: { fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.25rem', color: '#0F172A', textAlign: 'center' as const } as const,
+  sub:   { fontSize: '0.85rem', color: '#64748B', marginBottom: '1.75rem', textAlign: 'center' as const } as const,
   label: { display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' } as const,
-  input: { width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.95rem', outline: 'none', marginBottom: '1rem' } as const,
-  btn:   { width: '100%', padding: '0.75rem', background: '#b8960c', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' } as const,
-  err:   { background: '#fee2e2', color: '#dc2626', padding: '0.65rem 1rem', borderRadius: 8, marginBottom: '1rem', fontSize: '0.85rem' } as const,
+  input: { width: '100%', padding: '0.6rem 0.85rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.92rem', outline: 'none', marginBottom: '1rem', background: '#FFFFFF', color: '#0F172A' } as const,
+  btn:   { width: '100%', padding: '0.7rem', background: '#0F172A', border: 'none', borderRadius: 6, color: '#FFFFFF', fontWeight: 600, fontSize: '0.92rem', cursor: 'pointer' } as const,
+  err:   { background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', padding: '0.65rem 1rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.85rem' } as const,
 };
 
 export default function Login() {

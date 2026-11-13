@@ -13,6 +13,7 @@ import { ProjectCard } from '../components/ui/ProjectCard';
 import { ProjectCardSkeleton, ProjectSpotlightSkeleton } from '../components/ui/ProjectCardSkeleton';
 import { Skeleton } from '../components/ui/Skeleton';
 import { getProjects, type Project } from '../lib/dbService';
+import { SIGNATURE_PROJECTS } from '../lib/signatureProjects';
 import { SeoHead } from '../components/seo/SeoHead';
 import { Breadcrumbs } from '../components/ui/Breadcrumbs';
 import defaultExteriorImg from '../assets/images/project_exterior_elevation_1793995966183.jpg';
@@ -24,11 +25,11 @@ gsap.registerPlugin(ScrollTrigger);
 
 const FILTER_STATUSES = ['All', 'Coming Soon', 'In Progress', 'Sold Out'] as const;
 
-const FALLBACK_PROJECTS: Project[] = [];
+const FALLBACK_PROJECTS: Project[] = SIGNATURE_PROJECTS;
 
 export default function ProjectsPage() {
   const { t } = useTranslation();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Project[]>(FALLBACK_PROJECTS);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<(typeof FILTER_STATUSES)[number]>('All');
 
@@ -43,8 +44,12 @@ export default function ProjectsPage() {
           setProjects([]);
         }
       })
-      .catch(() => {
-        setProjects([]);
+      .catch((err) => {
+        if (err instanceof Error && err.message === 'STATIC_PREVIEW_NON_JSON') {
+          setProjects(FALLBACK_PROJECTS);
+        } else {
+          setProjects([]);
+        }
       })
       .finally(() => setLoading(false));
   }, []);

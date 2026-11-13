@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { api, type Agent } from '../api';
 
 const S = {
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' as const },
-  title: { fontSize: '1.5rem', fontWeight: 700, margin: 0 },
-  btn: { padding: '0.6rem 1.2rem', background: '#B8944A', color: '#fff', border: 0, borderRadius: 8, fontWeight: 700, cursor: 'pointer' },
-  table: { width: '100%', borderCollapse: 'collapse' as const, background: '#fff', borderRadius: 10, overflow: 'hidden' as const, boxShadow: '0 1px 4px rgba(0,0,0,.08)' },
-  th: { padding: '0.75rem 1rem', background: '#f8fafc', textAlign: 'left' as const, fontSize: '0.75rem', color: '#64748b', borderBottom: '1px solid #e2e8f0' },
-  td: { padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem', verticalAlign: 'middle' as const },
-  action: { padding: '0.35rem 0.75rem', background: '#0f172a', color: '#fff', border: 0, borderRadius: 6, cursor: 'pointer', marginRight: 6 },
-  delete: { padding: '0.35rem 0.75rem', background: 'transparent', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 6, cursor: 'pointer' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' as const },
+  title: { fontSize: '1.35rem', fontWeight: 700, margin: 0, color: '#0F172A' },
+  btn: { padding: '0.55rem 1.15rem', background: '#0F172A', color: '#FFFFFF', border: 0, borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: '0.84rem' },
+  table: { width: '100%', borderCollapse: 'collapse' as const, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' as const, border: '1px solid #E2E8F0' },
+  th: { padding: '0.7rem 1rem', background: '#F8FAFC', textAlign: 'left' as const, fontSize: '0.72rem', fontWeight: 600, color: '#64748B', borderBottom: '1px solid #E2E8F0', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+  td: { padding: '0.75rem 1rem', borderBottom: '1px solid #F1F5F9', fontSize: '0.86rem', verticalAlign: 'middle' as const, color: '#0F172A' },
+  action: { padding: '0.32rem 0.75rem', background: '#0F172A', color: '#FFFFFF', border: 0, borderRadius: 6, cursor: 'pointer', marginRight: 6, fontSize: '0.78rem', fontWeight: 600 },
+  delete: { padding: '0.32rem 0.75rem', background: '#FFFFFF', color: '#DC2626', border: '1px solid #FECACA', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 },
 };
 
 export default function Agents() {

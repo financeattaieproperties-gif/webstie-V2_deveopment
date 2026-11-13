@@ -170,30 +170,30 @@ const S = {
     gap: '1rem',
     marginBottom: '1.25rem',
   } as const,
-  title: { fontSize: '1.5rem', fontWeight: 700, margin: 0, color: '#1A2335' } as const,
-  subtitle: { fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' } as const,
+  title: { fontSize: '1.35rem', fontWeight: 700, margin: 0, color: '#0F172A' } as const,
+  subtitle: { fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' } as const,
   actionsGroup: { display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' as const } as const,
   exportCsvBtn: {
-    padding: '0.55rem 1rem',
-    borderRadius: 8,
-    border: '1px solid #cbd5e1',
-    background: '#ffffff',
-    color: '#1A2335',
-    fontWeight: 700,
-    fontSize: '0.82rem',
+    padding: '0.5rem 0.95rem',
+    borderRadius: 6,
+    border: '1px solid #E2E8F0',
+    background: '#FFFFFF',
+    color: '#0F172A',
+    fontWeight: 600,
+    fontSize: '0.8rem',
     cursor: 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.4rem',
   } as const,
   exportPdfBtn: {
-    padding: '0.55rem 1rem',
-    borderRadius: 8,
+    padding: '0.5rem 0.95rem',
+    borderRadius: 6,
     border: 'none',
-    background: '#B8944A',
-    color: '#ffffff',
-    fontWeight: 700,
-    fontSize: '0.82rem',
+    background: '#0F172A',
+    color: '#FFFFFF',
+    fontWeight: 600,
+    fontSize: '0.8rem',
     cursor: 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
@@ -208,44 +208,47 @@ const S = {
     marginBottom: '1rem',
   } as const,
   searchInput: {
-    padding: '0.55rem 0.9rem',
-    borderRadius: 8,
-    border: '1px solid #cbd5e1',
-    fontSize: '0.88rem',
+    padding: '0.52rem 0.85rem',
+    borderRadius: 6,
+    border: '1px solid #CBD5E1',
+    fontSize: '0.85rem',
     flex: '1 1 340px',
     maxWidth: 440,
-    background: '#ffffff',
+    background: '#FFFFFF',
+    color: '#0F172A',
   } as const,
-  filterPills: { display: 'flex', gap: '0.45rem', flexWrap: 'wrap' as const } as const,
+  filterPills: { display: 'flex', gap: '0.4rem', flexWrap: 'wrap' as const } as const,
   pill: (active: boolean) =>
     ({
-      padding: '0.4rem 0.8rem',
-      borderRadius: 8,
-      border: active ? '1.5px solid #B8944A' : '1px solid #e2e8f0',
-      background: active ? '#FFF8EE' : '#ffffff',
-      color: active ? '#B8944A' : '#475569',
-      fontWeight: 700,
+      padding: '0.38rem 0.78rem',
+      borderRadius: 6,
+      border: active ? '1px solid #0F172A' : '1px solid #E2E8F0',
+      background: active ? '#F1F5F9' : '#FFFFFF',
+      color: active ? '#0F172A' : '#475569',
+      fontWeight: 600,
       fontSize: '0.78rem',
       cursor: 'pointer',
     }) as const,
   table: {
     width: '100%',
     borderCollapse: 'collapse' as const,
-    background: '#fff',
-    borderRadius: 10,
+    background: '#FFFFFF',
+    borderRadius: 8,
     overflow: 'hidden',
-    boxShadow: '0 1px 4px rgba(0,0,0,.08)',
+    border: '1px solid #E2E8F0',
   },
   th: {
-    padding: '0.75rem 1rem',
-    background: '#f8fafc',
+    padding: '0.7rem 1rem',
+    background: '#F8FAFC',
     textAlign: 'left' as const,
-    fontSize: '0.8rem',
-    fontWeight: 700,
-    color: '#64748b',
-    borderBottom: '1px solid #e2e8f0',
+    fontSize: '0.7rem',
+    fontWeight: 600,
+    color: '#64748B',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    borderBottom: '1px solid #E2E8F0',
   },
-  td: { padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem', color: '#1e293b' },
+  td: { padding: '0.75rem 1rem', borderBottom: '1px solid #F1F5F9', fontSize: '0.85rem', color: '#1E293B', fontVariantNumeric: 'tabular-nums' },
 };
 
 export default function Leads() {
@@ -378,7 +381,7 @@ export default function Leads() {
             onClick={handleExportCsv}
             disabled={filteredItems.length === 0}
           >
-            ⬇ Export CSV ({filteredItems.length})
+            Export CSV ({filteredItems.length})
           </button>
           <button
             type="button"
@@ -387,7 +390,7 @@ export default function Leads() {
             onClick={handleExportPdf}
             disabled={filteredItems.length === 0}
           >
-            📄 Export PDF ({filteredItems.length})
+            Export PDF ({filteredItems.length})
           </button>
         </div>
       </div>
@@ -396,12 +399,11 @@ export default function Leads() {
       <div
         data-testid="admin-leads-pipeline-summary-card"
         style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: 12,
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: 8,
           padding: '1.15rem 1.25rem',
           marginBottom: '1.25rem',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
         }}
       >
         <div
@@ -415,20 +417,21 @@ export default function Leads() {
           }}
         >
           <div>
-            <strong style={{ fontSize: '0.95rem', color: '#1A2335' }}>
+            <strong style={{ fontSize: '0.95rem', color: '#0F172A' }}>
               Pipeline Health Summary
             </strong>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '0.6rem' }}>
+            <span style={{ fontSize: '0.8rem', color: '#64748B', marginLeft: '0.6rem' }}>
               Total leads broken down by status
             </span>
           </div>
           <span
+            className="tabular-nums"
             style={{
-              fontSize: '0.76rem',
-              fontWeight: 700,
-              background: '#FFF8EE',
-              color: '#B8944A',
-              border: '1px solid #FDE68A',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              background: '#F1F5F9',
+              color: '#0F172A',
+              border: '1px solid #E2E8F0',
               padding: '0.2rem 0.65rem',
               borderRadius: 6,
             }}
@@ -443,7 +446,7 @@ export default function Leads() {
             height: 8,
             borderRadius: 6,
             overflow: 'hidden',
-            background: '#f1f5f9',
+            background: '#F1F5F9',
             marginBottom: '0.9rem',
           }}
         >
@@ -469,7 +472,7 @@ export default function Leads() {
           }}
         >
           {[
-            { key: 'ALL', label: 'Total Leads', count: pipelineSummary.total, pct: 100, dot: '#1A2335' },
+            { key: 'ALL', label: 'Total Leads', count: pipelineSummary.total, pct: 100, dot: '#0F172A' },
             { key: 'BUCKET_ACTIVE', label: 'Active', count: pipelineSummary.active, pct: pipelineSummary.activePct, dot: '#0ea5e9' },
             { key: 'BUCKET_DRAFT', label: 'Draft / New', count: pipelineSummary.draft, pct: pipelineSummary.draftPct, dot: '#f59e0b' },
             { key: 'BUCKET_CLOSED', label: 'Closed', count: pipelineSummary.closed, pct: pipelineSummary.closedPct, dot: '#16a34a' },
@@ -486,9 +489,9 @@ export default function Leads() {
                   flexDirection: 'column',
                   alignItems: 'flex-start',
                   padding: '0.75rem 0.9rem',
-                  borderRadius: 10,
-                  border: active ? '1.5px solid #B8944A' : '1px solid #e2e8f0',
-                  background: active ? '#FFF8EE' : '#f8fafc',
+                  borderRadius: 8,
+                  border: active ? '1px solid #0F172A' : '1px solid #E2E8F0',
+                  background: active ? '#F1F5F9' : '#FFFFFF',
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
@@ -502,17 +505,9 @@ export default function Leads() {
                     marginBottom: '0.35rem',
                   }}
                 >
-                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#475569' }}>
                     {stat.label}
                   </span>
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: stat.dot,
-                    }}
-                  />
                 </div>
                 <div
                   style={{
@@ -522,8 +517,8 @@ export default function Leads() {
                     alignItems: 'baseline',
                   }}
                 >
-                  <strong style={{ fontSize: '1.35rem', color: '#1A2335' }}>{stat.count}</strong>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>
+                  <strong className="tabular-nums" style={{ fontSize: '1.35rem', color: '#0F172A' }}>{stat.count}</strong>
+                  <span className="tabular-nums" style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B' }}>
                     {stat.pct}%
                   </span>
                 </div>
@@ -615,10 +610,10 @@ export default function Leads() {
                       padding: '0.2rem 0.55rem',
                       borderRadius: 6,
                       fontSize: '0.76rem',
-                      fontWeight: 700,
-                      background: '#FFF8EE',
-                      color: '#B8944A',
-                      border: '1px solid #FDE68A',
+                      fontWeight: 600,
+                      background: '#F1F5F9',
+                      color: '#0F172A',
+                      border: '1px solid #E2E8F0',
                     }}
                   >
                     {l.stage}

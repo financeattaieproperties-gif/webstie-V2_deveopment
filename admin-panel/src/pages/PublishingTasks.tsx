@@ -11,28 +11,28 @@ const S = {
     marginBottom: '1.5rem',
   } as const,
   title: {
-    fontSize: '1.5rem',
-    fontWeight: 800,
-    color: '#1A2335',
+    fontSize: '1.35rem',
+    fontWeight: 700,
+    color: '#0F172A',
     margin: 0,
   } as const,
   subtitle: {
-    fontSize: '0.88rem',
-    color: '#6B7280',
-    marginTop: '0.3rem',
+    fontSize: '0.85rem',
+    color: '#64748B',
+    marginTop: '0.25rem',
   } as const,
   isolationBanner: {
-    background: '#F0FDFA',
-    border: '1px solid #99F6E4',
-    borderRadius: 12,
+    background: '#FFFFFF',
+    border: '1px solid #E2E8F0',
+    borderRadius: 8,
     padding: '0.85rem 1.1rem',
-    marginBottom: '1.5rem',
+    marginBottom: '1.25rem',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap' as const,
     gap: '0.75rem',
-    color: '#0B3D3B',
+    color: '#0F172A',
     fontSize: '0.84rem',
   } as const,
   filterRow: {
@@ -43,33 +43,35 @@ const S = {
   } as const,
   pill: (active: boolean) =>
     ({
-      padding: '0.45rem 0.9rem',
-      borderRadius: 8,
-      border: active ? '1.5px solid #B8944A' : '1px solid #E5E7EB',
-      background: active ? '#FFF8EE' : '#FFFFFF',
-      color: active ? '#B8944A' : '#4B5563',
-      fontWeight: 700,
-      fontSize: '0.82rem',
+      padding: '0.42rem 0.85rem',
+      borderRadius: 6,
+      border: active ? '1px solid #0F172A' : '1px solid #E2E8F0',
+      background: active ? '#0F172A' : '#FFFFFF',
+      color: active ? '#FFFFFF' : '#475569',
+      fontWeight: 600,
+      fontSize: '0.8rem',
       cursor: 'pointer',
+      fontVariantNumeric: 'tabular-nums',
     }) as const,
   card: {
     background: '#FFFFFF',
-    border: '1px solid #E5E7EB',
-    borderRadius: 14,
-    padding: '1.35rem',
+    border: '1px solid #E2E8F0',
+    borderRadius: 8,
+    padding: '1.25rem',
     marginBottom: '1rem',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
   } as const,
   serialBadge: {
     display: 'inline-block',
-    background: '#1A2335',
-    color: '#F5EFE6',
-    fontFamily: 'monospace',
-    fontWeight: 800,
-    fontSize: '0.82rem',
-    padding: '0.25rem 0.65rem',
+    background: '#F1F5F9',
+    color: '#0F172A',
+    border: '1px solid #E2E8F0',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontWeight: 700,
+    fontSize: '0.78rem',
+    padding: '0.22rem 0.6rem',
     borderRadius: 6,
     letterSpacing: '0.03em',
+    fontVariantNumeric: 'tabular-nums',
   } as const,
   statusBadge: (status: SubmissionPost['submission_status']) => {
     const map: Record<SubmissionPost['submission_status'], { bg: string; color: string; border: string }> = {
@@ -84,9 +86,9 @@ const S = {
       background: c.bg,
       color: c.color,
       border: `1px solid ${c.border}`,
-      fontWeight: 700,
-      fontSize: '0.76rem',
-      padding: '0.2rem 0.65rem',
+      fontWeight: 600,
+      fontSize: '0.74rem',
+      padding: '0.2rem 0.6rem',
       borderRadius: 6,
     } as const;
   },
@@ -100,45 +102,49 @@ const S = {
     width: '100%',
     height: 86,
     objectFit: 'cover' as const,
-    borderRadius: 8,
-    border: '1px solid #E5E7EB',
-    background: '#F9FAFB',
+    borderRadius: 6,
+    border: '1px solid #E2E8F0',
+    background: '#F8FAFC',
   } as const,
   btnApprove: {
-    padding: '0.55rem 1rem',
-    background: '#0284C7',
+    padding: '0.5rem 0.95rem',
+    background: '#0F172A',
     color: '#FFFFFF',
     border: 'none',
-    borderRadius: 8,
-    fontWeight: 700,
-    fontSize: '0.82rem',
+    borderRadius: 6,
+    fontWeight: 600,
+    fontSize: '0.8rem',
     cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
   } as const,
   btnPublish: {
-    padding: '0.55rem 1.1rem',
-    background: '#B8944A',
+    padding: '0.5rem 1rem',
+    background: '#0F172A',
     color: '#FFFFFF',
     border: 'none',
-    borderRadius: 8,
-    fontWeight: 700,
-    fontSize: '0.82rem',
+    borderRadius: 6,
+    fontWeight: 600,
+    fontSize: '0.8rem',
     cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
   } as const,
   btnReject: {
-    padding: '0.55rem 0.95rem',
+    padding: '0.5rem 0.9rem',
     background: '#FFFFFF',
     color: '#DC2626',
-    border: '1px solid #FCA5A5',
-    borderRadius: 8,
-    fontWeight: 700,
-    fontSize: '0.82rem',
+    border: '1px solid #FECACA',
+    borderRadius: 6,
+    fontWeight: 600,
+    fontSize: '0.8rem',
     cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
   } as const,
   input: {
     padding: '0.45rem 0.7rem',
-    border: '1px solid #D1D5DB',
-    borderRadius: 7,
+    border: '1px solid #CBD5E1',
+    borderRadius: 6,
     fontSize: '0.82rem',
+    color: '#0F172A',
   } as const,
 };
 
@@ -222,16 +228,18 @@ export default function PublishingTasks() {
           type="button"
           onClick={() => void load()}
           style={{
-            padding: '0.55rem 1rem',
-            borderRadius: 8,
-            border: '1px solid #D1D5DB',
+            padding: '0.5rem 0.95rem',
+            borderRadius: 6,
+            border: '1px solid #E2E8F0',
             background: '#FFFFFF',
-            fontWeight: 700,
-            fontSize: '0.82rem',
+            color: '#0F172A',
+            fontWeight: 600,
+            fontSize: '0.8rem',
             cursor: 'pointer',
+            whiteSpace: 'nowrap',
           }}
         >
-          ↻ Refresh Queue
+          Refresh Queue
         </button>
       </div>
 
@@ -242,12 +250,14 @@ export default function PublishingTasks() {
         </div>
         <span
           style={{
-            background: '#0B3D3B',
-            color: '#99F6E4',
+            background: '#F1F5F9',
+            color: '#0F172A',
+            border: '1px solid #E2E8F0',
             padding: '0.25rem 0.65rem',
             borderRadius: 6,
-            fontWeight: 700,
-            fontSize: '0.75rem',
+            fontWeight: 600,
+            fontSize: '0.74rem',
+            whiteSpace: 'nowrap',
           }}
         >
           Submission DB → Website DB
@@ -328,10 +338,10 @@ export default function PublishingTasks() {
                     Platform: {item.social_platform}
                   </span>
                 </div>
-                <h3 style={{ margin: '0.5rem 0 0.2rem', fontSize: '1.08rem', color: '#1A2335' }}>
+                <h3 style={{ margin: '0.5rem 0 0.2rem', fontSize: '1.05rem', color: '#0F172A', fontWeight: 700 }}>
                   {item.property_type} — {item.address}
                 </h3>
-                <div style={{ fontSize: '0.82rem', color: '#4B5563' }}>
+                <div style={{ fontSize: '0.82rem', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>
                   Customer / Owner: <strong>{item.customer_name}</strong> · Submitted by:{' '}
                   <strong>{item.submitted_by}</strong>
                   {item.website_property_id ? (
@@ -351,7 +361,7 @@ export default function PublishingTasks() {
                     disabled={publishingId === item.id}
                     onClick={() => void handleAction(item, 'approve')}
                   >
-                    ✓ Approve Submission
+                    Approve Submission
                   </button>
                 )}
                 {item.submission_status === 'Approved' && (
@@ -389,7 +399,7 @@ export default function PublishingTasks() {
                       disabled={publishingId === item.id}
                       onClick={() => void handleAction(item, 'publish')}
                     >
-                      🌐 Publish to Website
+                      Publish to Website
                     </button>
                   </>
                 )}
@@ -411,7 +421,7 @@ export default function PublishingTasks() {
                       disabled={publishingId === item.id}
                       onClick={() => void handleAction(item, 'reject')}
                     >
-                      ✕ Reject
+                      Reject
                     </button>
                   </>
                 )}

@@ -18,14 +18,14 @@ const STATUS_BADGE: Record<VisitRequest['status'], { bg: string; color: string }
 };
 
 const S = {
-  title:      { fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' } as const,
-  filterBar:  { display: 'flex', flexWrap: 'wrap' as const, gap: '0.75rem', marginBottom: '1.25rem', background: '#fff', padding: '1rem 1.25rem', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,.06)' } as const,
-  input:      { padding: '0.5rem 0.75rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.88rem', minWidth: 180 } as const,
-  select:     { padding: '0.5rem 0.75rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.88rem', background: '#fff' } as const,
-  card:       { background: '#fff', borderRadius: 12, padding: '1.25rem 1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,.08)', marginBottom: '1rem' } as const,
-  noteInput:  { width: '100%', padding: '0.55rem 0.75rem', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.88rem', marginTop: '0.5rem', boxSizing: 'border-box' as const } as const,
-  btn:        { padding: '0.45rem 1rem', background: '#1A2335', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' } as const,
-  clearBtn:   { padding: '0.45rem 0.9rem', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' } as const,
+  title:      { fontSize: '1.35rem', fontWeight: 700, marginBottom: '1rem', color: '#0F172A', fontVariantNumeric: 'tabular-nums' } as const,
+  filterBar:  { display: 'flex', flexWrap: 'wrap' as const, gap: '0.75rem', marginBottom: '1.25rem', background: '#FFFFFF', padding: '1rem 1.25rem', borderRadius: 8, border: '1px solid #E2E8F0' } as const,
+  input:      { padding: '0.5rem 0.75rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.86rem', minWidth: 180, color: '#0F172A' } as const,
+  select:     { padding: '0.5rem 0.75rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.86rem', background: '#FFFFFF', color: '#0F172A' } as const,
+  card:       { background: '#FFFFFF', borderRadius: 8, padding: '1.25rem 1.5rem', border: '1px solid #E2E8F0', marginBottom: '1rem' } as const,
+  noteInput:  { width: '100%', padding: '0.55rem 0.75rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.86rem', marginTop: '0.5rem', boxSizing: 'border-box' as const, color: '#0F172A' } as const,
+  btn:        { padding: '0.45rem 1rem', background: '#0F172A', color: '#FFFFFF', border: 'none', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const } as const,
+  clearBtn:   { padding: '0.45rem 0.9rem', background: '#F8FAFC', color: '#334155', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const } as const,
 };
 
 export default function Visits() {
@@ -164,16 +164,16 @@ export default function Visits() {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                    <strong style={{ fontSize: '1.05rem' }}>{item.name}</strong>
-                    <span style={{ padding: '0.2rem 0.6rem', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', background: badge.bg, color: badge.color }}>
+                    <strong style={{ fontSize: '1.02rem', color: '#0F172A' }}>{item.name}</strong>
+                    <span style={{ padding: '0.2rem 0.55rem', borderRadius: 6, fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', background: badge.bg, color: badge.color }}>
                       {item.status}
                     </span>
                   </div>
-                  <p style={{ margin: '0.35rem 0', color: '#475569', fontWeight: 500 }}>
-                    {item.listing_name} · <a href={`tel:+${item.phone}`} style={{ color: '#0145F2' }}>+{item.phone}</a>
+                  <p style={{ margin: '0.35rem 0', color: '#475569', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
+                    {item.listing_name} · <a href={`tel:+${item.phone}`} style={{ color: '#0F172A', fontWeight: 600, textDecoration: 'underline' }}>+{item.phone}</a>
                   </p>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-                    Requested for (Kabul time): <strong>{reqDate.toLocaleString('en-US', { timeZone: 'Asia/Kabul', dateStyle: 'medium', timeStyle: 'short' })}</strong>
+                  <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748B', fontVariantNumeric: 'tabular-nums' }}>
+                    Requested for (Kabul time): <strong style={{ color: '#0F172A' }}>{reqDate.toLocaleString('en-US', { timeZone: 'Asia/Kabul', dateStyle: 'medium', timeStyle: 'short' })}</strong>
                   </p>
                 </div>
 

@@ -620,9 +620,9 @@ export function HrContractsWorkspace({
                         width: 36,
                         height: 36,
                         borderRadius: '50%',
-                        background: '#99f6e4',
-                        color: '#0b3d3b',
-                        fontWeight: 800,
+                        background: '#F1F5F9',
+                        color: '#0F172A',
+                        fontWeight: 700,
                         fontSize: 13,
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -639,7 +639,7 @@ export function HrContractsWorkspace({
                     <strong style={{ display: 'block', fontSize: 10 }}>
                       {selectedContract.buyers[0]?.name || 'Buyer 3×4'}
                     </strong>
-                    <div style={{ fontSize: 9, marginTop: 2, color: '#376663' }}>
+                    <div style={{ fontSize: 9, marginTop: 2, color: '#64748B' }}>
                       3×4 Verified Portrait
                     </div>
                   </div>
@@ -768,7 +768,7 @@ export function HrContractsWorkspace({
               ))}
             </ol>
 
-            <div style={{ marginTop: 12, padding: 12, background: '#f8fffe', border: '1px solid #b9e8df', borderRadius: 6, fontSize: 13 }}>
+            <div style={{ marginTop: 12, padding: 12, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 13 }}>
               <strong>Special Notes (ملاحظات اختصاصی):</strong> {selectedContract.notes}
               <div style={{ marginTop: 4 }}>
                 <small>

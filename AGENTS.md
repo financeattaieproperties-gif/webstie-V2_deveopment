@@ -262,15 +262,13 @@ Status colors: `available` `#22C55E`, `pending` `#F59E0B`, `sold` `#EF4444`, `re
 
 Fonts: `font-heading` and `font-body` use **DM Sans** (self-hosted, `public/fonts/dm-sans-*.ttf`); `font-arabic` uses **Tajawal** (self-hosted). The `html[dir="rtl"]` rule in `globals.css` swaps heading/body to Tajawal. Fonts are self-hosted deliberately (the comment notes "works behind GFW" / no Google Fonts dependency).
 
-### ⚠️ Discrepancy to be aware of
+### Dashboard Visual Standard (Option 2: Alabaster Architectural Split-Rail)
 
-The brand accent was **migrated from gold to blue** in `globals.css` (`brand-gold` → `#0145F2`) but older config and the admin panel still use the **original gold** (`#B8944A`):
+All Admin CRM (`/admin`), Staff Workspaces (`/dashboard`, `/management`, `/callcenter`), and **any future dashboards** follow the **Option 2: Alabaster Architectural Split-Rail** light design system (replacing legacy `#B8944A` gold / `#0B3D3B` teal themes):
 
-- `tailwind.config.ts` — still declares `brand-gold: '#B8944A'`, `brand-navy: '#1A2335'`, etc. This file is largely superseded by `@theme` in `globals.css`, but if any code resolves tokens via `tailwind.config.ts` it will get the old gold.
-- `CLAUDE.md` — the "Brand Tokens" table documents the **old** gold values as authoritative.
-- `admin-panel/src/components/Layout.tsx`, `SettingsPage.tsx`, `PropertyForm.tsx`, `ProjectForm.tsx` — inline `S` style objects hardcode `#B8944A` (gold) and `#1A2335` (navy).
-
-When changing brand colors, update **all** of these or confirm which surface you are affecting. The public site is the source of truth (blue); the admin panel is deliberately a darker CRM and uses its own inline styles, not the Tailwind tokens.
+- **Canonical references**: `src/components/ui/dashboard-alabaster-split-rail.tsx`, `shared/alabaster-dashboard.css`, and Section 7 of `DESIGN.md`.
+- **Palette**: `#F7F8FA` canvas, `#FFFFFF` cards/drawers/topbar, `#FBFBFD` 64px primary pillar rail, `#0F172A` active pillar & primary CTA buttons, `#F1F5F9` active nav row fill, `1px solid #E2E8F0` hairline borders, `#64748B` muted metadata, `tabular-nums` on numbers.
+- **Navigation**: Two-tier Split-Rail (`64px` icon pillar rail + `224px` contextual sub-drawer with `"All Modules"` quick list) + `Pillar > Page` breadcrumb topbar + mobile slide-over drawer. Zero emojis in navigation, zero thick left-border active stripes, zero decorative pulsing dots.
 
 Custom CSS utilities in `globals.css` (used widely in `LandingPageContent.tsx` and sections): `.container-custom`, `.section-padding`, `.text-display`, `.text-headline`, `.text-overline`, `.islamic-pattern`, `.islamic-pattern-light`, `.glass`, `.glass-light`, `.link-underline`, `.shimmer`, `.pulse-gold`, `.flash-gold`, `.float-gentle`, `.scroll-bounce`, `.shadow-brand-*`, `.shadow-gold-*`. The file also defines semantic CSS custom properties (`--background`, `--foreground`, `--shadow-*`, `--ease-*`, `--gold-glow-*`, `--dur-*`) and a `prefers-reduced-motion` override.
 
@@ -289,7 +287,7 @@ The `Button` component (`src/components/ui/Button.tsx`) exports the shared `cn()
 - Per-page SEO: wrap page content in `<Helmet>` (from `react-helmet-async`) and set `<title>`, `<meta name="description">`, `<link rel="canonical">`, and OG tags — see `HomePage.tsx` / `PropertiesPage.tsx`.
 - i18n: route user-facing strings through `t('key')` from `react-i18next`; add keys to both `src/i18n/locales/en.json` and `fa.json`. The CSS `html[dir="rtl"]` flip handles RTL automatically once `toggleLanguage()` sets the `dir` attribute.
 - Accessibility: the globals include a `:focus-visible` ring and a `prefers-reduced-motion` block — preserve these when adding animations. Icon-only buttons need `aria-label`s (existing components follow this).
-- Admin panel inline styles: the admin pages use inline `S` style objects (`Layout.tsx`, `SettingsPage.tsx`) rather than Tailwind, and hardcode the gold/navy hex values. Keep that style consistent within the admin app unless migrating it.
+- Dashboard & Admin inline styles: keep inline styles aligned with the Option 2 Alabaster tokens (`#F7F8FA` / `#FFFFFF` / `#0F172A` / `#E2E8F0` / `#F1F5F9`).
 
 ---
 

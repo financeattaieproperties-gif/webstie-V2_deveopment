@@ -2,167 +2,445 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://website.attaieproperties.com/</loc>
-    <lastmod>2026-11-12</lastmod>
+    <loc>https://www.attaieproperties.com/</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/properties</loc>
-    <lastmod>2026-11-12</lastmod>
+    <loc>https://www.attaieproperties.com/properties</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/projects</loc>
-    <lastmod>2026-11-12</lastmod>
+    <loc>https://www.attaieproperties.com/projects</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/careers</loc>
-    <lastmod>2026-11-12</lastmod>
+    <loc>https://www.attaieproperties.com/careers</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/agents</loc>
-    <lastmod>2026-11-12</lastmod>
+    <loc>https://www.attaieproperties.com/agents</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/about</loc>
-    <lastmod>2026-11-12</lastmod>
+    <loc>https://www.attaieproperties.com/about</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/contact</loc>
-    <lastmod>2026-11-12</lastmod>
+    <loc>https://www.attaieproperties.com/contact</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/properties/1</loc>
-    <lastmod>2026-01-15</lastmod>
+    <loc>https://www.attaieproperties.com/properties/4</loc>
+    <lastmod>2026-11-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
-      <image:title>Exclusive Luxury Villa in Wazir Akbar Khan (AP-101)</image:title>
-      <image:caption>Exclusive Luxury Villa in Wazir Akbar Khan in Street 13, Wazir Akbar Khan, Kabul</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec50b77609b7.25384036.jpg</image:loc>
+      <image:title>آپارتمان فروشی پنج اطاقه  نوساخت (AP-1760)</image:title>
+      <image:caption>آپارتمان فروشی پنج اطاقه  نوساخت in کارته چهارم، لب سرک عمومی، کابل</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
-      <image:title>Exclusive Luxury Villa in Wazir Akbar Khan — Gallery</image:title>
-      <image:caption>Street 13, Wazir Akbar Khan, Kabul</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec50e6b466f5.00761923.jpg</image:loc>
+      <image:title>آپارتمان فروشی پنج اطاقه  نوساخت — Gallery</image:title>
+      <image:caption>کارته چهارم، لب سرک عمومی، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec50f8524f21.48039723.jpg</image:loc>
+      <image:title>آپارتمان فروشی پنج اطاقه  نوساخت — Gallery</image:title>
+      <image:caption>کارته چهارم، لب سرک عمومی، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec51100497c2.40208212.jpg</image:loc>
+      <image:title>آپارتمان فروشی پنج اطاقه  نوساخت — Gallery</image:title>
+      <image:caption>کارته چهارم، لب سرک عمومی، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec5128181d06.29364326.jpg</image:loc>
+      <image:title>آپارتمان فروشی پنج اطاقه  نوساخت — Gallery</image:title>
+      <image:caption>کارته چهارم، لب سرک عمومی، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec51414df8d6.90246033.jpg</image:loc>
+      <image:title>آپارتمان فروشی پنج اطاقه  نوساخت — Gallery</image:title>
+      <image:caption>کارته چهارم، لب سرک عمومی، کابل</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/properties/2</loc>
-    <lastmod>2026-02-01</lastmod>
+    <loc>https://www.attaieproperties.com/properties/3</loc>
+    <lastmod>2026-11-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
-      <image:title>Contemporary High-Rise Apartment in Shahr-e-Naw (AP-102)</image:title>
-      <image:caption>Contemporary High-Rise Apartment in Shahr-e-Naw in Ansari Square, Shahr-e-Naw, Kabul</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec4f3b132a93.65202846.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه نو ساخت (AP-1759)</image:title>
+      <image:caption>آپارتمان فروشی چهار اطاقه نو ساخت in شهرنو، کابل – افغانستان</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec4f7a6e6209.68469469.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل – افغانستان</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec4f84b4d701.77046229.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل – افغانستان</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec4f8f4c8c56.49965026.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل – افغانستان</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec4f9b997395.98697663.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل – افغانستان</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec4fab52bf01.71167723.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل – افغانستان</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/properties/3</loc>
-    <lastmod>2026-02-10</lastmod>
+    <loc>https://www.attaieproperties.com/properties/2</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.70</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec34c6076440.91176804.png</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه نو ساخت  VIP (AP-1755)</image:title>
+      <image:caption>آپارتمان فروشی چهار اطاقه نو ساخت  VIP in کارته چهارم جمال مینه، کابل – افغانستان</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec34be63e4a2.58692670.png</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه نو ساخت  VIP — Gallery</image:title>
+      <image:caption>کارته چهارم جمال مینه، کابل – افغانستان</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/properties/1</loc>
+    <lastmod>2026-11-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
-      <image:title>Prime Commercial Plaza Space on Kolola Pushta Main (AP-103)</image:title>
-      <image:caption>Prime Commercial Plaza Space on Kolola Pushta Main in Kolola Pushta Main Boulevard, Kabul</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec30f36d8e83.02055717.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه تخت بام دار نو ساخت (AP-1757)</image:title>
+      <image:caption>آپارتمان فروشی چهار اطاقه تخت بام دار نو ساخت in شهرنو، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec314c610588.66423626.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه تخت بام دار نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec315355dcf1.02865907.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه تخت بام دار نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec315856b830.09125441.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه تخت بام دار نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec315e0958a9.58336108.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه تخت بام دار نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec3162dcba23.48089401.jpg</image:loc>
+      <image:title>آپارتمان فروشی چهار اطاقه تخت بام دار نو ساخت — Gallery</image:title>
+      <image:caption>شهرنو، کابل</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/properties/4</loc>
-    <lastmod>2026-02-15</lastmod>
-    <changefreq>daily</changefreq>
+    <loc>https://www.attaieproperties.com/projects/1</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.85</priority>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
-      <image:title>Classic Family Residence with Private Garden (AP-104)</image:title>
-      <image:caption>Classic Family Residence with Private Garden in Street 5, Karte Se, Kabul</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec23de121af2.11589874.jpg</image:loc>
+      <image:title>KABUL PLAZA 5</image:title>
+      <image:caption>KABUL PLAZA 5 — Taimani, Kabul, Afghanistan</image:caption>
     </image:image>
-  </url>
-  <url>
-    <loc>https://website.attaieproperties.com/properties/5</loc>
-    <lastmod>2026-02-20</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
-      <image:title>Luxury Penthouse with Mountain Panoramas (AP-105)</image:title>
-      <image:caption>Luxury Penthouse with Mountain Panoramas in Block 4, Macrorayan, Kabul</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec245b45d7c1.53341482.png</image:loc>
+      <image:title>KABUL PLAZA 5 Masterplan</image:title>
+      <image:caption>Architectural Masterplan — KABUL PLAZA 5</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/properties/6</loc>
-    <lastmod>2026-03-01</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-    <image:image>
-      <image:loc>https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
-      <image:title>Diplomatic Compound with Enhanced Security (AP-106)</image:title>
-      <image:caption>Diplomatic Compound with Enhanced Security in Sherpur Diplomatic Enclave, Kabul</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://website.attaieproperties.com/careers/1</loc>
+    <loc>https://www.attaieproperties.com/careers/1</loc>
     <lastmod>2026-10-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/careers/2</loc>
+    <loc>https://www.attaieproperties.com/careers/2</loc>
     <lastmod>2026-10-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/careers/3</loc>
+    <loc>https://www.attaieproperties.com/careers/3</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.55</priority>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/agents/1</loc>
-    <lastmod>2026-01-01</lastmod>
+    <loc>https://www.attaieproperties.com/agents/21</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
-      <image:title>Ahmad Attaie — Founder &amp; Managing Director</image:title>
-      <image:caption>Ahmad Attaie at Attaie Properties</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec13c024bab4.69800666.jpg</image:loc>
+      <image:title>Abdul Khaliq BARAKZAI — Sales Agent</image:title>
+      <image:caption>Abdul Khaliq BARAKZAI at Attaie Properties</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/agents/2</loc>
-    <lastmod>2026-01-05</lastmod>
+    <loc>https://www.attaieproperties.com/agents/20</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
-      <image:title>Zahra Karimi — Senior Residential Advisor</image:title>
-      <image:caption>Zahra Karimi at Attaie Properties</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec13541a17e0.74022245.jpg</image:loc>
+      <image:title>Ahmad Masoud NIKZAD — Sales Agent</image:title>
+      <image:caption>Ahmad Masoud NIKZAD at Attaie Properties</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://website.attaieproperties.com/agents/3</loc>
-    <lastmod>2026-01-10</lastmod>
+    <loc>https://www.attaieproperties.com/agents/16</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
     <image:image>
-      <image:loc>https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&amp;fit=crop&amp;w=800&amp;q=80</image:loc>
-      <image:title>Mohammad Ramin — Commercial &amp; Land Specialist</image:title>
-      <image:caption>Mohammad Ramin at Attaie Properties</image:caption>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec0f6a57e7d6.13626019.png</image:loc>
+      <image:title>AttaUllah HADAWAL — Customer Care Officer</image:title>
+      <image:caption>AttaUllah HADAWAL at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/7</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec093ced0c92.62998130.jpg</image:loc>
+      <image:title>Basir SUFIZADA — Sales Team Leader</image:title>
+      <image:caption>Basir SUFIZADA at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/5</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec084cd71e78.50214758.png</image:loc>
+      <image:title>Basir WAHIDI — Branch Manager ( Koche Cafteria )</image:title>
+      <image:caption>Basir WAHIDI at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/18</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec129d74d164.08464529.jpg</image:loc>
+      <image:title>Ekram Ullah MALIK — Editor</image:title>
+      <image:caption>Ekram Ullah MALIK at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/15</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec0d12dc1792.56369535.jpg</image:loc>
+      <image:title>Erfan Malik — MainBranch Admin Assistant</image:title>
+      <image:caption>Erfan Malik at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/12</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec0b702bf551.10161486.jpg</image:loc>
+      <image:title>Faisal ATTAIE — Procurement Officer</image:title>
+      <image:caption>Faisal ATTAIE at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/8</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec09c3d057d2.24444183.jpg</image:loc>
+      <image:title>Fardin Hanifi — Admin Assistant</image:title>
+      <image:caption>Fardin Hanifi at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/22</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec18e9509700.49132589.jpg</image:loc>
+      <image:title>Haris ASEM — Sales Agent</image:title>
+      <image:caption>Haris ASEM at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/23</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec196e1f9e27.21180562.jpg</image:loc>
+      <image:title>Milad Ahmad — Architect Engineer</image:title>
+      <image:caption>Milad Ahmad at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/13</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec0bcf590193.70686556.jpg</image:loc>
+      <image:title>Mohammad Aseel — Sales Agent</image:title>
+      <image:caption>Mohammad Aseel at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/9</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec0a3816ce34.31016723.png</image:loc>
+      <image:title>Mohammad Javed WAHIDI — MainBranch Admin Manager</image:title>
+      <image:caption>Mohammad Javed WAHIDI at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/6</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec08ce585f41.54906943.jpg</image:loc>
+      <image:title>Mohammad Reza Yousufi — Sales Agent</image:title>
+      <image:caption>Mohammad Reza Yousufi at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/3</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aeb2b3aba9a22.51042277.jpg</image:loc>
+      <image:title>Roheen AHMADI — IT Manager</image:title>
+      <image:caption>Roheen AHMADI at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/2</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aeb2adb81d1f7.06780462.png</image:loc>
+      <image:title>Sameer Kakar — Production Manager</image:title>
+      <image:caption>Sameer Kakar at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/19</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec130be22358.24537166.jpg</image:loc>
+      <image:title>Samim Mosa Khail — Graphic Designer</image:title>
+      <image:caption>Samim Mosa Khail at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/11</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec0af223ec44.98836092.jpg</image:loc>
+      <image:title>Samim Yousufi — Editor</image:title>
+      <image:caption>Samim Yousufi at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/10</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec0a982f7ab8.20997836.jpg</image:loc>
+      <image:title>Sayed Azam SADAT — Finance Manager</image:title>
+      <image:caption>Sayed Azam SADAT at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/14</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec0ca14f1f81.08477599.jpg</image:loc>
+      <image:title>Sayed Lemar HASHIMI — Sales Team Leader</image:title>
+      <image:caption>Sayed Lemar HASHIMI at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/4</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec076e19cbe1.81009796.png</image:loc>
+      <image:title>Shabir ATTAIE — Branch Manager ( Karte 4 )</image:title>
+      <image:caption>Shabir ATTAIE at Attaie Properties</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.attaieproperties.com/agents/17</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+    <image:image>
+      <image:loc>https://www.attaieproperties.com/uploads/img_6aec11c6f2cba2.44065804.jpg</image:loc>
+      <image:title>Shaheer AHMADI — Visual &amp; 3d Designer</image:title>
+      <image:caption>Shaheer AHMADI at Attaie Properties</image:caption>
     </image:image>
   </url>
 </urlset>

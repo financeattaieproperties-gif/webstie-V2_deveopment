@@ -48,7 +48,7 @@ function getBaseSiteUrl(): string {
     }
     return cleaned;
   }
-  const envUrl = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '');
+  const envUrl = (import.meta.env?.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '');
   if (envUrl) return envUrl;
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
@@ -79,9 +79,9 @@ export const SEO_CONFIG = {
     );
   },
   get defaultKeywords(): string[] {
-    const raw = getInitialOverrides()?.keywords;
-    if (raw && raw.trim()) {
-      return raw
+    const overrides = getInitialOverrides();
+    if (overrides && overrides.keywords !== undefined && overrides.keywords !== null) {
+      return overrides.keywords
         .split(',')
         .map(k => k.trim())
         .filter(Boolean);

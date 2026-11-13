@@ -19,14 +19,14 @@ const S = {
     gap: '0.5rem',
     fontSize: '0.78rem',
     fontWeight: 700,
-    color: '#1A2335',
+    color: '#0F172A',
     letterSpacing: 0.3,
   } as const,
   dot: {
     width: 8,
     height: 8,
-    borderRadius: '50%',
-    background: '#B8944A',
+    borderRadius: 3,
+    background: '#0F172A',
     display: 'inline-block',
   } as const,
   controls: {
@@ -70,7 +70,7 @@ export default function TitleBar() {
     <div style={S.bar}>
       <div style={S.left}>
         <span style={S.dot} />
-        ATTAIE <span style={{ color: '#B8944A', marginLeft: 2 }}>ADMIN</span>
+        ATTAIE <span style={{ color: '#64748B', marginLeft: 2 }}>ADMIN</span>
       </div>
 
       <div style={S.controls}>

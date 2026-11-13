@@ -537,4 +537,10 @@ export function syncDocumentMetaTags(tags: GeneratedHeadTags): void {
     }
     metaEl.setAttribute('content', tag.content);
   }
+
+  // Remove stale <meta name="keywords"> if all global/page keywords were cleared
+  if (!tags.metaTags.some(t => t.name === 'keywords')) {
+    const staleKeywordsEl = document.head.querySelector<HTMLMetaElement>('meta[name="keywords"]');
+    staleKeywordsEl?.remove();
+  }
 }

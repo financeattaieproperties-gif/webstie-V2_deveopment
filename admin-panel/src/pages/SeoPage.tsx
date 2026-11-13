@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import {
   api,
   DEFAULT_SEO_SETTINGS,
+  type SeoKeywordItem,
+  type SeoKeywordsResponse,
   type SeoSettingsInput,
   type SitemapCrawlReport,
   type SitemapStatusData,
@@ -10,62 +12,67 @@ import ImageUpload from '../components/ImageUpload';
 import SitemapStatusWidget, {
   type SitemapCategoryFilter,
 } from '../components/SitemapStatusWidget';
+import SeoContentManagementPanel from '../components/SeoContentManagementPanel';
+import {
+  getActiveSeoKeywordsString,
+  toggleSeoKeywordRecord,
+} from '../lib/seoKeywords';
 
 const S = {
   page:         { maxWidth: 1020 } as const,
   headerRow:    { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' as const, gap: '1rem', marginBottom: '1.75rem' } as const,
-  title:        { fontSize: '1.5rem', fontWeight: 700, color: '#1A2335', marginBottom: '0.25rem' } as const,
-  sub:          { color: '#6B7280', fontSize: '0.875rem', margin: 0 } as const,
-  grid:         { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem', alignItems: 'start' } as const,
-  card:         { background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,.07)', border: '1px solid #E5E7EB', overflow: 'hidden', marginBottom: '1.5rem' } as const,
-  section:      { padding: '1.5rem 1.75rem' } as const,
-  divider:      { borderTop: '1px solid #F3F4F6' } as const,
-  secHdr:       { fontSize: '0.7rem', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: '1rem' } as const,
-  fieldGroup:   { marginBottom: '1.15rem' } as const,
+  title:        { fontSize: '1.35rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.25rem' } as const,
+  sub:          { color: '#64748B', fontSize: '0.85rem', margin: 0 } as const,
+  grid:         { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.25rem', alignItems: 'start' } as const,
+  card:         { background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', marginBottom: '1.25rem' } as const,
+  section:      { padding: '1.35rem 1.5rem' } as const,
+  divider:      { borderTop: '1px solid #F1F5F9' } as const,
+  secHdr:       { fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: '1rem' } as const,
+  fieldGroup:   { marginBottom: '1.1rem' } as const,
   labelRow:     { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' } as const,
-  label:        { fontSize: '0.8rem', fontWeight: 600, color: '#374151' } as const,
+  label:        { fontSize: '0.8rem', fontWeight: 600, color: '#334155' } as const,
   counter:      (len: number, min: number, max: number): React.CSSProperties => ({
     fontSize: '0.73rem',
     fontWeight: 600,
     color: len >= min && len <= max ? '#059669' : len > max ? '#DC2626' : '#D97706',
   }),
-  input:        { width: '100%', padding: '0.6rem 0.8rem', border: '1.5px solid #D1D5DB', borderRadius: 8, fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const, color: '#111827', background: '#fff' } as const,
-  textarea:     { width: '100%', padding: '0.65rem 0.8rem', border: '1.5px solid #D1D5DB', borderRadius: 8, fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const, minHeight: 92, resize: 'vertical' as const, fontFamily: 'inherit', color: '#111827' } as const,
-  help:         { fontSize: '0.74rem', color: '#6B7280', marginTop: '0.35rem', lineHeight: 1.4 } as const,
+  input:        { width: '100%', padding: '0.58rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.86rem', outline: 'none', boxSizing: 'border-box' as const, color: '#0F172A', background: '#FFFFFF' } as const,
+  textarea:     { width: '100%', padding: '0.6rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.86rem', outline: 'none', boxSizing: 'border-box' as const, minHeight: 92, resize: 'vertical' as const, fontFamily: 'inherit', color: '#0F172A', background: '#FFFFFF' } as const,
+  help:         { fontSize: '0.74rem', color: '#64748B', marginTop: '0.35rem', lineHeight: 1.4 } as const,
   row:          { display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' as const } as const,
-  btnPrimary:   { padding: '0.6rem 1.5rem', background: '#B8944A', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem' } as const,
-  btnNavy:      { padding: '0.6rem 1.25rem', background: '#1A2335', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' } as const,
-  btnSecondary: { padding: '0.6rem 1.25rem', background: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' } as const,
-  alertSuccess: { padding: '0.75rem 1rem', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, marginBottom: '1.25rem' } as const,
-  alertError:   { padding: '0.75rem 1rem', background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, marginBottom: '1.25rem' } as const,
+  btnPrimary:   { padding: '0.55rem 1.25rem', background: '#0F172A', color: '#FFFFFF', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: '0.84rem' } as const,
+  btnNavy:      { padding: '0.55rem 1.15rem', background: '#0F172A', color: '#FFFFFF', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: '0.84rem' } as const,
+  btnSecondary: { padding: '0.55rem 1.1rem', background: '#FFFFFF', color: '#334155', border: '1px solid #E2E8F0', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' } as const,
+  alertSuccess: { padding: '0.75rem 1rem', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, marginBottom: '1.25rem' } as const,
+  alertError:   { padding: '0.75rem 1rem', background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, marginBottom: '1.25rem' } as const,
   tagWrap:      { display: 'flex', flexWrap: 'wrap' as const, gap: '0.35rem', marginTop: '0.5rem' } as const,
-  tag:          { fontSize: '0.72rem', fontWeight: 600, padding: '0.2rem 0.55rem', borderRadius: 999, background: '#FFF8EE', color: '#9A7835', border: '1px solid #F3E3C3' } as const,
-  serpBox:      { background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '1rem 1.15rem' } as const,
-  serpUrl:      { fontSize: '0.78rem', color: '#374151', marginBottom: '0.2rem', wordBreak: 'break-all' as const } as const,
-  serpTitle:    { fontSize: '1.08rem', color: '#1a0dab', fontWeight: 600, marginBottom: '0.25rem', lineHeight: 1.3 } as const,
-  serpDesc:     { fontSize: '0.83rem', color: '#4B5563', lineHeight: 1.45, margin: 0 } as const,
-  socialCard:   { border: '1px solid #E5E7EB', borderRadius: 10, overflow: 'hidden', background: '#fff' } as const,
-  socialImgBox: { height: 180, background: '#1A2335', position: 'relative' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } as const,
-  socialBody:   { padding: '0.85rem 1rem', borderTop: '1px solid #E5E7EB', background: '#F9FAFB' } as const,
-  socialDomain: { fontSize: '0.7rem', color: '#6B7280', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: '0.2rem' } as const,
-  socialTitle:  { fontSize: '0.92rem', fontWeight: 700, color: '#111827', marginBottom: '0.2rem', lineHeight: 1.3 } as const,
-  socialDesc:   { fontSize: '0.78rem', color: '#4B5563', lineHeight: 1.4, margin: 0 } as const,
+  tag:          { fontSize: '0.72rem', fontWeight: 600, padding: '0.2rem 0.55rem', borderRadius: 6, background: '#F1F5F9', color: '#334155', border: '1px solid #E2E8F0' } as const,
+  serpBox:      { background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '1rem 1.15rem' } as const,
+  serpUrl:      { fontSize: '0.78rem', color: '#475569', marginBottom: '0.2rem', wordBreak: 'break-all' as const } as const,
+  serpTitle:    { fontSize: '1.05rem', color: '#1D4ED8', fontWeight: 600, marginBottom: '0.25rem', lineHeight: 1.3 } as const,
+  serpDesc:     { fontSize: '0.83rem', color: '#475569', lineHeight: 1.45, margin: 0 } as const,
+  socialCard:   { border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden', background: '#FFFFFF' } as const,
+  socialImgBox: { height: 180, background: '#F1F5F9', position: 'relative' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } as const,
+  socialBody:   { padding: '0.85rem 1rem', borderTop: '1px solid #E2E8F0', background: '#F8FAFC' } as const,
+  socialDomain: { fontSize: '0.7rem', color: '#64748B', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: '0.2rem' } as const,
+  socialTitle:  { fontSize: '0.92rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.2rem', lineHeight: 1.3 } as const,
+  socialDesc:   { fontSize: '0.78rem', color: '#475569', lineHeight: 1.4, margin: 0 } as const,
   statGrid:     { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' } as const,
   statBox:      (active: boolean): React.CSSProperties => ({
     padding: '0.85rem 1rem',
-    borderRadius: 10,
-    background: active ? '#FFF8EE' : '#F9FAFB',
-    border: active ? '1.5px solid #B8944A' : '1px solid #E5E7EB',
+    borderRadius: 8,
+    background: active ? '#F1F5F9' : '#FFFFFF',
+    border: active ? '1px solid #0F172A' : '1px solid #E2E8F0',
     cursor: 'pointer',
     transition: 'all 0.15s ease',
   }),
-  statLabel:    { fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' as const, letterSpacing: 0.6, marginBottom: '0.25rem' } as const,
-  statValue:    { fontSize: '1.4rem', fontWeight: 800, color: '#1A2335', lineHeight: 1.1 } as const,
-  xmlPre:       { background: '#0F172A', color: '#E2E8F0', padding: '1rem 1.15rem', borderRadius: 10, fontSize: '0.76rem', lineHeight: 1.55, overflowX: 'auto' as const, maxHeight: 320, margin: 0, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' } as const,
-  urlTableWrap: { border: '1px solid #E5E7EB', borderRadius: 10, overflow: 'hidden', maxHeight: 300, overflowY: 'auto' as const } as const,
+  statLabel:    { fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: '0.25rem' } as const,
+  statValue:    { fontSize: '1.35rem', fontWeight: 700, color: '#0F172A', lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' } as const,
+  xmlPre:       { background: '#F8FAFC', color: '#0F172A', border: '1px solid #E2E8F0', padding: '1rem 1.15rem', borderRadius: 8, fontSize: '0.76rem', lineHeight: 1.55, overflowX: 'auto' as const, maxHeight: 320, margin: 0, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' } as const,
+  urlTableWrap: { border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden', maxHeight: 300, overflowY: 'auto' as const } as const,
   urlTable:     { width: '100%', borderCollapse: 'collapse' as const, fontSize: '0.8rem' } as const,
-  th:           { textAlign: 'left' as const, padding: '0.6rem 0.85rem', background: '#F9FAFB', color: '#4B5563', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase' as const, borderBottom: '1px solid #E5E7EB', position: 'sticky' as const, top: 0 } as const,
-  td:           { padding: '0.55rem 0.85rem', borderBottom: '1px solid #F3F4F6', color: '#1F2937' } as const,
+  th:           { textAlign: 'left' as const, padding: '0.6rem 0.85rem', background: '#F8FAFC', color: '#64748B', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase' as const, borderBottom: '1px solid #E2E8F0', position: 'sticky' as const, top: 0 } as const,
+  td:           { padding: '0.55rem 0.85rem', borderBottom: '1px solid #F1F5F9', color: '#0F172A', fontVariantNumeric: 'tabular-nums' } as const,
 };
 
 export default function SeoPage() {
@@ -84,7 +91,11 @@ export default function SeoPage() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [loadingKeywords, setLoadingKeywords] = useState(true);
+  const [keywordItems, setKeywordItems] = useState<SeoKeywordItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [syncingKeywords, setSyncingKeywords] = useState(false);
+  const [keywordSyncError, setKeywordSyncError] = useState('');
   const [savedMsg, setSavedMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -107,16 +118,28 @@ export default function SeoPage() {
     let active = true;
     Promise.all([
       api.getSeoSettings(),
+      api.getSeoKeywords(),
       api.getSitemapStatus().catch(() => null),
     ])
-      .then(([data, sitemapData]) => {
+      .then(([data, keywordsData, sitemapData]) => {
         if (!active) return;
+        const resolvedKeywords =
+          keywordsData && Array.isArray(keywordsData.keywords)
+            ? keywordsData.active_keywords
+            : (data.keywords !== undefined && data.keywords !== null
+                ? data.keywords
+                : (DEFAULT_SEO_SETTINGS.keywords ?? ''));
+
+        if (keywordsData && Array.isArray(keywordsData.keywords)) {
+          setKeywordItems(keywordsData.keywords);
+        }
+
         setForm({
           site_name: data.site_name || DEFAULT_SEO_SETTINGS.site_name,
           default_title: data.default_title || DEFAULT_SEO_SETTINGS.default_title,
           title_template: data.title_template || DEFAULT_SEO_SETTINGS.title_template,
           default_description: data.default_description || DEFAULT_SEO_SETTINGS.default_description,
-          keywords: data.keywords ?? DEFAULT_SEO_SETTINGS.keywords,
+          keywords: resolvedKeywords,
           og_image: data.og_image || DEFAULT_SEO_SETTINGS.og_image,
           twitter_image: data.twitter_image ?? null,
           twitter_card: data.twitter_card || 'summary_large_image',
@@ -133,7 +156,10 @@ export default function SeoPage() {
         setErrorMsg(err instanceof Error ? err.message : 'Failed to load SEO settings');
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setLoadingKeywords(false);
+        }
       });
     return () => {
       active = false;
@@ -206,6 +232,104 @@ export default function SeoPage() {
     }
   };
 
+  const applyKeywordsResponse = useCallback((resp: SeoKeywordsResponse) => {
+    setKeywordItems(resp.keywords);
+    setForm(prev => ({ ...prev, keywords: resp.active_keywords }));
+  }, []);
+
+  const handleToggleKeyword = useCallback(async (id: number, enabled: boolean) => {
+    setKeywordSyncError('');
+    setSyncingKeywords(true);
+    const previousItems = keywordItems;
+    const optimistic = toggleSeoKeywordRecord(keywordItems, id, enabled);
+    setKeywordItems(optimistic);
+    setForm(prev => ({ ...prev, keywords: getActiveSeoKeywordsString(optimistic) }));
+    try {
+      const resp = await api.toggleSeoKeyword(id, enabled);
+      applyKeywordsResponse(resp);
+    } catch (err) {
+      setKeywordItems(previousItems);
+      setForm(prev => ({ ...prev, keywords: getActiveSeoKeywordsString(previousItems) }));
+      setKeywordSyncError(
+        err instanceof Error ? err.message : 'Failed to toggle SEO keyword',
+      );
+    } finally {
+      setSyncingKeywords(false);
+    }
+  }, [keywordItems, applyKeywordsResponse]);
+
+  const handleToggleAllKeywords = useCallback(async (enabled: boolean) => {
+    setKeywordSyncError('');
+    setSyncingKeywords(true);
+    const previousItems = keywordItems;
+    const optimistic = keywordItems.map(item => ({ ...item, enabled }));
+    setKeywordItems(optimistic);
+    setForm(prev => ({ ...prev, keywords: getActiveSeoKeywordsString(optimistic) }));
+    try {
+      const resp = await api.toggleAllSeoKeywords(enabled);
+      applyKeywordsResponse(resp);
+    } catch (err) {
+      setKeywordItems(previousItems);
+      setForm(prev => ({ ...prev, keywords: getActiveSeoKeywordsString(previousItems) }));
+      setKeywordSyncError(
+        err instanceof Error ? err.message : 'Failed to update all SEO keywords',
+      );
+    } finally {
+      setSyncingKeywords(false);
+    }
+  }, [keywordItems, applyKeywordsResponse]);
+
+  const handleAddKeyword = useCallback(async (keyword: string) => {
+    setKeywordSyncError('');
+    setSyncingKeywords(true);
+    try {
+      const resp = await api.addSeoKeyword(keyword, true);
+      applyKeywordsResponse(resp);
+    } catch (err) {
+      setKeywordSyncError(
+        err instanceof Error ? err.message : 'Failed to add SEO keyword',
+      );
+    } finally {
+      setSyncingKeywords(false);
+    }
+  }, [applyKeywordsResponse]);
+
+  const handleDeleteKeyword = useCallback(async (id: number) => {
+    setKeywordSyncError('');
+    setSyncingKeywords(true);
+    const previousItems = keywordItems;
+    const optimistic = keywordItems.filter(item => item.id !== id);
+    setKeywordItems(optimistic);
+    setForm(prev => ({ ...prev, keywords: getActiveSeoKeywordsString(optimistic) }));
+    try {
+      const resp = await api.deleteSeoKeyword(id);
+      applyKeywordsResponse(resp);
+    } catch (err) {
+      setKeywordItems(previousItems);
+      setForm(prev => ({ ...prev, keywords: getActiveSeoKeywordsString(previousItems) }));
+      setKeywordSyncError(
+        err instanceof Error ? err.message : 'Failed to remove SEO keyword',
+      );
+    } finally {
+      setSyncingKeywords(false);
+    }
+  }, [keywordItems, applyKeywordsResponse]);
+
+  const handleRestoreDefaultKeywords = useCallback(async () => {
+    setKeywordSyncError('');
+    setSyncingKeywords(true);
+    try {
+      const resp = await api.restoreDefaultSeoKeywords();
+      applyKeywordsResponse(resp);
+    } catch (err) {
+      setKeywordSyncError(
+        err instanceof Error ? err.message : 'Failed to restore default SEO keywords',
+      );
+    } finally {
+      setSyncingKeywords(false);
+    }
+  }, [applyKeywordsResponse]);
+
   const handleResetDefaults = () => {
     setForm({
       site_name: DEFAULT_SEO_SETTINGS.site_name,
@@ -220,12 +344,8 @@ export default function SeoPage() {
       canonical_base_url: DEFAULT_SEO_SETTINGS.canonical_base_url,
       robots_index: DEFAULT_SEO_SETTINGS.robots_index,
     });
+    void handleRestoreDefaultKeywords();
   };
-
-  const parsedKeywords = (form.keywords || '')
-    .split(',')
-    .map(k => k.trim())
-    .filter(Boolean);
 
   const previewSocialImage = form.og_image || '/logo.png';
   const cleanDomain = (form.canonical_base_url || 'https://www.attaieproperties.com')
@@ -267,6 +387,20 @@ export default function SeoPage() {
 
       {savedMsg && <div style={S.alertSuccess}>✓ {savedMsg}</div>}
       {errorMsg && <div style={S.alertError}>✕ {errorMsg}</div>}
+
+      {/* SEO Content Management Panel (/api/admin/seo-keywords.php + Toggle On/Off) */}
+      <SeoContentManagementPanel
+        items={keywordItems}
+        onToggleKeyword={handleToggleKeyword}
+        onToggleAll={handleToggleAllKeywords}
+        onAddKeyword={handleAddKeyword}
+        onDeleteKeyword={id => handleDeleteKeyword(id)}
+        onRestoreDefaults={handleRestoreDefaultKeywords}
+        defaultKeywordsValue={DEFAULT_SEO_SETTINGS.keywords ?? ''}
+        loading={loadingKeywords}
+        syncing={syncingKeywords}
+        syncError={keywordSyncError}
+      />
 
       {/* Dashboard Widget fetching and displaying /sitemap-status.json */}
       <SitemapStatusWidget
@@ -318,7 +452,7 @@ export default function SeoPage() {
                 onClick={handleCrawlSitemap}
                 disabled={crawlingSitemap}
               >
-                {crawlingSitemap ? 'Crawling Data…' : '↻ Crawl & Regenerate Sitemap.xml'}
+                {crawlingSitemap ? 'Crawling Data…' : 'Crawl & Regenerate Sitemap.xml'}
               </button>
             </div>
           </div>
@@ -480,7 +614,7 @@ export default function SeoPage() {
                 <p style={S.help}>Use <code>%s</code> as the placeholder for sub-page titles (e.g., <code>%s | Attaie Properties</code>).</p>
               </div>
 
-              <div style={S.fieldGroup}>
+              <div style={{ ...S.fieldGroup, marginBottom: 0 }}>
                 <div style={S.labelRow}>
                   <label style={S.label}>Default Meta Description</label>
                   <span style={S.counter(form.default_description.length, 110, 165)}>
@@ -495,26 +629,6 @@ export default function SeoPage() {
                   required
                 />
                 <p style={S.help}>Injected into <code>&lt;meta name="description"&gt;</code>, <code>og:description</code>, and <code>twitter:description</code> (recommended: 120–160 characters).</p>
-              </div>
-
-              <div style={{ ...S.fieldGroup, marginBottom: 0 }}>
-                <div style={S.labelRow}>
-                  <label style={S.label}>Global Meta Keywords (comma-separated)</label>
-                  <span style={{ fontSize: '0.73rem', color: '#6B7280' }}>{parsedKeywords.length} keywords</span>
-                </div>
-                <textarea
-                  style={{ ...S.textarea, minHeight: 68 }}
-                  value={form.keywords ?? ''}
-                  onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))}
-                  placeholder="Attaie Properties, Kabul real estate, properties for sale in Kabul..."
-                />
-                {parsedKeywords.length > 0 && (
-                  <div style={S.tagWrap}>
-                    {parsedKeywords.slice(0, 12).map(kw => (
-                      <span key={kw} style={S.tag}>{kw}</span>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -550,7 +664,7 @@ export default function SeoPage() {
                   type="checkbox"
                   checked={form.robots_index}
                   onChange={e => setForm(f => ({ ...f, robots_index: e.target.checked }))}
-                  style={{ width: 18, height: 18, accentColor: '#B8944A', cursor: 'pointer' }}
+                  style={{ width: 18, height: 18, accentColor: '#0F172A', cursor: 'pointer' }}
                 />
               </div>
             </div>

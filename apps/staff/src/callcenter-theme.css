@@ -1,15 +1,16 @@
-/* Shared UI/UX Pro Max Teal Palette across all Staff Dashboards (Call Center, Management, Sales, HR, Finance, Marketing, Engineering) */
+/* Option 2 Alabaster Architectural Split-Rail Palette across all Staff Dashboards (Call Center, Management, Sales, HR, Finance, Marketing, Engineering) */
 html[data-staff-role] {
-  --primary: #0B3D3B;
-  --accent: #14B8A6;
-  --secondary: #99F6E4;
-  --surface: #E6FFFB;
-  --background: #F8FFFE;
-  --navy: var(--primary);
-  --gold: var(--primary);
-  --gold-light: var(--secondary);
-  --muted: #376663;
-  --line: #b9e8df;
+  --primary: #0F172A;
+  --accent: #334155;
+  --secondary: #F1F5F9;
+  --surface: #FFFFFF;
+  --rail-bg: #FBFBFD;
+  --background: #F7F8FA;
+  --navy: #0F172A;
+  --gold: #0F172A;
+  --gold-light: #F1F5F9;
+  --muted: #64748B;
+  --line: #E2E8F0;
   color: var(--primary);
   background: var(--background);
 }
@@ -20,13 +21,31 @@ html[data-staff-role]:not([dir="rtl"]) {
 html[data-staff-role][dir="rtl"] {
   font-family: StaffArabic, StaffSans, system-ui, sans-serif;
 }
-html[data-staff-role] :is(.sidebar, .topbar, .workspace-tag, .help-card, .login-card, .modal, .modal-heading, .detail dl, th) {
+html[data-staff-role] :is(.sidebar, .topbar, .workspace-tag, .help-card, .login-card, .modal, .modal-heading, .panel, .stat-card, .customer-card, .task-row, .task-footer) {
   background: var(--surface);
   border-color: var(--line);
 }
-html[data-staff-role] :is(.account, .panel, .stat-card, .customer-card, .task-row, .task-footer, .login-screen, .field input, .field textarea, .field select, .button.secondary, .heading-actions > .icon-button) {
+html[data-staff-role] :is(.pillar-rail) {
+  background: var(--rail-bg);
+  border-color: var(--line);
+}
+html[data-staff-role] :is(.sub-drawer) {
+  background: var(--surface);
+  border-color: var(--line);
+}
+html[data-staff-role] :is(.detail dl, th) {
+  background: #F8FAFC;
+  border-color: var(--line);
+}
+html[data-staff-role] :is(.account, .login-screen, .field input, .field textarea, .field select, .button.secondary, .heading-actions > .icon-button) {
   background: var(--background);
   border-color: var(--line);
+}
+html[data-staff-role] .login-screen {
+  background: var(--background);
+}
+html[data-staff-role] :is(.account) {
+  background: var(--surface);
 }
 html[data-staff-role] :is(.avatar, .avatar.gold, .workspace-icon, .login-icon, .stat-icon.gold, .stat-icon.blue, .stat-icon.purple, .empty > span, .customer-footer strong) {
   background: var(--secondary);
@@ -36,38 +55,42 @@ html[data-staff-role] :is(.nav-item.selected, .filter-bar button.active) {
   background: var(--secondary);
   color: var(--primary);
 }
-html[data-staff-role] :is(.nav-item:hover, .button.secondary:hover, .icon-button:hover, .task-mini:hover, .task-footer:hover, .field input:read-only) {
-  background: var(--surface);
+html[data-staff-role] .pillar-btn.active {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+html[data-staff-role] :is(.nav-item:hover, .button.secondary:hover, .icon-button:hover, .task-mini:hover, .task-footer:hover, .field input:read-only, .quick-jump-item:hover) {
+  background: #F8FAFC;
   color: var(--primary);
 }
 html[data-staff-role] .button:not(.secondary) {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--background);
+  color: #FFFFFF;
 }
 html[data-staff-role] .button:not(.secondary):hover {
-  background: #105650;
-  border-color: #105650;
+  background: #1E293B;
+  border-color: #1E293B;
 }
 html[data-staff-role] :is(button, a, input, textarea, select):focus-visible {
   outline-color: var(--primary);
-  box-shadow: 0 0 0 4px var(--secondary);
+  box-shadow: 0 0 0 3px #E2E8F0;
 }
-html[data-staff-role] :is(.stat-card:hover, .customer-card:hover) {
-  border-color: var(--accent);
-  box-shadow: 0 3px 14px #0b3d3b0d;
+html[data-staff-role] .customer-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
-html[data-staff-role] :is(.brand > span, .workspace-tag small, .nav-caption, .nav-item, .help-card, .help-card p, .help-card small, .breadcrumbs, .breadcrumbs strong, .timezone, .eyebrow, .icon-button, .stat-top, .stat-note, .panel-heading p, .panel-heading > svg, th, td, td strong, .task-mini strong, .task-mini small, .task-footer, .page-footer, .list-note, .filter-bar button, .empty, .empty h3, .pagination, .pagination-note, .customer-top, .customer-card .phone, .customer-requirements small, .customer-requirements p, .customer-footer, .task-row-title strong, .task-row-title small, .profile-card p, .field > label, .form-description, .form-note, .detail p, .detail dt, .detail dd, .timeline small, .timeline p, .login-brand > span, .login-card > p, .login-private, .login-screen footer, .muted) {
+html[data-staff-role] :is(.brand > span, .workspace-tag small, .nav-caption, .nav-item, .help-card, .help-card p, .help-card small, .breadcrumbs, .timezone, .eyebrow, .icon-button, .stat-top, .stat-note, .panel-heading p, .panel-heading > svg, th, td, .task-mini small, .task-footer, .page-footer, .list-note, .filter-bar button, .empty, .empty h3, .pagination, .pagination-note, .customer-top, .customer-card .phone, .customer-requirements small, .customer-requirements p, .customer-footer, .task-row-title small, .profile-card p, .field > label, .form-description, .form-note, .detail p, .detail dt, .detail dd, .timeline small, .timeline p, .login-brand > span, .login-card > p, .login-private, .login-screen footer, .muted) {
   color: var(--muted);
 }
-html[data-staff-role] :is(.eyebrow, .breadcrumbs strong, td strong, .task-mini strong, .text-button, .preview-link, .customer-footer strong, .task-row-title strong, .field > label) {
+html[data-staff-role] :is(.eyebrow, .breadcrumbs strong, td strong, .task-mini strong, .text-button, .preview-link, .customer-footer strong, .task-row-title strong, .field > label, .stat-number, .panel-heading h2, .page-heading h1) {
   color: var(--primary);
 }
 html[data-staff-role] :is(td small, .serial) {
   color: var(--muted) !important;
 }
 html[data-staff-role] :is(.field input, .field textarea)::placeholder {
-  color: var(--muted);
+  color: #94A3B8;
 }
 html[data-staff-role] :is(th, td, .customer-footer) {
   border-color: var(--line);
@@ -75,34 +98,32 @@ html[data-staff-role] :is(th, td, .customer-footer) {
 html[data-staff-role] :is(.integration-note, .preview-banner) {
   background: var(--surface);
   border-color: var(--line);
+  color: var(--muted);
+}
+html[data-staff-role] :is(.integration-note strong, .preview-banner strong) {
   color: var(--primary);
 }
-html[data-staff-role] .integration-note strong {
-  color: var(--primary);
-}
-html[data-staff-role] :is(.status-dot, .timeline-dot) {
-  background: var(--accent);
-}
-html[data-staff-role] .brand > span::before {
-  background: var(--accent);
+html[data-staff-role] .timeline-dot {
+  background: var(--primary);
 }
 html[data-staff-role] .timeline > div {
   border-color: var(--line);
 }
 html[data-staff-role] :is(.badge.due, .badge.active, .badge.in_progress, .badge.completed, .badge.closed, .badge.issued, .badge.posted, .badge.approved, .badge.Published, .badge.Approved) {
-  background: var(--secondary);
-  color: var(--primary);
+  background: #F1F5F9;
+  color: #0F172A;
+  border: 1px solid #E2E8F0;
 }
 html[data-staff-role] :is(.badge.upcoming, .badge.normal, .badge.low, .badge.todo, .badge.draft, .badge.high, .badge.pending, .badge.submitted, .badge.Submitted) {
-  background: var(--surface);
-  color: var(--primary);
+  background: #FFFFFF;
+  color: #475569;
+  border: 1px solid #E2E8F0;
 }
-/* Keep warning/error colors distinct so urgency is not lost in the brand palette. */
 html[data-staff-role] .modal::backdrop {
-  background: #0b3d3b66;
+  background: rgba(15, 23, 42, 0.35);
 }
 html[data-staff-role] .spinner {
-  border-color: var(--secondary);
+  border-color: #E2E8F0;
   border-top-color: var(--primary);
 }
 /* Keep visually hidden table headings inside the horizontal scroll container. */
@@ -128,7 +149,7 @@ html[data-staff-role] .table-scroll :is(th, td) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--background, #F8FFFE);
+  background: var(--background, #F7F8FA);
   padding: 24px;
 }
 
@@ -146,7 +167,7 @@ html[data-staff-role] .table-scroll :is(th, td) {
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--background);
+  background: var(--surface);
   color: var(--muted);
   font-size: 13px;
   font-weight: 600;
@@ -155,7 +176,7 @@ html[data-staff-role] .table-scroll :is(th, td) {
 }
 .wizard-step.active {
   background: var(--secondary);
-  border-color: var(--accent);
+  border-color: var(--primary);
   color: var(--primary);
 }
 .wizard-step-num {
@@ -165,14 +186,15 @@ html[data-staff-role] .table-scroll :is(th, td) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface);
+  background: #F8FAFC;
   color: var(--primary);
   font-weight: 700;
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 .wizard-step.active .wizard-step-num {
   background: var(--primary);
-  color: var(--background);
+  color: #FFFFFF;
 }
 
 /* Role Switcher Bar for Preview Testing */
@@ -182,10 +204,11 @@ html[data-staff-role] .table-scroll :is(th, td) {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 18px;
+  padding: 10px 24px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 12px;
+  color: var(--muted);
 }
 .role-switcher-controls {
   display: flex;
@@ -197,23 +220,23 @@ html[data-staff-role] .table-scroll :is(th, td) {
   min-height: 36px;
   padding: 6px 10px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 7px;
   background: var(--background);
   color: var(--primary);
   font-weight: 600;
 }
 
-/* Two-Page A4 Bilingual Contract Print Sheet */
+/* Two-Page A4 Bilingual Contract Print Sheet (Crisp High-Contrast Slate/Black for print clarity) */
 .contract-print-sheet {
   background: #ffffff;
-  color: #0b3d3b;
-  border: 2px solid #0b3d3b;
+  color: #0F172A;
+  border: 2px solid #0F172A;
   border-radius: 8px;
   padding: 28px;
   margin-top: 16px;
 }
 .contract-page {
-  border: 1px solid #b9e8df;
+  border: 1px solid #CBD5E1;
   padding: 24px;
   margin-bottom: 24px;
   background: #ffffff;
@@ -223,20 +246,20 @@ html[data-staff-role] .table-scroll :is(th, td) {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
-  border-bottom: 2px solid #0b3d3b;
+  border-bottom: 2px solid #0F172A;
   padding-bottom: 16px;
   margin-bottom: 16px;
 }
 .contract-photo-box {
   width: 96px;
   height: 124px;
-  border: 1.5px solid #0b3d3b;
+  border: 1.5px solid #0F172A;
   border-radius: 4px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fffe;
+  background: #F8FAFC;
   font-size: 11px;
   text-align: center;
 }
@@ -251,15 +274,15 @@ html[data-staff-role] .table-scroll :is(th, td) {
   gap: 16px;
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px dashed #376663;
+  border-top: 1px dashed #64748B;
 }
 .contract-sig-box {
   min-height: 76px;
-  border: 1px solid #b9e8df;
+  border: 1px solid #CBD5E1;
   border-radius: 6px;
   padding: 10px;
   font-size: 12px;
-  background: #f8fffe;
+  background: #F8FAFC;
 }
 @media print {
   .sidebar, .topbar, .role-switcher-bar, .no-print {

@@ -17,6 +17,7 @@ const AgentsPage = lazy(() => import('./pages/AgentsPage'));
 const AgentDetailPage = lazy(() => import('./pages/AgentDetailPage'));
 const CareersPage = lazy(() => import('./pages/CareersPage'));
 const CareerDetailPage = lazy(() => import('./pages/CareerDetailPage'));
+const UnifiedDashboardSelectorPage = lazy(() => import('./pages/UnifiedDashboardSelectorPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 import {
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
   { path: '/agents/:id', element: withSuspense(<AgentDetailPage />, <DetailPageSkeleton />) },
   { path: '/careers', element: withSuspense(<CareersPage />) },
   { path: '/careers/:id', element: withSuspense(<CareerDetailPage />, <DetailPageSkeleton />) },
+  { path: '/unified-dashboard', element: withSuspense(<UnifiedDashboardSelectorPage />) },
   { path: '*', element: withSuspense(<NotFoundPage />) },
 ]);
 

@@ -90,5 +90,5 @@ const walk=dir=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirector
 const manifest=walk(output).map(file=>({path:path.relative(output,file).replaceAll('\\','/'),bytes:fs.statSync(file).size,sha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}));
 write('manifest.json',JSON.stringify(manifest,null,2));
 run(process.execPath,['tests/staff/packaging/v2-kit.mjs',output]);
-run('python',['scripts/zip-v2-release.py',output]);
+run(process.platform==='win32'?'python':'python3',['scripts/zip-v2-release.py',output]);
 console.log('Prepared V2 testing kit: '+output+'\nNo server upload, live import, or production change occurred.');

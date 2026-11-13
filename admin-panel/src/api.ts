@@ -238,6 +238,137 @@ export const api = {
     }
   },
 
+  getSeoKeywords: async (): Promise<SeoKeywordsResponse> => {
+    const syncLocal = (resp: SeoKeywordsResponse) => {
+      try {
+        localStorage.setItem('attaie_seo_keywords_v1', JSON.stringify(resp.keywords));
+        const rawSettings = localStorage.getItem('attaie_seo_settings_v1');
+        const settingsObj = rawSettings
+          ? (JSON.parse(rawSettings) as SeoSettings)
+          : { ...DEFAULT_SEO_SETTINGS };
+        localStorage.setItem(
+          'attaie_seo_settings_v1',
+          JSON.stringify({ ...settingsObj, keywords: resp.active_keywords }),
+        );
+      } catch {
+        // ignore storage quota errors
+      }
+      return resp;
+    };
+
+    try {
+      const data = await request<SeoKeywordsResponse>('/admin/seo-keywords.php');
+      if (data && Array.isArray(data.keywords)) {
+        return syncLocal(data);
+      }
+    } catch {
+      // Fallback to local cache if PHP backend is unavailable
+    }
+
+    try {
+      const cached = localStorage.getItem('attaie_seo_keywords_v1');
+      if (cached) {
+        const items = JSON.parse(cached) as SeoKeywordItem[];
+        const active_keywords = items
+          .filter(i => i.enabled)
+          .map(i => i.keyword)
+          .join(', ');
+        return { keywords: items, active_keywords };
+      }
+    } catch {
+      // ignore
+    }
+
+    const fallbackItems: SeoKeywordItem[] = (DEFAULT_SEO_SETTINGS.keywords || '')
+      .split(',')
+      .map(k => k.trim())
+      .filter(Boolean)
+      .map((keyword, idx) => ({ id: idx + 1, keyword, enabled: true }));
+    return syncLocal({
+      keywords: fallbackItems,
+      active_keywords: fallbackItems.map(i => i.keyword).join(', '),
+    });
+  },
+
+  addSeoKeyword: async (keyword: string, enabled = true): Promise<SeoKeywordsResponse> => {
+    const resp = await request<SeoKeywordsResponse>('/admin/seo-keywords.php', {
+      method: 'POST',
+      body: JSON.stringify({ keyword, enabled }),
+    });
+    try {
+      localStorage.setItem('attaie_seo_keywords_v1', JSON.stringify(resp.keywords));
+      const rawSettings = localStorage.getItem('attaie_seo_settings_v1');
+      const settingsObj = rawSettings ? (JSON.parse(rawSettings) as SeoSettings) : { ...DEFAULT_SEO_SETTINGS };
+      localStorage.setItem('attaie_seo_settings_v1', JSON.stringify({ ...settingsObj, keywords: resp.active_keywords }));
+    } catch {
+      // ignore
+    }
+    return resp;
+  },
+
+  toggleSeoKeyword: async (id: number, enabled: boolean): Promise<SeoKeywordsResponse> => {
+    const resp = await request<SeoKeywordsResponse>('/admin/seo-keywords.php', {
+      method: 'PUT',
+      body: JSON.stringify({ id, enabled }),
+    });
+    try {
+      localStorage.setItem('attaie_seo_keywords_v1', JSON.stringify(resp.keywords));
+      const rawSettings = localStorage.getItem('attaie_seo_settings_v1');
+      const settingsObj = rawSettings ? (JSON.parse(rawSettings) as SeoSettings) : { ...DEFAULT_SEO_SETTINGS };
+      localStorage.setItem('attaie_seo_settings_v1', JSON.stringify({ ...settingsObj, keywords: resp.active_keywords }));
+    } catch {
+      // ignore
+    }
+    return resp;
+  },
+
+  toggleAllSeoKeywords: async (enabled: boolean): Promise<SeoKeywordsResponse> => {
+    const resp = await request<SeoKeywordsResponse>('/admin/seo-keywords.php', {
+      method: 'PUT',
+      body: JSON.stringify({ action: 'set_all', enabled }),
+    });
+    try {
+      localStorage.setItem('attaie_seo_keywords_v1', JSON.stringify(resp.keywords));
+      const rawSettings = localStorage.getItem('attaie_seo_settings_v1');
+      const settingsObj = rawSettings ? (JSON.parse(rawSettings) as SeoSettings) : { ...DEFAULT_SEO_SETTINGS };
+      localStorage.setItem('attaie_seo_settings_v1', JSON.stringify({ ...settingsObj, keywords: resp.active_keywords }));
+    } catch {
+      // ignore
+    }
+    return resp;
+  },
+
+  deleteSeoKeyword: async (id: number): Promise<SeoKeywordsResponse> => {
+    const resp = await request<SeoKeywordsResponse>(`/admin/seo-keywords.php?id=${id}`, {
+      method: 'DELETE',
+    });
+    try {
+      localStorage.setItem('attaie_seo_keywords_v1', JSON.stringify(resp.keywords));
+      const rawSettings = localStorage.getItem('attaie_seo_settings_v1');
+      const settingsObj = rawSettings ? (JSON.parse(rawSettings) as SeoSettings) : { ...DEFAULT_SEO_SETTINGS };
+      localStorage.setItem('attaie_seo_settings_v1', JSON.stringify({ ...settingsObj, keywords: resp.active_keywords }));
+    } catch {
+      // ignore
+    }
+    return resp;
+  },
+
+  restoreDefaultSeoKeywords: async (): Promise<SeoKeywordsResponse> => {
+    const resp = await request<SeoKeywordsResponse>('/admin/seo-keywords.php', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'restore_defaults' }),
+    });
+    try {
+      localStorage.setItem('attaie_seo_keywords_v1', JSON.stringify(resp.keywords));
+      const rawSettings = localStorage.getItem('attaie_seo_settings_v1');
+      const settingsObj = rawSettings ? (JSON.parse(rawSettings) as SeoSettings) : { ...DEFAULT_SEO_SETTINGS };
+      localStorage.setItem('attaie_seo_settings_v1', JSON.stringify({ ...settingsObj, keywords: resp.active_keywords }));
+    } catch {
+      // ignore
+    }
+    return resp;
+  },
+
   fetchSitemapStatusJson: async (): Promise<SitemapStatusData> => {
     const baseRoot = BASE.replace(/\/api\/?$/, '');
     const candidates = [
@@ -913,6 +1044,21 @@ export interface SeoSettings {
   canonical_base_url: string;
   robots_index: boolean;
   updated_at?: string | null;
+}
+
+export interface SeoKeywordItem {
+  id: number;
+  keyword: string;
+  enabled: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface SeoKeywordsResponse {
+  success?: boolean;
+  added?: number;
+  keywords: SeoKeywordItem[];
+  active_keywords: string;
 }
 
 export type SeoSettingsInput = Omit<SeoSettings, 'id' | 'updated_at'>;

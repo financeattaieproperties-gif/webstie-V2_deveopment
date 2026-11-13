@@ -171,9 +171,9 @@ export default function ImageUpload({ value, onChange, purpose }: Props) {
   };
 
   const dropZone: React.CSSProperties = {
-    border: `2px dashed ${dragging ? '#B8944A' : value ? '#10b981' : '#D1D5DB'}`,
+    border: `2px dashed ${dragging ? '#0F172A' : value ? '#10b981' : '#CBD5E1'}`,
     borderRadius: 10,
-    background: dragging ? '#FFFBEB' : value ? '#F0FDF4' : '#FAFAFA',
+    background: dragging ? '#F1F5F9' : value ? '#F0FDF4' : '#F8FAFC',
     transition: 'all .2s',
     overflow: 'hidden',
   };
@@ -212,8 +212,8 @@ export default function ImageUpload({ value, onChange, purpose }: Props) {
 
       {/* Progress bar */}
       {uploading && (
-        <div style={{ height: 4, background: '#E5E7EB' }}>
-          <div style={{ height: '100%', background: '#B8944A', width: `${progress}%`, transition: 'width .3s' }} />
+        <div style={{ height: 4, background: '#E2E8F0' }}>
+          <div style={{ height: '100%', background: '#0F172A', width: `${progress}%`, transition: 'width .3s' }} />
         </div>
       )}
 
@@ -238,12 +238,12 @@ export default function ImageUpload({ value, onChange, purpose }: Props) {
               type="button"
               onClick={isElectron ? openNativeDialog : () => inputRef.current?.click()}
               style={{
-                padding: '0.5rem 1.4rem', background: '#1A2335', color: '#fff',
+                padding: '0.5rem 1.4rem', background: '#0F172A', color: '#FFFFFF',
                 border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
               }}
             >
               {isElectron
-                ? (value ? '📁 Replace Image' : '📁 Browse Files')
+                ? (value ? 'Replace Image' : 'Browse Files')
                 : (value ? 'Choose Different Image' : 'Browse Files')}
             </button>
             <p style={{ color: '#9CA3AF', fontSize: '0.75rem', marginTop: '0.5rem' }}>

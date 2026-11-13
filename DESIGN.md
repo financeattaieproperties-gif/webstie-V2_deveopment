@@ -121,3 +121,40 @@
    - 2-column asymmetric split: `Explore by Category` 4-card grid (`Apartments`, `Houses`, `Commercial`, `Projects`) paired beside a `Featured Project` showcase banner card (`rounded-2xl`, architectural photography, project title, and `View Apartments →` CTA).
 4. **Property Cards (`PropertyCard`)**:
    - `rounded-2xl` white card with `16:10` image container, top-left listing status badge (`For Sale` in `#0145F2` / `#020E3A` or `For Rent` in `#22C55E`), top-right favorite/quick-action button, price in `#0145F2`, title in `#020E3A`, location with pin icon, and bed/bath/area spec pills.
+
+---
+
+## 7. Unified Dashboard Standard — Option 2: Alabaster Architectural Split-Rail
+
+All internal management consoles, CRM panels, and **any future dashboards** must use the **Alabaster Architectural Split-Rail (Option 2)** light design system. Reference implementations:
+- React / Tailwind SPA blueprint: `src/components/ui/dashboard-alabaster-split-rail.tsx`
+- Framework-agnostic CSS tokens: `shared/alabaster-dashboard.css`
+- Applied surfaces: Website Admin CRM (`/admin`), Internal Staff & Management Workspaces (`/dashboard`, `/management`, `/callcenter`), and `/unified-dashboard` (default Option 2).
+
+### Visual Tokens (Dashboards)
+- **Canvas (`--alabaster-bg`)**: `#F7F8FA`
+- **Card / Sub-Drawer / Top Bar Surface (`--alabaster-surface`)**: `#FFFFFF`
+- **Primary Pillar Rail Surface (`--alabaster-rail-bg`)**: `#FBFBFD`
+- **Primary Active Ink / CTA Button Fill (`--alabaster-primary`)**: `#0F172A` (Hover: `#1E293B`)
+- **Active Nav Row / Hover Fill (`--alabaster-hover`)**: `#F1F5F9`
+- **Hairline Borders (`--alabaster-border`)**: `1px solid #E2E8F0`
+- **Muted / Helper Metadata (`--alabaster-muted`)**: `#64748B` / `#94A3B8`
+- **Numerals & Counts**: Always render financial amounts, unit counts, badge counters, and timestamps with `font-variant-numeric: tabular-nums`.
+
+### Architectural Shell Anatomy
+1. **Tier 1 — Primary Pillar Rail (`64px`, `#FBFBFD`)**:
+   - Architectural brand logo mark at top (`36×36px`, `#FFFFFF`, `1px solid #CBD5E1`, `rounded-md`).
+   - Vertically stacked crisp SVG icon buttons (`40×40px`, zero emojis) for workspace pillars (`Command`, `Sales & Client CRM`, `Operations & Finance`, `Organization & Web`). Active pillar icon uses solid `#0F172A` fill with white stroke.
+   - Bottom-pinned persistent **Compact / Expand Sidebar** toggle (`PanelLeftClose` / `PanelLeftOpen`, persisted in `localStorage`) that collapses Tier 2 on desktop to icon-only `64px` mode (`#0F172A` active state), above the System / Profile icon button (`40×40px`).
+2. **Tier 2 — Contextual Sub-Drawer (`224px`, `#FFFFFF`, collapsible via Tier 1 toggle)**:
+   - Drawer header displaying `Attaie Properties` eyebrow and active Pillar title.
+   - Active pillar navigation items (`#F1F5F9` fill + `#0F172A` semibold text — **no thick `border-left` stripes**).
+   - Compact `"All Modules"` quick-jump section beneath a `1px solid #F1F5F9` divider so cross-department navigation is always one click away.
+   - Pinned footer containing Role Lens Switcher (or Account/Version/Sign-out controls).
+3. **Top Breadcrumb Header (`56px`, `#FFFFFF`, `1px solid #E2E8F0` bottom border)**:
+   - Left: Mobile drawer hamburger trigger (`< 768px` / `< lg`), `Pillar > Current Page Title` breadcrumb, crisp chevron divider.
+   - Right: Inline search/filter input, timezone/language toggle, or session avatar.
+4. **KPI Strip & Data Surfaces**:
+   - Flat hairline 4-cell KPI strip (`divide-y` / `divide-x #E2E8F0` on a single white `#FFFFFF` `1px solid #E2E8F0` container) or crisp flat metric cards — zero drop-shadow clutter, zero gold/teal gradients, zero decorative pulsing dots.
+   - Responsive rule: Every CSS grid or flex main column must specify `min-width: 0` (`min-w-0`), and horizontal filter strips must use `max-width: 100%; overflow-x: auto` to guarantee zero horizontal overflow at `390px` mobile width.
+

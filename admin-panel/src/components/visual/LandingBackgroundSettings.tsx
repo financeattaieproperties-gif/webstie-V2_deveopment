@@ -72,12 +72,12 @@ export const LandingBackgroundSettings: React.FC = () => {
   if (loading) return <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Loading hero background settings…</p>;
 
   return (
-    <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', border: '1px solid #e2e8f0', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+    <div style={{ background: '#FFFFFF', borderRadius: 8, padding: '1.5rem', border: '1px solid #E2E8F0', marginBottom: '1.5rem' }}>
       <div style={{ marginBottom: '1rem' }}>
-        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>
           Public Landing Page Hero Background
         </h3>
-        <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+        <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#64748B' }}>
           Customize the high-resolution background photo displayed across the main homepage hero banner.
         </p>
       </div>
@@ -112,11 +112,11 @@ export const LandingBackgroundSettings: React.FC = () => {
                   style={{
                     padding: '0.45rem',
                     borderRadius: 6,
-                    border: isSelected ? '2px solid #0145F2' : '1px solid #cbd5e1',
-                    background: isSelected ? '#dbeafe' : '#f8fafc',
-                    color: isSelected ? '#1e40af' : '#475569',
+                    border: isSelected ? '1px solid #0F172A' : '1px solid #CBD5E1',
+                    background: isSelected ? '#0F172A' : '#F8FAFC',
+                    color: isSelected ? '#FFFFFF' : '#475569',
                     fontSize: '0.75rem',
-                    fontWeight: isSelected ? 700 : 500,
+                    fontWeight: isSelected ? 600 : 500,
                     cursor: 'pointer',
                   }}
                 >
@@ -135,16 +135,16 @@ export const LandingBackgroundSettings: React.FC = () => {
           disabled={saving}
           style={{
             padding: '0.55rem 1.4rem',
-            borderRadius: 8,
+            borderRadius: 6,
             border: 'none',
-            background: '#0145F2',
-            color: '#fff',
-            fontWeight: 700,
+            background: '#0F172A',
+            color: '#FFFFFF',
+            fontWeight: 600,
             fontSize: '0.85rem',
             cursor: saving ? 'not-allowed' : 'pointer',
           }}
         >
-          {saving ? 'Saving…' : '✓ Save & Apply Background'}
+          {saving ? 'Saving…' : 'Save & Apply Background'}
         </button>
 
         {heroConfig.imageUrl && (
@@ -154,10 +154,10 @@ export const LandingBackgroundSettings: React.FC = () => {
             disabled={saving}
             style={{
               padding: '0.55rem 1rem',
-              borderRadius: 8,
-              border: '1px solid #cbd5e1',
-              background: '#f8fafc',
-              color: '#64748b',
+              borderRadius: 6,
+              border: '1px solid #E2E8F0',
+              background: '#FFFFFF',
+              color: '#475569',
               fontWeight: 600,
               fontSize: '0.85rem',
               cursor: saving ? 'not-allowed' : 'pointer',

@@ -20,12 +20,11 @@ interface SitemapStatusWidgetProps {
 
 const S = {
   widget: {
-    background: 'linear-gradient(135deg, #1A2335 0%, #243048 100%)',
-    borderRadius: 12,
-    padding: '1.35rem 1.6rem',
-    color: '#FFFFFF',
-    boxShadow: '0 4px 14px rgba(26, 35, 53, 0.16)',
-    border: '1px solid rgba(184, 148, 74, 0.35)',
+    background: '#FFFFFF',
+    borderRadius: 10,
+    padding: '1.35rem 1.5rem',
+    color: '#0F172A',
+    border: '1px solid #E2E8F0',
     marginBottom: '1.5rem',
   } as const,
   topBar: {
@@ -46,7 +45,7 @@ const S = {
   overline: {
     fontSize: '0.7rem',
     fontWeight: 700,
-    color: '#D4B46A',
+    color: '#64748B',
     textTransform: 'uppercase' as const,
     letterSpacing: 1.1,
     margin: 0,
@@ -58,20 +57,20 @@ const S = {
     fontSize: '0.7rem',
     fontWeight: 700,
     padding: '0.18rem 0.6rem',
-    borderRadius: 999,
-    background: ok ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.2)',
-    color: ok ? '#6EE7B7' : '#FCA5A5',
-    border: ok ? '1px solid rgba(16, 185, 129, 0.38)' : '1px solid rgba(239, 68, 68, 0.4)',
+    borderRadius: 6,
+    background: ok ? '#ECFDF5' : '#FEF2F2',
+    color: ok ? '#065F46' : '#991B1B',
+    border: ok ? '1px solid #A7F3D0' : '1px solid #FECACA',
   }),
   heading: {
-    fontSize: '1.1rem',
+    fontSize: '1.05rem',
     fontWeight: 700,
-    color: '#FFFFFF',
+    color: '#0F172A',
     margin: 0,
   } as const,
   subText: {
     fontSize: '0.8rem',
-    color: '#CBD5E1',
+    color: '#64748B',
     marginTop: '0.2rem',
     marginBottom: 0,
   } as const,
@@ -83,9 +82,9 @@ const S = {
   } as const,
   btnGhost: {
     padding: '0.45rem 0.85rem',
-    background: 'rgba(255, 255, 255, 0.08)',
-    color: '#F8FAFC',
-    border: '1px solid rgba(255, 255, 255, 0.18)',
+    background: '#FFFFFF',
+    color: '#334155',
+    border: '1px solid #E2E8F0',
     borderRadius: 8,
     fontSize: '0.78rem',
     fontWeight: 600,
@@ -97,12 +96,12 @@ const S = {
   } as const,
   btnGold: {
     padding: '0.48rem 0.95rem',
-    background: '#B8944A',
+    background: '#0F172A',
     color: '#FFFFFF',
     border: 'none',
     borderRadius: 8,
     fontSize: '0.78rem',
-    fontWeight: 700,
+    fontWeight: 600,
     cursor: 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
@@ -115,15 +114,16 @@ const S = {
     marginBottom: '1.1rem',
   } as const,
   kpiCard: {
-    background: 'rgba(255, 255, 255, 0.06)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    borderRadius: 10,
+    background: '#F8FAFC',
+    border: '1px solid #E2E8F0',
+    borderRadius: 8,
     padding: '0.95rem 1.1rem',
+    fontVariantNumeric: 'tabular-nums',
   } as const,
   kpiLabel: {
     fontSize: '0.7rem',
     fontWeight: 700,
-    color: '#94A3B8',
+    color: '#64748B',
     textTransform: 'uppercase' as const,
     letterSpacing: 0.7,
     marginBottom: '0.35rem',
@@ -131,7 +131,7 @@ const S = {
   kpiMainValue: {
     fontSize: '1.65rem',
     fontWeight: 800,
-    color: '#FFFFFF',
+    color: '#0F172A',
     lineHeight: 1.15,
     display: 'flex',
     alignItems: 'baseline',
@@ -141,22 +141,22 @@ const S = {
   kpiTimestampValue: {
     fontSize: '1.05rem',
     fontWeight: 700,
-    color: '#FFFFFF',
+    color: '#0F172A',
     lineHeight: 1.3,
   } as const,
   kpiMeta: {
     fontSize: '0.74rem',
-    color: '#CBD5E1',
+    color: '#64748B',
     marginTop: '0.3rem',
   } as const,
   progressWrap: {
-    background: 'rgba(15, 23, 42, 0.55)',
+    background: '#F1F5F9',
     borderRadius: 999,
     height: 8,
     overflow: 'hidden',
     display: 'flex',
     marginBottom: '0.75rem',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid #E2E8F0',
   } as const,
   breakdownRow: {
     display: 'grid',
@@ -166,10 +166,10 @@ const S = {
   breakdownChip: (active: boolean): React.CSSProperties => ({
     padding: '0.55rem 0.75rem',
     borderRadius: 8,
-    background: active ? 'rgba(184, 148, 74, 0.24)' : 'rgba(255, 255, 255, 0.05)',
+    background: active ? '#F1F5F9' : '#FFFFFF',
     border: active
-      ? '1.5px solid #B8944A'
-      : '1px solid rgba(255, 255, 255, 0.1)',
+      ? '1px solid #0F172A'
+      : '1px solid #E2E8F0',
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'space-between',
@@ -179,7 +179,7 @@ const S = {
   chipLabel: {
     fontSize: '0.74rem',
     fontWeight: 600,
-    color: '#E2E8F0',
+    color: '#334155',
     display: 'flex',
     alignItems: 'center',
     gap: '0.4rem',
@@ -187,12 +187,13 @@ const S = {
   chipCount: {
     fontSize: '0.88rem',
     fontWeight: 800,
-    color: '#FFFFFF',
+    color: '#0F172A',
+    fontVariantNumeric: 'tabular-nums',
   } as const,
   errorBox: {
-    background: 'rgba(239, 68, 68, 0.16)',
-    border: '1px solid rgba(239, 68, 68, 0.4)',
-    color: '#FECACA',
+    background: '#FEF2F2',
+    border: '1px solid #FECACA',
+    color: '#991B1B',
     padding: '0.65rem 0.9rem',
     borderRadius: 8,
     fontSize: '0.8rem',
@@ -292,7 +293,7 @@ export default function SitemapStatusWidget({
       key: 'properties',
       label: 'Properties',
       count: statusData?.counts?.properties ?? 0,
-      color: '#B8944A',
+      color: '#0F172A',
     },
     {
       key: 'projects',
@@ -327,7 +328,6 @@ export default function SitemapStatusWidget({
           <div style={S.badgeRow}>
             <p style={S.overline}>Sitemap Index Monitor • sitemap-status.json</p>
             <span style={S.statusPill(!fetchError && Boolean(statusData))}>
-              <span>●</span>
               {loading
                 ? 'Fetching Status…'
                 : fetchError
@@ -364,7 +364,7 @@ export default function SitemapStatusWidget({
             onClick={() => void loadSitemapStatusJson(true)}
             disabled={loading || refreshing}
           >
-            {refreshing ? 'Refreshing…' : '↻ Refresh Status'}
+            {refreshing ? 'Refreshing…' : 'Refresh Status'}
           </button>
           {onRegenerate && (
             <button
@@ -373,7 +373,7 @@ export default function SitemapStatusWidget({
               onClick={onRegenerate}
               disabled={regenerating}
             >
-              {regenerating ? 'Crawling…' : '⚡ Crawl & Rebuild Now'}
+              {regenerating ? 'Crawling…' : 'Crawl & Rebuild Now'}
             </button>
           )}
         </div>
@@ -389,15 +389,15 @@ export default function SitemapStatusWidget({
             cursor: onSelectCategory ? 'pointer' : 'default',
             border:
               selectedCategory === 'all'
-                ? '1.5px solid #B8944A'
-                : '1px solid rgba(255, 255, 255, 0.12)',
+                ? '1px solid #0F172A'
+                : '1px solid #E2E8F0',
           }}
           onClick={() => onSelectCategory?.('all')}
         >
           <div style={S.kpiLabel}>Total Indexed URLs</div>
           <div style={S.kpiMainValue}>
             <span>{loading && !statusData ? '—' : totalUrls.toLocaleString()}</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#D4B46A' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748B' }}>
               URLs in sitemap.xml
             </span>
           </div>
@@ -419,10 +419,10 @@ export default function SitemapStatusWidget({
           <div style={S.kpiMeta}>
             {statusData?.generated_at ? (
               <>
-                <span style={{ color: '#6EE7B7', fontWeight: 600 }}>
+                <span style={{ color: '#047857', fontWeight: 600 }}>
                   {formatRelativeTime(statusData.generated_at)}
                 </span>{' '}
-                • <code style={{ fontSize: '0.7rem', color: '#94A3B8' }}>{statusData.generated_at}</code>
+                • <code style={{ fontSize: '0.7rem', color: '#64748B' }}>{statusData.generated_at}</code>
               </>
             ) : (
               'Awaiting initial crawl'
@@ -435,11 +435,12 @@ export default function SitemapStatusWidget({
           <div style={S.kpiLabel}>Canonical Sitemap Endpoint</div>
           <div
             style={{
-              fontSize: '0.86rem',
-              fontWeight: 700,
-              color: '#F8FAFC',
+              fontSize: '0.84rem',
+              fontWeight: 600,
+              color: '#0F172A',
               wordBreak: 'break-all',
               lineHeight: 1.35,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
             }}
           >
             {statusData?.sitemap_url || 'https://www.attaieproperties.com/sitemap.xml'}
@@ -483,18 +484,7 @@ export default function SitemapStatusWidget({
                   onSelectCategory?.(selectedCategory === seg.key ? 'all' : seg.key)
                 }
               >
-                <span style={S.chipLabel}>
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 999,
-                      background: seg.color,
-                      display: 'inline-block',
-                    }}
-                  />
-                  {seg.label}
-                </span>
+                <span style={S.chipLabel}>{seg.label}</span>
                 <span style={S.chipCount}>{seg.count}</span>
               </div>
             ))}

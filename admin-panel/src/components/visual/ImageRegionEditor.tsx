@@ -103,9 +103,9 @@ export const ImageRegionEditor: React.FC<ImageRegionEditorProps> = ({
                 padding: '0.35rem 0.65rem',
                 fontSize: '0.75rem',
                 borderRadius: 6,
-                border: '1px solid #cbd5e1',
-                background: isSettingAnchor ? '#b8960c' : '#fff',
-                color: isSettingAnchor ? '#fff' : '#334155',
+                border: isSettingAnchor ? '1px solid #0F172A' : '1px solid #CBD5E1',
+                background: isSettingAnchor ? '#0F172A' : '#FFFFFF',
+                color: isSettingAnchor ? '#FFFFFF' : '#334155',
                 cursor: 'pointer',
                 fontWeight: 600,
               }}
@@ -233,13 +233,12 @@ export const ImageRegionEditor: React.FC<ImageRegionEditorProps> = ({
               transform: 'translate(-50%, -50%)',
               padding: '0.15rem 0.4rem',
               borderRadius: 4,
-              background: '#b8960c',
-              color: '#fff',
+              background: '#0F172A',
+              color: '#FFFFFF',
               fontSize: '0.65rem',
               fontWeight: 700,
               zIndex: 12,
               pointerEvents: 'none',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
             }}
           >
             Label Anchor
@@ -247,8 +246,8 @@ export const ImageRegionEditor: React.FC<ImageRegionEditorProps> = ({
         )}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem', fontSize: '0.72rem', color: '#64748b' }}>
-        <span>Points: {points.length} {points.length < 3 ? '(min 3 required for a closed polygon)' : '✓ Closed shape'}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem', fontSize: '0.72rem', color: '#64748B', fontVariantNumeric: 'tabular-nums' }}>
+        <span>Points: {points.length} {points.length < 3 ? '(min 3 required for a closed polygon)' : '• Closed shape'}</span>
         {labelAnchor && <span>Anchor: ({labelAnchor.x}, {labelAnchor.y})</span>}
       </div>
     </div>

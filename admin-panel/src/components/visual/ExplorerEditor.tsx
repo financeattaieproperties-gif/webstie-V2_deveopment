@@ -97,13 +97,13 @@ export const ExplorerEditor: React.FC<ExplorerEditorProps> = ({
   if (!projectData) return null;
 
   return (
-    <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', border: '1px solid #e2e8f0', marginTop: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+    <div style={{ background: '#FFFFFF', borderRadius: 8, padding: '1.5rem', border: '1px solid #E2E8F0', marginTop: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #F1F5F9', paddingBottom: '0.75rem' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0F172A' }}>
             Interactive Photo-Based Apartment Explorer Calibration
           </h3>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B' }}>
             Calibrate exterior floor window lighting and apartment polygon boundaries on the masterplan.
           </p>
         </div>
@@ -115,9 +115,9 @@ export const ExplorerEditor: React.FC<ExplorerEditorProps> = ({
             disabled={saving}
             style={{
               padding: '0.5rem 1rem',
-              borderRadius: 8,
-              border: '1px solid #cbd5e1',
-              background: '#f8fafc',
+              borderRadius: 6,
+              border: '1px solid #E2E8F0',
+              background: '#FFFFFF',
               color: '#334155',
               fontWeight: 600,
               fontSize: '0.85rem',
@@ -132,16 +132,16 @@ export const ExplorerEditor: React.FC<ExplorerEditorProps> = ({
             disabled={saving}
             style={{
               padding: '0.5rem 1.2rem',
-              borderRadius: 8,
+              borderRadius: 6,
               border: 'none',
-              background: '#0145F2',
-              color: '#fff',
-              fontWeight: 700,
+              background: '#0F172A',
+              color: '#FFFFFF',
+              fontWeight: 600,
               fontSize: '0.85rem',
               cursor: saving ? 'not-allowed' : 'pointer',
             }}
           >
-            {saving ? 'Publishing…' : '✓ Publish to Public Site'}
+            {saving ? 'Publishing…' : 'Publish to Public Site'}
           </button>
         </div>
       </div>
@@ -150,12 +150,12 @@ export const ExplorerEditor: React.FC<ExplorerEditorProps> = ({
         <div
           style={{
             padding: '0.6rem 1rem',
-            borderRadius: 8,
+            borderRadius: 6,
             marginBottom: '1rem',
             fontSize: '0.82rem',
             fontWeight: 600,
-            background: statusMsg.ok ? '#dcfce7' : '#fee2e2',
-            color: statusMsg.ok ? '#166534' : '#dc2626',
+            background: statusMsg.ok ? '#ECFDF5' : '#FEF2F2',
+            color: statusMsg.ok ? '#065F46' : '#DC2626',
           }}
         >
           {statusMsg.text}
@@ -164,9 +164,9 @@ export const ExplorerEditor: React.FC<ExplorerEditorProps> = ({
 
       {/* Calibration Sub-view 1: Calibrating a floor's exterior hit region */}
       {activeCalibratingFloor && (
-        <div style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: 10, border: '1px solid #cbd5e1' }}>
+        <div style={{ marginBottom: '1.5rem', background: '#F8FAFC', padding: '1rem', borderRadius: 8, border: '1px solid #E2E8F0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0145F2' }}>
+            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0F172A' }}>
               Calibrating Exterior Polygon: {activeCalibratingFloor.label.en}
             </h4>
             <button
@@ -196,15 +196,15 @@ export const ExplorerEditor: React.FC<ExplorerEditorProps> = ({
 
       {/* Calibration Sub-view 2: Calibrating an apartment's masterplan polygon */}
       {activeCalibratingApartment && (
-        <div style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: 10, border: '1px solid #cbd5e1' }}>
+        <div style={{ marginBottom: '1.5rem', background: '#F8FAFC', padding: '1rem', borderRadius: 8, border: '1px solid #E2E8F0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0145F2' }}>
+            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0F172A' }}>
               Calibrating Apartment Polygon: {activeCalibratingApartment.unitNumber}
             </h4>
             <button
               type="button"
               onClick={() => setActiveCalibratingApartment(null)}
-              style={{ padding: '0.3rem 0.7rem', background: '#e2e8f0', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}
+              style={{ padding: '0.3rem 0.7rem', background: '#E2E8F0', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}
             >
               Done Calibrating
             </button>
@@ -244,18 +244,18 @@ export const ExplorerEditor: React.FC<ExplorerEditorProps> = ({
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
           <thead>
-            <tr style={{ background: '#f8fafc', textAlign: 'left', color: '#64748b' }}>
-              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Floor Level</th>
-              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Kind</th>
-              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Exterior Hit Region</th>
-              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Units</th>
-              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #e2e8f0' }}>Actions</th>
+            <tr style={{ background: '#F8FAFC', textAlign: 'left', color: '#64748B' }}>
+              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #E2E8F0' }}>Floor Level</th>
+              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #E2E8F0' }}>Kind</th>
+              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #E2E8F0' }}>Exterior Hit Region</th>
+              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #E2E8F0' }}>Units</th>
+              <th style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid #E2E8F0' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {projectData.floors.map((floor) => (
-              <tr key={floor.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '0.6rem 0.75rem', fontWeight: 700, color: '#0145F2' }}>
+              <tr key={floor.id} style={{ borderBottom: '1px solid #F1F5F9', fontVariantNumeric: 'tabular-nums' }}>
+                <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600, color: '#0F172A' }}>
                   {floor.label.en}
                 </td>
                 <td style={{ padding: '0.6rem 0.75rem', textTransform: 'capitalize' }}>
@@ -274,15 +274,16 @@ export const ExplorerEditor: React.FC<ExplorerEditorProps> = ({
                         style={{
                           fontSize: '0.72rem',
                           padding: '0.2rem 0.5rem',
-                          borderRadius: 4,
-                          background: '#f1f5f9',
-                          border: '1px solid #cbd5e1',
+                          borderRadius: 6,
+                          background: '#F1F5F9',
+                          border: '1px solid #E2E8F0',
+                          color: '#0F172A',
                           cursor: 'pointer',
                           fontWeight: 600,
                         }}
                         title="Click to calibrate unit polygon"
                       >
-                        {u.unitNumber} ✏️
+                        {u.unitNumber}
                       </button>
                     ))}
                   </div>
