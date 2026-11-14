@@ -241,5 +241,8 @@
   "Add Attaie Sales to your home screen for quick launch and offline lead viewing.": "برنامه فروش عطایی را به صفحه اصلی تلفن اضافه کنید تا سریع و بدون اینترنت به سرنخ‌ها دسترسی داشته باشید.",
   "Device battery": "شارژ باتری دستگاه",
   "Charging": "در حال شارژ",
-  "Offline": "آفلاین"
+  "Offline": "آفلاین",
+  "Low battery": "هشدار کم بودن باتری",
+  "Battery dropped below {{threshold}}%. Connect a charger soon to keep working smoothly in the field.": "شارژ باتری به زیر {{threshold}}٪ رسیده است. برای ادامه بدون وقفه در ساحه، دستگاه را به شارژ وصل کنید.",
+  "Dismiss": "بستن هشدار"
 }

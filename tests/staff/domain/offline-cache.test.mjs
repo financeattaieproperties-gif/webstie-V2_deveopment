@@ -5,9 +5,11 @@ import {
   formatBatteryStatus,
   getOfflineSnapshotKey,
   isNetworkOfflineError,
+  LOW_BATTERY_WARNING_THRESHOLD,
   parseBatteryBridgePayload,
   readOfflineSnapshot,
   readOfflineViewData,
+  shouldWarnLowBattery,
   writeOfflineSessionUser,
   writeOfflineViewData,
 } from "../../../packages/staff-contracts/offline-cache.mjs";
@@ -161,4 +163,29 @@ test("parseBatteryBridgePayload and formatBatteryStatus handle normal, low, crit
   const unavailable = formatBatteryStatus({ available: false });
   assert.equal(unavailable.visible, false);
 });
+
+test("shouldWarnLowBattery warns strictly below 15% when unplugged and clears on charge or recovery", () => {
+  assert.equal(LOW_BATTERY_WARNING_THRESHOLD, 15);
+  assert.equal(
+    shouldWarnLowBattery(formatBatteryStatus({ available: true, level: 0.14, charging: false })),
+    true,
+  );
+  assert.equal(
+    shouldWarnLowBattery(formatBatteryStatus({ available: true, level: 0.05, charging: false })),
+    true,
+  );
+  assert.equal(
+    shouldWarnLowBattery(formatBatteryStatus({ available: true, level: 0.15, charging: false })),
+    false,
+  );
+  assert.equal(
+    shouldWarnLowBattery(formatBatteryStatus({ available: true, level: 0.1, charging: true })),
+    false,
+  );
+  assert.equal(
+    shouldWarnLowBattery(formatBatteryStatus({ available: false, level: 0.05, charging: false })),
+    false,
+  );
+});
+
 

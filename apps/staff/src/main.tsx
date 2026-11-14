@@ -96,7 +96,7 @@ import {
 } from "./auth/biometric";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { usePWAInstall } from "./hooks/usePWAInstall";
-import { useBatteryStatus } from "./hooks/useBatteryStatus";
+import { useLowBatteryWarning } from "./hooks/useLowBatteryWarning";
 import { registerSalesServiceWorker } from "./pwa/register";
 import { AttaieLogoEntrance } from "./components/AttaieLogoEntrance";
 import { ProjectInventoryWizard } from "./components/ProjectInventoryWizard";
@@ -257,7 +257,12 @@ function App() {
   const [notice, setNotice] = useState("");
   const [justSignedOut, setJustSignedOut] = useState(false);
   const isOnline = useOnlineStatus();
-  const battery = useBatteryStatus(panelSpec.panelId === "sales");
+  const {
+    battery,
+    showWarning: showLowBatteryWarning,
+    thresholdPercent: lowBatteryThreshold,
+    dismissWarning: dismissLowBatteryWarning,
+  } = useLowBatteryWarning(panelSpec.panelId === "sales");
   const {
     canInstall: canInstallPwa,
     isInstalled: isPwaInstalled,
@@ -1238,6 +1243,38 @@ function App() {
               )}
             </div>
           </div>
+          {showLowBatteryWarning && (
+            <div
+              className="low-battery-warning-banner"
+              role="alert"
+              data-testid="low-battery-warning-banner"
+            >
+              <div className="low-battery-warning-copy">
+                <span className="low-battery-warning-icon" aria-hidden="true">
+                  <BatteryWarning size={17} />
+                </span>
+                <div>
+                  <strong>
+                    {t("Low battery")} · {battery.text}
+                  </strong>
+                  <small>
+                    {t(
+                      "Battery dropped below {{threshold}}%. Connect a charger soon to keep working smoothly in the field.",
+                    ).replace("{{threshold}}", String(lowBatteryThreshold))}
+                  </small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="low-battery-dismiss-btn"
+                data-testid="dismiss-low-battery-btn"
+                aria-label={t("Dismiss")}
+                onClick={dismissLowBatteryWarning}
+              >
+                <X size={15} />
+              </button>
+            </div>
+          )}
           {(!isOnline || offlineSavedAt) && (
             <div
               className="offline-indicator-banner"
