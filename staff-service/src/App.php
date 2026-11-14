@@ -4,6 +4,7 @@ namespace Staff;
 require_once __DIR__ . '/Domain.php';
 require_once __DIR__ . '/FirebaseAuth.php';
 require_once __DIR__ . '/Completion.php';
+require_once __DIR__ . '/LeadPropertyClaims.php';
 use PDO;
 use RuntimeException;
 use InvalidArgumentException;
@@ -14,6 +15,7 @@ final class HttpError extends RuntimeException {
 
 final class App {
     use Completion;
+    use LeadPropertyClaims;
     private PDO $db;
     private array $config;
     private array $user = [];
@@ -53,7 +55,7 @@ final class App {
         session_set_cookie_params(['lifetime'=>0, 'path'=>'/', 'secure'=>!$local, 'httponly'=>true, 'samesite'=>'Strict']);
         session_start();
         if (!empty($_SESSION['user_id'])) {
-            $row = $this->one('SELECT id,name,username,firebase_uid,role,active,auth_version FROM core_users WHERE id=?', [$_SESSION['user_id']]);
+            $row = $this->one('SELECT id,name,username,firebase_uid,role,branch_id,active,auth_version FROM core_users WHERE id=?', [$_SESSION['user_id']]);
             if (!$row || !$row['active'] || $row['role'] === 'finance_assistant' || $row['auth_version'] !== ($_SESSION['auth_version'] ?? null) || time() - ($_SESSION['last_seen'] ?? 0) > 1800 || time() >= ($_SESSION['firebase_expiry'] ?? 0)) {
                 $_SESSION = [];
                 session_regenerate_id(true);
@@ -198,11 +200,12 @@ final class App {
         if (!is_string($raw) || !preg_match('/^\d{4}-\d{2}-\d{2}T/', $raw)) throw new InvalidArgumentException('Enter the actual call time.');
         try { $date=new \DateTimeImmutable($raw); } catch (\Exception $e) { throw new InvalidArgumentException('Invalid call time.'); }
         if ($date->getTimestamp()>time()+60) throw new InvalidArgumentException('Call time cannot be in the future.');
-        $this->execute('INSERT IGNORE INTO cc_serial_counters(agent_id,next_number) VALUES (?,1)',[$this->uid()]);
+        $this->execute('INSERT INTO cc_serial_counters(agent_id,next_number) VALUES (?,1) ON DUPLICATE KEY UPDATE next_number=next_number',[$this->uid()]);
         $counter=$this->one('SELECT next_number FROM cc_serial_counters WHERE agent_id=? FOR UPDATE',[$this->uid()]);
         $serial='CA'.str_pad((string)$this->uid(),2,'0',STR_PAD_LEFT).'-L'.$counter['next_number'];
         $this->execute('UPDATE cc_serial_counters SET next_number=next_number+1 WHERE agent_id=?',[$this->uid()]);
-        $this->execute("INSERT INTO cc_leads(serial,phone,requirements,origin_agent_id,assignee_id,call_at,source) VALUES (?,?,'',?,?,?,'manual')",[$serial,$phone,$this->uid(),$this->uid(),$date->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s')]);
+        $branch=(int)($this->user['branch_id']??0);if(!$branch)throw new HttpError(503,'Staff branch mapping requires review.');
+        $this->execute("INSERT INTO cc_leads(branch_id,serial,phone,requirements,origin_agent_id,assignee_id,call_at,source) VALUES (?,?,?,'',?,?,?,'manual')",[$branch,$serial,$phone,$this->uid(),$this->uid(),$date->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s')]);
         $id=(int)$this->db->lastInsertId();
         $this->execute("INSERT INTO cc_calls(lead_id,agent_id,customer_phone,call_at,source,created_at) VALUES (?,?,?,?,'manual',?)",[$id,$this->uid(),$phone,$date->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),$this->now]);
         $this->audit('call.manual_created',$id);
@@ -217,8 +220,10 @@ final class App {
         $claim=$this->customerClaim($lead['phone'],$name,$requirements);
         if (!empty($claim['duplicateConflict'])) return $claim;
         $customerId=(int)$claim['customerId'];
+        $property=$this->resolveLeadProperty($body);
+        $this->claimLeadProperty($customerId,$property,$id);
         $taskId=$this->nextTask($id,$assignee,$scheduled,$requirements);
-        $this->execute("UPDATE cc_leads SET customer_id=?,customer_name=?,requirements=?,assignee_id=?,status='active',current_task_id=?,version=version+1 WHERE id=?",[$customerId,$name,$requirements,$assignee,$taskId,$id]);
+        $this->execute("UPDATE cc_leads SET customer_id=?,customer_name=?,requirements=?,assignee_id=?,status='active',current_task_id=?,property_kind=?,property_id=?,project_id=?,apartment_id=?,version=version+1 WHERE id=?",[$customerId,$name,$requirements,$assignee,$taskId,$property['kind'],$property['id'],$property['projectId'],$property['apartmentId'],$id]);
         $this->activity($id,'entry_submitted',$requirements); $this->audit('lead.entry_submitted',$id);
         return $this->leadDto($this->lead($id));
     }
@@ -330,7 +335,7 @@ final class App {
     private function isManager(): bool { return $this->hasPermission('callcenter.manage'); }
     private function manager(): void { if (!$this->isManager()) throw new HttpError(403,'Management permission is required.'); }
     private function publicUser(array $row): array { return ['id'=>(int)$row['id'],'name'=>$row['name'],'role'=>$row['role'],'username'=>$row['username'] ?? '','departmentCode'=>$row['department_code']??null,'teamLeaderId'=>empty($row['team_leader_id'])?null:(int)$row['team_leader_id'],'active'=>(bool)($row['active'] ?? 1)]; }
-    private function leadDto(array $r): array { return ['id'=>(int)$r['id'],'serial'=>$r['serial'],'customerId'=>$r['customer_id']===null ? null : (int)$r['customer_id'],'customerName'=>$r['customer_name'],'phone'=>$r['phone'],'requirements'=>$r['requirements'],'status'=>$r['status'],'originAgentId'=>(int)$r['origin_agent_id'],'assigneeId'=>(int)$r['assignee_id'],'callAt'=>Domain::iso($r['call_at']),'source'=>$r['source'],'version'=>(int)$r['version']]; }
+    private function leadDto(array $r): array { return ['property'=>!empty($r['property_kind']) && !empty($r['property_id']) ? ['kind'=>$r['property_kind'],'id'=>(int)$r['property_id']] : null,'projectId'=>empty($r['project_id']) ? null : (int)$r['project_id'],'apartmentId'=>empty($r['apartment_id']) ? null : (int)$r['apartment_id'],'id'=>(int)$r['id'],'serial'=>$r['serial'],'customerId'=>$r['customer_id']===null ? null : (int)$r['customer_id'],'customerName'=>$r['customer_name'],'phone'=>$r['phone'],'requirements'=>$r['requirements'],'status'=>$r['status'],'originAgentId'=>(int)$r['origin_agent_id'],'assigneeId'=>(int)$r['assignee_id'],'callAt'=>Domain::iso($r['call_at']),'source'=>$r['source'],'version'=>(int)$r['version']]; }
     private function followupDto(array $r): array { return ['id'=>(int)$r['id'],'leadId'=>(int)$r['lead_id'],'serial'=>$r['serial'],'customerName'=>$r['customer_name'],'phone'=>$r['phone'],'requirements'=>$r['requirements'],'assigneeId'=>(int)$r['assignee_id'],'scheduledAt'=>Domain::iso($r['scheduled_at']),'completedAt'=>Domain::iso($r['completed_at']),'notes'=>$r['notes'],'version'=>(int)$r['version']]; }
     private function taskDto(array $r): array { return ['id'=>(int)$r['id'],'title'=>$r['title'],'instructions'=>$r['instructions'],'priority'=>$r['priority'],'assigneeId'=>(int)$r['assignee_id'],'assignedBy'=>$r['assigned_by_name'],'deadlineAt'=>Domain::iso($r['deadline_at']),'status'=>$r['status'],'completedAt'=>Domain::iso($r['completed_at']),'version'=>(int)$r['version']]; }
     private function query(string $sql,array $params=[]): array { $s=$this->db->prepare($sql); $s->execute($params); return $s->fetchAll(); }
