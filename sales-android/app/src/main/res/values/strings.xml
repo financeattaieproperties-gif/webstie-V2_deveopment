@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Attaie Sales CRM</string>
+    <string name="biometric_prompt_title">Attaie Sales CRM</string>
+    <string name="biometric_prompt_subtitle">Verify your fingerprint or face to sign in</string>
+    <string name="biometric_prompt_enroll_subtitle">Confirm your fingerprint or face to enable quick sign-in</string>
+    <string name="biometric_prompt_negative">Use password</string>
+</resources>

@@ -1,0 +1,67 @@
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
+android {
+    namespace 'af.attaieproperties.sales'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'af.attaieproperties.sales'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '2.0.0'
+
+        // Shared V2 backend API endpoint (same PHP/MySQL + Firebase backend as Web)
+        buildConfigField(
+            'String',
+            'STAFF_API_BASE_URL',
+            '"https://website.attaieproperties.com/staff-api/v1"'
+        )
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles(
+                getDefaultProguardFile('proguard-android-optimize.txt'),
+                'proguard-rules.pro'
+            )
+        }
+        debug {
+            debuggable true
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+base {
+    archivesName.set('AttaieSalesCRM')
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("com.google.android.material:material:1.12.0")
+}

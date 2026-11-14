@@ -1,0 +1,19 @@
+{
+  "appId": "af.attaieproperties.sales",
+  "appName": "Attaie Sales CRM",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "website.attaieproperties.com",
+      "attaieproperties.af"
+    ]
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#FFFFFF"
+    }
+  }
+}

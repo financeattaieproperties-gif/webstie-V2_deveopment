@@ -17,6 +17,6 @@
     }
   },
   "include": ["src", "vite.config.ts"],
-  "exclude": ["node_modules", "admin-panel", "dist"]
+  "exclude": ["node_modules", "admin-panel", "sales-android", "dist"]
 }
 
