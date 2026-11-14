@@ -9,6 +9,11 @@ define('DB_NAME',    'your_cpanel_db_name');
 define('ADMIN_USER', 'admin');
 define('ADMIN_PASS', 'choose_a_strong_password');
 
+// V2 chat: set this to an existing private directory OUTSIDE every web document root.
+// Copy and verify existing chat data before switching; see docs/staff/v2-website-chat-migration.md.
+// An empty, public, inaccessible, or corrupt store fails closed; no local delivery is fabricated.
+define('WEBSITE_CHAT_STORE_DIR', '');
+
 // ── Etisalat CPaaS Click-to-Call (CTC) Configuration ───────────────────────────
 // Fill these in from your Etisalat CPaaS account manager (or set via cPanel Env Vars):
 define('CTC_BASE_URL',          ''); // e.g. 'https://cpaas.etisalat.af/Cpaas/api/clicktocall'

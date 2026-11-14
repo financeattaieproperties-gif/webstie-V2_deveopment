@@ -66,6 +66,7 @@ trait Completion {
         if ($route==='engineering/deliverables') return $this->engineeringCreate($b);
         if (preg_match('#^engineering/deliverables/(\d+)/(versions|review)$#',$route,$m)) return $this->engineeringChange((int)$m[1],$m[2],$b);
         if ($route==='sales/leads') return $this->salesLead($b);
+        if (preg_match('#^leads/(\d+)/property$#',$route,$m)) return $this->changeLeadProperty((int)$m[1],$b);
         if (preg_match('#^customers/review-requests/(\d+)$#',$route,$m)) return $this->customerReview((int)$m[1],$b);
         if (preg_match('#^leads/(\d+)/referrals$#',$route,$m)) return $this->shareLead((int)$m[1],$b);
         if ($route==='submissions/retry') { $this->roleOnly(['manager','marketing_manager','production_manager']); return ['queued'=>true]; }
@@ -243,7 +244,7 @@ trait Completion {
         return ['id'=>(int)$d['id'],'contractId'=>(int)$d['contract_id'],'contractSerial'=>$c['contract_serial'],'installmentId'=>(int)$d['installment_id'],'installmentNumber'=>(int)$i['installment_number'],'amount'=>(float)$d['amount'],'currency'=>$d['currency'],'paymentMethod'=>$d['payment_method'],'receiptNumber'=>$d['receipt_number'],'paymentDate'=>$d['payment_date'],'receiptPaidToDate'=>$d['receipt_paid_to_date']===null?null:(float)$d['receipt_paid_to_date'],'receiptRemainingBalance'=>$d['receipt_remaining_balance']===null?null:(float)$d['receipt_remaining_balance'],'notes'=>$d['notes'],'status'=>$d['status'],'enteredBy'=>$this->record('core_users',(int)$d['entered_by'])['name'],'approvedBy'=>$d['approved_by']?$this->record('core_users',(int)$d['approved_by'])['name']:null,'createdAt'=>Domain::iso($d['created_at']),'postedAt'=>Domain::iso($d['posted_at']),'reversalReason'=>$d['reversal_reason'],'version'=>(int)$d['version']];
     }
     private function customerClaim(string $phone,string $name,string $requirements): array {
-        $this->execute('INSERT IGNORE INTO crm_phone_registry(phone) VALUES (?)',[$phone]); $registry=$this->one('SELECT customer_id FROM crm_phone_registry WHERE phone=? FOR UPDATE',[$phone]);
+        $this->execute('INSERT INTO crm_phone_registry(phone) VALUES (?) ON DUPLICATE KEY UPDATE phone=VALUES(phone)',[$phone]); $registry=$this->one('SELECT customer_id FROM crm_phone_registry WHERE phone=? FOR UPDATE',[$phone]);
         if ($registry['customer_id']) {
             $id=(int)$registry['customer_id']; $owner=$this->one('SELECT owner_agent_id FROM crm_customer_owners WHERE customer_id=?',[$id]);
             $access=$owner && ((int)$owner['owner_agent_id']===$this->uid()||$this->one('SELECT 1 FROM crm_customer_shared_access WHERE customer_id=? AND agent_id=?',[$id,$this->uid()]));
@@ -254,18 +255,27 @@ trait Completion {
             }
             return ['customerId'=>$id];
         }
-        $this->execute('INSERT INTO cc_customers(name,phone,created_at) VALUES (?,?,?)',[$name,$phone,$this->now]); $id=(int)$this->db->lastInsertId();
+        $branch=(int)($this->user['branch_id']??0);if(!$branch)throw new HttpError(503,'Staff branch mapping requires review.');
+        $this->execute('INSERT INTO cc_customers(branch_id,name,phone,created_at) VALUES (?,?,?,?)',[$branch,$name,$phone,$this->now]); $id=(int)$this->db->lastInsertId();
         $this->execute('UPDATE crm_phone_registry SET customer_id=? WHERE phone=?',[$id,$phone]);
         $this->execute('INSERT INTO crm_customer_owners(customer_id,serial,owner_agent_id) VALUES (?,?,?)',[$id,'C'.str_pad((string)$id,6,'0',STR_PAD_LEFT),$this->uid()]); return ['customerId'=>$id];
     }
     private function salesLead(array $b): array {
         $this->roleOnly(['sales']); $phone=Domain::phone((string)($b['phone']??'')); $name=Domain::text($b['customerName']??null,160); $requirements=Domain::text($b['requirements']??null);
         $claim=$this->customerClaim($phone,$name,$requirements); if (!empty($claim['duplicateConflict'])) return $claim;
-        $project=(int)($b['projectId']??0); if ($project && !$this->one('SELECT 1 FROM inv_project_sales_agents WHERE project_id=? AND sales_agent_id=?',[$project,$this->uid()])) throw new HttpError(404,'Project not assigned.');
-        $this->execute('INSERT IGNORE INTO cc_serial_counters(agent_id,next_number) VALUES (?,1)',[$this->uid()]); $counter=$this->one('SELECT next_number FROM cc_serial_counters WHERE agent_id=? FOR UPDATE',[$this->uid()]);
+        $property=$this->resolveLeadProperty($b);
+        $this->execute('INSERT INTO cc_serial_counters(agent_id,next_number) VALUES (?,1) ON DUPLICATE KEY UPDATE next_number=next_number',[$this->uid()]); $counter=$this->one('SELECT next_number FROM cc_serial_counters WHERE agent_id=? FOR UPDATE',[$this->uid()]);
         $serial='SA'.str_pad((string)$this->uid(),2,'0',STR_PAD_LEFT).'-L'.$counter['next_number']; $this->execute('UPDATE cc_serial_counters SET next_number=next_number+1 WHERE agent_id=?',[$this->uid()]);
-        $this->execute("INSERT INTO cc_leads(serial,customer_id,customer_name,phone,requirements,origin_agent_id,assignee_id,status,call_at,source,project_id) VALUES (?,?,?,?,?,?,?,'active',?,'manual',?)",[$serial,$claim['customerId'],$name,$phone,$requirements,$this->uid(),$this->uid(),$this->now,$project?:null]); $id=(int)$this->db->lastInsertId();
+        $this->execute("INSERT INTO cc_leads(branch_id,serial,customer_id,customer_name,phone,requirements,origin_agent_id,assignee_id,status,call_at,source,property_kind,property_id,project_id,apartment_id) VALUES (?,?,?,?,?,?,?,?,'active',?,'manual',?,?,?,?)",[(int)$this->user['branch_id'],$serial,$claim['customerId'],$name,$phone,$requirements,$this->uid(),$this->uid(),$this->now,$property['kind'],$property['id'],$property['projectId'],$property['apartmentId']]); $id=(int)$this->db->lastInsertId();
+        $this->claimLeadProperty((int)$claim['customerId'],$property,$id);
         $task=$this->nextTask($id,$this->uid(),Domain::future($b['nextScheduledAt']??null),$requirements); $this->execute('UPDATE cc_leads SET current_task_id=? WHERE id=?',[$task,$id]); $this->activity($id,'sales_entry',$requirements); $this->audit('sales.lead_created',$id); return $this->leadDto($this->record('cc_leads',$id));
+    }
+    private function changeLeadProperty(int $id,array $body): array {
+        $this->roleOnly(['sales','callcenter']);$lead=$this->lead($id,true);$this->version($lead,$body);
+        if($lead['status']!=='active'||!$lead['customer_id']||(int)$lead['branch_id']!==(int)($this->user['branch_id']??0))throw new HttpError(403,'This lead property cannot be changed.');
+        $property=$this->resolveLeadProperty($body);$this->claimLeadProperty((int)$lead['customer_id'],$property,$id);
+        $this->execute('UPDATE cc_leads SET property_kind=?,property_id=?,project_id=?,apartment_id=?,version=version+1 WHERE id=?',[$property['kind'],$property['id'],$property['projectId'],$property['apartmentId'],$id]);
+        $this->audit('lead.property_changed',$id);return $this->leadDto($this->lead($id));
     }
     private function customerReview(int $id,array $b): array {
         $this->roleOnly(['manager']); $r=$this->record('crm_customer_review_requests',$id,true); $this->version($r,$b);
@@ -278,13 +288,16 @@ trait Completion {
         $this->execute('INSERT IGNORE INTO crm_lead_referrals(lead_id,shared_agent_id,referred_by_id) VALUES (?,?,?)',[$id,$agent['id'],$this->uid()]); if ($lead['customer_id']) $this->execute('INSERT IGNORE INTO crm_customer_shared_access(customer_id,agent_id,granted_by) VALUES (?,?,?)',[$lead['customer_id'],$agent['id'],$this->uid()]); $this->execute('UPDATE cc_leads SET version=version+1 WHERE id=?',[$id]); $this->audit('lead.referred',$id); return ['success'=>true];
     }
     private function closeHandoff(array $lead,array $b): void {
+        $property=$this->resolveLeadProperty(['property'=>['kind'=>'unit','id'=>(int)($b['apartmentId']??0)],'projectId'=>$b['projectId']??0]);
+        if(!$lead['customer_id'])throw new \InvalidArgumentException('Qualify the customer and property before closing.');
+        $this->claimLeadProperty((int)$lead['customer_id'],$property,(int)$lead['id']);
         $this->roleOnly(['sales']); $a=$this->record('inv_apartments',(int)($b['apartmentId']??0),true); $p=$this->record('inv_projects',(int)($b['projectId']??0));
         if ((int)$a['project_id']!==(int)$p['id']||!$this->one('SELECT 1 FROM inv_project_sales_agents WHERE project_id=? AND sales_agent_id=?',[$p['id'],$this->uid()])) throw new HttpError(403,'Project not assigned.');
         if ($a['status']!=='available'||$a['currency']!==$b['currency']) throw new HttpError(409,'Unit unavailable or currency mismatch.');
         $buyer=$this->fileReference($b['buyerPhotoUrl']??'','portrait'); $tazkira=$this->fileReference($b['tazkiraPhotoUrl']??'','tazkira');
         $serial='SA'.str_pad((string)$this->uid(),2,'0',STR_PAD_LEFT).'PRC-'.$p['code'].'-'.$a['unit_number'].'-'.gmdate('dmy');
         $this->execute('INSERT INTO crm_deal_handoffs(lead_id,deal_serial,sales_agent_id,project_id,apartment_id,agreed_amount,currency,buyer_photo_url,tazkira_photo_url) VALUES (?,?,?,?,?,?,?,?,?)',[$lead['id'],$serial,$this->uid(),$p['id'],$a['id'],$b['amount'],$b['currency'],$buyer,$tazkira]);
-        $this->execute("UPDATE inv_apartments SET status='deal_closed',version=version+1 WHERE id=?",[$a['id']]); $this->execute("UPDATE cc_leads SET project_id=?,apartment_id=?,stage_code='DC' WHERE id=?",[$p['id'],$a['id'],$lead['id']]);
+        $this->execute("UPDATE inv_apartments SET status='deal_closed',version=version+1 WHERE id=?",[$a['id']]); $this->execute("UPDATE cc_leads SET project_id=?,apartment_id=?,property_kind='unit',property_id=?,stage_code='DC' WHERE id=?",[$p['id'],$a['id'],$a['id'],$lead['id']]);
     }
     private function engineeringCreate(array $b): array {
         $this->roleOnly(['manager']); $project=$this->record('inv_projects',(int)($b['projectId']??0)); $agent=$this->activeUser((int)($b['assigneeId']??0));

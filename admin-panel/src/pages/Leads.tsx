@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, type Lead } from '../api';
+import InquiryFollowupEditor, { inquiryLabels, inquiryTime } from '../components/InquiryFollowupEditor';
 
 function escapeCsvCell(value: unknown): string {
   const raw = value === null || value === undefined ? '' : String(value);
@@ -257,6 +258,9 @@ export default function Leads() {
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('ALL');
   const [exportNotice, setExportNotice] = useState('');
+  const [editing, setEditing] = useState<Lead | null>(null);
+  const labels = inquiryLabels();
+  const t = (key: keyof typeof labels) => labels[key];
 
   useEffect(() => {
     api
@@ -328,7 +332,8 @@ export default function Leads() {
         l.email.toLowerCase().includes(q) ||
         l.phone.toLowerCase().includes(q) ||
         (l.property_name ?? '').toLowerCase().includes(q) ||
-        (l.message ?? '').toLowerCase().includes(q)
+        (l.message ?? '').toLowerCase().includes(q) ||
+        (l.receipt_reference ?? '').toLowerCase().includes(q)
       );
     });
   }, [items, searchQuery, stageFilter]);
@@ -567,7 +572,7 @@ export default function Leads() {
           type="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search leads by name, email, phone, or property…"
+          placeholder={t('search')}
           style={S.searchInput}
           aria-label="Search leads"
         />
@@ -585,6 +590,8 @@ export default function Leads() {
         </div>
       </div>
 
+      {editing && <InquiryFollowupEditor key={editing.id} inquiry={editing} onClose={() => setEditing(null)} onSaved={updated => { setItems(current => current.map(item => item.id === updated.id ? updated : item)); setEditing(null); }} />}
+
       <div style={{ overflowX: 'auto' }}>
         <table style={S.table} data-testid="admin-leads-table">
           <thead>
@@ -594,6 +601,7 @@ export default function Leads() {
                   {h}
                 </th>
               ))}
+              <th style={S.th}>{t('reference')}</th><th style={S.th}>{t('title')}</th>
             </tr>
           </thead>
           <tbody>
@@ -620,11 +628,17 @@ export default function Leads() {
                   </span>
                 </td>
                 <td style={S.td}>{new Date(l.created_at).toLocaleDateString()}</td>
+                <td style={{...S.td,overflowWrap:'anywhere',maxWidth:230}} dir="ltr">{l.receipt_reference || '—'}</td>
+                <td style={S.td}>
+                  <p>{t(l.followup_status || 'new')}</p>
+                  {l.followup_at && <p>{t('nextTime')}: <time dateTime={inquiryTime(l.followup_at)}>{new Date(inquiryTime(l.followup_at)).toLocaleString()}</time></p>}
+                  <button type="button" onClick={() => setEditing(l)} style={{minHeight:44,padding:'0.5rem 0.75rem',background:'#FFFFFF',border:'1px solid #E2E8F0',borderRadius:6,cursor:'pointer'}}>{t('edit')}</button>
+                </td>
               </tr>
             ))}
             {filteredItems.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ ...S.td, textAlign: 'center', color: '#94a3b8' }}>
+                <td colSpan={8} style={{ ...S.td, textAlign: 'center', color: '#94a3b8' }}>
                   No leads match the current view.
                 </td>
               </tr>

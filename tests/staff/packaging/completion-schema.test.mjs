@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import path from 'node:path';
+
+test('canonical lead migration preserves historical rows and reports unresolved identities', () => {
+  const php=process.env.STAFF_TEST_PHP || path.resolve('releases/validation/php/php.exe');
+  const result=spawnSync(php,['-d',`extension_dir=${path.join(path.dirname(php),'ext')}`,'-d','extension=pdo_mysql','staff-service/tests/lead-property-migration.php'],{env:{...process.env,STAFF_LOCAL_TEST:'1'},encoding:'utf8'});
+  assert.equal(result.status,0,result.stdout+result.stderr);
+});
 
 test('completion delivery supplies website publication ledger and isolated asset upgrade', () => {
   const script = fs.readFileSync('scripts/package-dashboard-completion.mjs', 'utf8');

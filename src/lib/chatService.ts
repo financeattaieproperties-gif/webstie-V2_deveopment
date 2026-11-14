@@ -1,7 +1,7 @@
-import { createLead } from './dbService';
-
 export interface ChatMessage {
   id: string;
+  client_message_id?: string;
+  delivery_status?: 'pending' | 'confirmed' | 'needs_attention';
   sender: 'customer' | 'admin' | 'system';
   sender_name?: string;
   text: string;
@@ -9,9 +9,9 @@ export interface ChatMessage {
   read_at?: string | null;
   created_at: string;
 }
-
 export interface ChatConversation {
   id: string;
+  version?: number;
   customer_name: string;
   customer_phone: string;
   customer_email?: string;
@@ -28,378 +28,130 @@ export interface ChatConversation {
   updated_at: string;
   messages: ChatMessage[];
 }
-
-const SESSION_STORAGE_KEY = 'attaie_customer_chat_session_v1';
-const LOCAL_STORE_KEY = 'attaie_chat_conversations_v1';
-const LEAD_SYNCED_PREFIX = 'attaie_chat_lead_synced_';
-const TYPING_TTL_MS = 6000;
-
-function resolveChatEndpoint(): string {
-  const apiEnv = (import.meta.env?.VITE_API_URL as string | undefined) || '';
-  const root = apiEnv.replace(/\/api\/?$/, '');
-  return `${root}/chat-service.php`;
+const SESSION_KEY = 'attaie_customer_chat_session_v1';
+const CACHE_KEY = 'attaie_customer_chat_cache_v2';
+const flights = new Map<string, Promise<void>>();
+const tokens = new Map<string, string>();
+let cacheFlight: Promise<unknown> = Promise.resolve();
+function endpoint(): string { return `${((import.meta.env?.VITE_API_URL as string | undefined) || '').replace(/\/api\/?$/, '')}/chat-service.php`; }
+function readCache(): ChatConversation[] {
+  try { const rows = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]'); return Array.isArray(rows) ? rows : []; }
+  catch { return []; }
 }
-
-function enrichConversationClient(conv: ChatConversation): ChatConversation {
-  const nowMs = Date.now();
-  const custTs = conv.typing_customer_at ? Date.parse(conv.typing_customer_at) : NaN;
-  const admTs = conv.typing_admin_at ? Date.parse(conv.typing_admin_at) : NaN;
-
-  return {
-    ...conv,
-    is_customer_typing:
-      Boolean(conv.is_customer_typing) ||
-      (Number.isFinite(custTs) && nowMs - custTs <= TYPING_TTL_MS),
-    is_admin_typing:
-      Boolean(conv.is_admin_typing) ||
-      (Number.isFinite(admTs) && nowMs - admTs <= TYPING_TTL_MS),
-    messages: (conv.messages || []).map(m => ({
-      ...m,
-      read_status: m.read_status ?? 'sent',
-      read_at: m.read_at ?? null,
-    })),
+function store(conv: ChatConversation): void {
+  // Persistence failures propagate to the composer; never claim an unsaved message is queued.
+  localStorage.setItem(CACHE_KEY, JSON.stringify([conv, ...readCache().filter(row => row.id !== conv.id)]));
+}
+async function updateCache(id: string, update: (current?: ChatConversation) => ChatConversation | undefined): Promise<ChatConversation | undefined> {
+  const mutate = () => {
+    const next = update(readCache().find(conv => conv.id === id));
+    if (next) store(next);
+    return next;
   };
+  if (navigator.locks) return navigator.locks.request('attaie-customer-chat-cache', mutate);
+  const next = cacheFlight.then(mutate, mutate);
+  cacheFlight = next.catch(() => undefined);
+  return next;
 }
-
-function readLocalConversations(): ChatConversation[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? (parsed as ChatConversation[]).map(enrichConversationClient)
-      : [];
-  } catch {
-    return [];
-  }
+function tokenFor(sessionId: string): string {
+  if (tokens.has(sessionId)) return tokens.get(sessionId)!;
+  const session = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+  if (session.sessionId !== sessionId || !/^[a-f0-9]{64}$/.test(session.ownerToken || '')) throw new Error('Chat session unavailable');
+  tokens.set(sessionId, session.ownerToken);
+  return session.ownerToken;
 }
-
-function writeLocalConversations(list: ChatConversation[]): void {
+export function getStoredCustomerSession(): {sessionId:string;name:string;phone:string;email:string} {
   try {
-    localStorage.setItem(LOCAL_STORE_KEY, JSON.stringify(list));
-  } catch {
-    // ignore storage errors
-  }
-}
-
-function broadcastChatEvent(payload: Record<string, unknown>): void {
-  try {
-    if (typeof BroadcastChannel !== 'undefined') {
-      const bc = new BroadcastChannel('attaie_live_chat_channel');
-      bc.postMessage(payload);
-      bc.close();
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+    if (typeof session.sessionId === 'string' && /^[a-f0-9]{64}$/.test(session.ownerToken || '')) {
+      tokens.set(session.sessionId,session.ownerToken);
+      return {sessionId:session.sessionId,name:session.name || '',phone:session.phone || '',email:session.email || ''};
     }
-  } catch {
-    // ignore if BroadcastChannel is unsupported
-  }
+  } catch { /* The composer will show persistence errors if storage remains unavailable. */ }
+  // Old ID-only threads stay in the private Admin history; they cannot be claimed by guessing their ID.
+  const session = {sessionId:`chat_${crypto.randomUUID()}`,name:'',phone:'',email:''};
+  tokens.set(session.sessionId, crypto.randomUUID().replaceAll('-','') + crypto.randomUUID().replaceAll('-',''));
+  try { saveCustomerSession(session); } catch { /* Keep an in-memory identity until the user can save. */ }
+  return session;
 }
-
-function upsertLocalConversation(conv: ChatConversation, eventType = 'CONVERSATION_UPDATED'): void {
-  const enriched = enrichConversationClient(conv);
-  const list = readLocalConversations();
-  const idx = list.findIndex(c => c.id === enriched.id);
-  if (idx >= 0) {
-    list.splice(idx, 1);
-  }
-  list.unshift(enriched);
-  writeLocalConversations(list);
-  broadcastChatEvent({ type: eventType, conversation: enriched });
+export function saveCustomerSession(session: {sessionId:string;name:string;phone:string;email:string}): void {
+  localStorage.setItem(SESSION_KEY,JSON.stringify({...session,ownerToken:tokenFor(session.sessionId)}));
 }
-
-export function getStoredCustomerSession(): {
-  sessionId: string;
-  name: string;
-  phone: string;
-  email: string;
-} {
-  try {
-    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.sessionId === 'string') {
-        return {
-          sessionId: parsed.sessionId,
-          name: parsed.name || '',
-          phone: parsed.phone || '',
-          email: parsed.email || '',
-        };
-      }
-    }
-  } catch {
-    // ignore
-  }
-  const newId = `chat_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-  return { sessionId: newId, name: '', phone: '', email: '' };
+function mergeRemote(remote: ChatConversation, local?: ChatConversation): ChatConversation {
+  if (local && (remote.version ?? 0) < (local.version ?? 0)) return local;
+  const ids = new Set(remote.messages.map(message => message.client_message_id));
+  const pending = (local?.messages || []).filter(message => message.delivery_status !== 'confirmed' && !ids.has(message.client_message_id));
+  return {...remote,messages:[...remote.messages.map(message => ({...message,delivery_status:'confirmed' as const})),...pending]};
 }
-
-export function saveCustomerSession(data: {
-  sessionId: string;
-  name: string;
-  phone: string;
-  email: string;
-}): void {
-  try {
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // ignore
-  }
-}
-
-export async function fetchCustomerThread(
-  sessionId: string,
-  markRead = false
-): Promise<ChatConversation | null> {
-  if (!sessionId) return null;
-
-  try {
-    const markParam = markRead ? '&mark_read=1' : '';
-    const res = await fetch(
-      `${resolveChatEndpoint()}?action=thread&session_id=${encodeURIComponent(sessionId)}${markParam}&t=${Date.now()}`,
-      { cache: 'no-store' }
-    );
-    if (res.ok) {
-      const data = (await res.json()) as { conversation?: ChatConversation | null };
-      if (data && 'conversation' in data) {
-        if (data.conversation) {
-          const enriched = enrichConversationClient(data.conversation);
-          upsertLocalConversation(enriched, 'THREAD_SYNC');
-          return enriched;
-        }
-        return null;
-      }
-    }
-  } catch {
-    // fallback to local store in static preview
-  }
-
-  const localList = readLocalConversations();
-  const found = localList.find(c => c.id === sessionId) ?? null;
-  if (!found) return null;
-
-  if (markRead) {
-    const hasUnreadAdmin =
-      found.unread_customer > 0 ||
-      found.messages.some(m => m.sender === 'admin' && m.read_status !== 'read');
-    if (hasUnreadAdmin) {
-      const now = new Date().toISOString();
-      const updated: ChatConversation = {
-        ...found,
-        unread_customer: 0,
-        messages: found.messages.map(m =>
-          m.sender === 'admin' && m.read_status !== 'read'
-            ? { ...m, read_status: 'read', read_at: now }
-            : m
-        ),
-      };
-      upsertLocalConversation(updated, 'MESSAGES_READ');
-      return enrichConversationClient(updated);
-    }
-  }
-  return enrichConversationClient(found);
-}
-
-/**
- * Updates the read_status ('sent' -> 'read') for admin messages read by the customer.
- */
-export async function markCustomerMessagesRead(
-  sessionId: string
-): Promise<ChatConversation | null> {
-  if (!sessionId) return null;
-
-  try {
-    const res = await fetch(`${resolveChatEndpoint()}?action=mark_read`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'mark_read',
-        session_id: sessionId,
-        reader: 'customer',
-      }),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { conversation?: ChatConversation | null };
-      if (data?.conversation) {
-        const enriched = enrichConversationClient(data.conversation);
-        upsertLocalConversation(enriched, 'MESSAGES_READ');
-        return enriched;
-      }
-    }
-  } catch {
-    // fallback to local store in static preview
-  }
-
-  return fetchCustomerThread(sessionId, true);
-}
-
-/**
- * Sends a real-time typing signal for the customer ('typing...' indicator).
- */
-export async function sendCustomerTypingSignal(
-  sessionId: string,
-  isTyping: boolean,
-  customerName?: string
-): Promise<void> {
-  if (!sessionId) return;
-
-  const nowIso = isTyping ? new Date().toISOString() : null;
-
-  // 1. Update local store & broadcast immediately via BroadcastChannel
-  try {
-    const list = readLocalConversations();
-    const idx = list.findIndex(c => c.id === sessionId);
-    if (idx >= 0) {
-      list[idx] = {
-        ...list[idx],
-        typing_customer_at: nowIso,
-        is_customer_typing: isTyping,
-      };
-      writeLocalConversations(list);
-    }
-    broadcastChatEvent({
-      type: 'TYPING_STATUS',
-      sessionId,
-      actor: 'customer',
-      isTyping,
-      actorName: customerName || 'Customer',
-      timestamp: Date.now(),
-    });
-  } catch {
-    // ignore
-  }
-
-  // 2. Notify PHP backend for cross-device admin polling
-  try {
-    await fetch(`${resolveChatEndpoint()}?action=typing`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'typing',
-        session_id: sessionId,
-        actor: 'customer',
-        is_typing: isTyping,
-        actor_name: customerName || 'Customer',
-      }),
-    });
-  } catch {
-    // ignore network errors in static preview
-  }
-}
-
-export async function sendCustomerChatMessage(input: {
-  sessionId: string;
-  name?: string;
-  phone?: string;
-  email?: string;
-  pageContext?: string;
-  message: string;
-}): Promise<ChatConversation> {
-  const sessionId =
-    input.sessionId ||
-    `chat_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-
-  const visitorLabel =
-    input.name?.trim() || `Visitor #${sessionId.slice(-4).toUpperCase()}`;
-  const visitorPhone = input.phone?.trim() || '';
-
-  saveCustomerSession({
-    sessionId,
-    name: visitorLabel,
-    phone: visitorPhone,
-    email: input.email || '',
+async function request(action: string, sessionId: string, body?: Record<string,unknown>): Promise<ChatConversation | null> {
+  const response = await fetch(`${endpoint()}?action=${action}${body ? '' : `&session_id=${encodeURIComponent(sessionId)}`}`, {
+    method: body ? 'POST' : 'GET', credentials:'include', cache:'no-store',
+    headers:{'Content-Type':'application/json','X-Chat-Token':tokenFor(sessionId)},
+    ...(body ? {body:JSON.stringify({...body,session_id:sessionId})} : {}),
   });
-
-  // Also forward the first message of the session to the existing Leads endpoint if contact info exists
-  const leadSyncKey = `${LEAD_SYNCED_PREFIX}${sessionId}`;
-  if (!localStorage.getItem(leadSyncKey) && input.name?.trim() && input.phone?.trim()) {
-    try {
-      localStorage.setItem(leadSyncKey, '1');
-      void createLead({
-        name: visitorLabel,
-        email: input.email?.trim() || 'chat@attaieproperties.com',
-        phone: visitorPhone,
-        message: `[Direct Chat] ${input.message}`,
-        propertyName: input.pageContext || 'Website Live Chat',
-      }).catch(() => {});
-    } catch {
-      // ignore
-    }
-  }
-
-  try {
-    const res = await fetch(`${resolveChatEndpoint()}?action=customer_message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'customer_message',
-        session_id: sessionId,
-        customer_name: visitorLabel,
-        customer_phone: visitorPhone,
-        customer_email: input.email || '',
-        page_context: input.pageContext || '',
-        message: input.message,
-      }),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { conversation?: ChatConversation };
-      if (data?.conversation) {
-        const enriched = enrichConversationClient(data.conversation);
-        upsertLocalConversation(enriched, 'NEW_CUSTOMER_MESSAGE');
-        return enriched;
+  if (!response.ok) throw Object.assign(new Error('Chat delivery unavailable'),{status:response.status});
+  const data = await response.json() as {conversation:ChatConversation|null};
+  if (!('conversation' in data)) throw new Error('Invalid chat confirmation');
+  return data.conversation;
+}
+export function flushCustomerChatMessages(sessionId: string): Promise<void> {
+  const current = flights.get(sessionId); if (current) return current;
+  const flight = (async () => {
+    const local = readCache().find(conv => conv.id === sessionId);
+    for (const message of local?.messages || []) {
+      if (message.sender !== 'customer' || message.delivery_status !== 'pending') continue;
+      try {
+        const remote = await request('customer_message',sessionId,{customer_name:local!.customer_name,customer_phone:local!.customer_phone,customer_email:local!.customer_email || '',page_context:local!.page_context || '',message:message.text,client_message_id:message.client_message_id});
+        if (!remote) throw new Error('No chat confirmation');
+        await updateCache(sessionId,current=>mergeRemote(remote,current));
+      } catch (error) {
+        const status = (error as {status?:number})?.status;
+        if (status && status >= 400 && status < 500 && ![408,429].includes(status)) {
+          await updateCache(sessionId,latest=>latest ? {...latest,messages:latest.messages.map(item=>item.client_message_id===message.client_message_id && item.delivery_status!=='confirmed' ? {...item,delivery_status:'needs_attention'} : item)} : latest);
+        }
+        break;
       }
     }
-  } catch {
-    // fallback to local store in static preview
-  }
-
-  const now = new Date().toISOString();
-  const list = readLocalConversations();
-  const existing = list.find(c => c.id === sessionId);
-  const newMsg: ChatMessage = {
-    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    sender: 'customer',
-    sender_name: visitorLabel,
-    text: input.message,
-    read_status: 'sent',
-    read_at: null,
-    created_at: now,
-  };
-
-  if (!existing) {
-    const created: ChatConversation = {
-      id: sessionId,
-      customer_name: visitorLabel,
-      customer_phone: visitorPhone,
-      customer_email: input.email || '',
-      page_context: input.pageContext || '',
-      status: 'open',
-      unread_admin: 1,
-      unread_customer: 0,
-      typing_customer_at: null,
-      typing_admin_at: null,
-      typing_admin_name: null,
-      is_customer_typing: false,
-      is_admin_typing: false,
-      created_at: now,
-      updated_at: now,
-      messages: [newMsg],
-    };
-    upsertLocalConversation(created, 'NEW_CUSTOMER_MESSAGE');
-    return created;
-  }
-
-  const updated: ChatConversation = {
+  })().finally(()=>flights.delete(sessionId));
+  flights.set(sessionId,flight);return flight;
+}
+export async function fetchCustomerThread(sessionId: string, markRead=false): Promise<ChatConversation|null> {
+  await flushCustomerChatMessages(sessionId);
+  const local=readCache().find(conv=>conv.id===sessionId);
+  try {
+    const remote=await request('thread',sessionId);
+    if (remote) { const merged=(await updateCache(sessionId,current=>mergeRemote(remote,current)))!;return markRead ? await markCustomerMessagesRead(sessionId) || merged : merged; }
+  } catch { /* Cached records retain explicit pending/confirmed delivery states. */ }
+  return readCache().find(conv=>conv.id===sessionId) || local || null;
+}
+/** Updates read receipts only after the server confirms the mutation. */
+export async function markCustomerMessagesRead(sessionId:string): Promise<ChatConversation|null> {
+  try { const remote=await request('customer_mark_read',sessionId,{});if(remote) return (await updateCache(sessionId,current=>mergeRemote(remote,current)))!; }
+  catch { /* Read status stays unchanged during transport failure. */ }
+  return null;
+}
+/** Sends a typing signal; it never implies delivery of a message. */
+export async function sendCustomerTypingSignal(sessionId:string,isTyping:boolean,customerName?:string): Promise<void> {
+  try { await request('typing',sessionId,{actor:'customer',is_typing:isTyping,actor_name:customerName || 'Customer'}); }
+  catch { /* A missed typing signal expires naturally; no local receipt is fabricated. */ }
+}
+export async function retryCustomerChatMessages(sessionId:string): Promise<void> {
+  await updateCache(sessionId,local=>local ? {...local,messages:local.messages.map(message=>message.delivery_status==='needs_attention'?{...message,delivery_status:'pending'}:message)} : local);
+  await flushCustomerChatMessages(sessionId);
+}
+export async function sendCustomerChatMessage(input:{sessionId:string;name?:string;phone?:string;email?:string;pageContext?:string;message:string}): Promise<ChatConversation> {
+  const sessionId=input.sessionId;
+  const now=new Date().toISOString(), clientId=crypto.randomUUID();
+  const session=getStoredCustomerSession();
+  saveCustomerSession({...session,sessionId,name:input.name || session.name,phone:input.phone || session.phone,email:input.email || session.email});
+  await updateCache(sessionId,existing=>({
+    id:sessionId,customer_name:input.name || existing?.customer_name || `Visitor #${sessionId.slice(-4).toUpperCase()}`,
+    customer_phone:input.phone || existing?.customer_phone || '',customer_email:input.email || existing?.customer_email || '',page_context:input.pageContext || existing?.page_context || '',
+    status:'open',unread_admin:existing?.unread_admin || 0,unread_customer:existing?.unread_customer || 0,
+    created_at:existing?.created_at || now,updated_at:now,
     ...existing,
-    customer_name: existing.customer_name || visitorLabel,
-    customer_phone: existing.customer_phone || visitorPhone,
-    customer_email: input.email || existing.customer_email,
-    page_context: input.pageContext || existing.page_context,
-    status: 'open',
-    unread_admin: (existing.unread_admin || 0) + 1,
-    typing_customer_at: null,
-    is_customer_typing: false,
-    updated_at: now,
-    messages: [...existing.messages, newMsg],
-  };
-  upsertLocalConversation(updated, 'NEW_CUSTOMER_MESSAGE');
-  return updated;
+    messages:[...(existing?.messages || []),{id:clientId,client_message_id:clientId,sender:'customer',text:input.message,created_at:now,delivery_status:'pending'}],
+  }));
+  await flushCustomerChatMessages(sessionId);
+  return readCache().find(item=>item.id===sessionId)!;
 }

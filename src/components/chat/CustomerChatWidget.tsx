@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,10 +15,12 @@ import {
   sendCustomerChatMessage,
   markCustomerMessagesRead,
   sendCustomerTypingSignal,
+  retryCustomerChatMessages,
   type ChatConversation,
 } from '../../lib/chatService';
 
 export const CustomerChatWidget: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   // Direct Customer-to-Admin Chat state
@@ -39,7 +42,7 @@ export const CustomerChatWidget: React.FC = () => {
 
   const loadThread = useCallback(async () => {
     if (!session.sessionId) return;
-    const conv = await fetchCustomerThread(session.sessionId);
+    const conv = await fetchCustomerThread(session.sessionId).catch(() => null);
     if (conv) {
       if (conv.is_admin_typing) {
         setIsAdminTyping(true);
@@ -77,80 +80,11 @@ export const CustomerChatWidget: React.FC = () => {
       void loadThread();
     }, 2500);
 
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'attaie_chat_conversations_v1') {
-        void loadThread();
-      }
-    };
-    window.addEventListener('storage', onStorage);
-
-    let bc: BroadcastChannel | null = null;
-    try {
-      if (typeof BroadcastChannel !== 'undefined') {
-        bc = new BroadcastChannel('attaie_live_chat_channel');
-        bc.onmessage = (event: MessageEvent) => {
-          const data = event.data as {
-            type?: string;
-            conversationId?: string;
-            sender?: string;
-            senderName?: string;
-            isTyping?: boolean;
-            reader?: string;
-            readAt?: string;
-          } | null;
-          if (!data) return;
-
-          if (data.conversationId && session.sessionId && data.conversationId !== session.sessionId) {
-            return;
-          }
-
-          if (data.type === 'TYPING_STATUS' && data.sender === 'admin') {
-            setIsAdminTyping(Boolean(data.isTyping));
-            if (data.senderName) {
-              setTypingAdminName(data.senderName);
-            }
-            if (adminTypingTimeoutRef.current) {
-              clearTimeout(adminTypingTimeoutRef.current);
-            }
-            if (data.isTyping) {
-              adminTypingTimeoutRef.current = setTimeout(() => {
-                setIsAdminTyping(false);
-              }, 6000);
-            }
-            return;
-          }
-
-          if (data.type === 'MESSAGES_READ' && data.reader === 'admin') {
-            const readTime = data.readAt || new Date().toISOString();
-            setConversation((prev) => {
-              if (!prev) return prev;
-              return {
-                ...prev,
-                unread_admin: 0,
-                messages: prev.messages.map((m) =>
-                  m.sender === 'customer'
-                    ? { ...m, read_status: 'read' as const, read_at: m.read_at || readTime }
-                    : m
-                ),
-              };
-            });
-            return;
-          }
-
-          if (data.type === 'NEW_ADMIN_REPLY') {
-            setIsAdminTyping(false);
-            void loadThread();
-          }
-        };
-      }
-    } catch {
-      // ignore if BroadcastChannel is unsupported
-    }
-
+    const online = () => { void loadThread(); };
+    window.addEventListener('online', online);
     return () => {
       clearInterval(interval);
-      window.removeEventListener('storage', onStorage);
-      bc?.close();
+      window.removeEventListener('online', online);
     };
   }, [loadThread, session.sessionId]);
 
@@ -165,21 +99,6 @@ export const CustomerChatWidget: React.FC = () => {
       void markCustomerMessagesRead(session.sessionId).then((updated) => {
         if (updated) {
           setConversation(updated);
-        } else {
-          const now = new Date().toISOString();
-          setConversation((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  unread_customer: 0,
-                  messages: prev.messages.map((m) =>
-                    m.sender === 'admin'
-                      ? { ...m, read_status: 'read' as const, read_at: m.read_at || now }
-                      : m
-                  ),
-                }
-              : prev
-          );
         }
       });
     }
@@ -266,13 +185,14 @@ export const CustomerChatWidget: React.FC = () => {
       setConversation(updated);
       setMessageText('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message.');
+      setError(t('chatDelivery.saveError'));
     } finally {
       setSending(false);
     }
   };
 
-  const renderReadReceiptBadge = (readStatus?: 'sent' | 'read', readAt?: string | null) => {
+  const renderReadReceiptBadge = (readStatus?: 'sent' | 'read', readAt?: string | null, deliveryStatus?: 'pending' | 'confirmed' | 'needs_attention') => {
+    if (deliveryStatus !== 'confirmed') return <span className="text-xs text-neutral-600 mt-1">{t(deliveryStatus === 'needs_attention' ? 'chatDelivery.needsAttention' : 'chatDelivery.pending')}</span>;
     const isRead = readStatus === 'read';
     const timeLabel = readAt
       ? new Date(readAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -356,7 +276,7 @@ export const CustomerChatWidget: React.FC = () => {
                       {msg.text}
                     </div>
                     {isCustomer ? (
-                      renderReadReceiptBadge(msg.read_status, msg.read_at)
+                      renderReadReceiptBadge(msg.read_status, msg.read_at, msg.delivery_status)
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-medium mt-1 px-1">
                         <CheckCheck size={11} className="text-emerald-600" />
@@ -392,6 +312,7 @@ export const CustomerChatWidget: React.FC = () => {
               onSubmit={handleSendMessage}
               className="p-3.5 bg-white border-t border-neutral-200 space-y-2 shrink-0"
             >
+              {conversation?.messages.some(message => message.delivery_status === 'needs_attention') && <button type="button" className="text-sm underline min-h-11" onClick={() => { void retryCustomerChatMessages(session.sessionId).then(loadThread).catch(() => setError(t('chatDelivery.saveError'))); }}>{t('chatDelivery.retry')}</button>}
               {error && (
                 <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
                   {error}
@@ -401,6 +322,7 @@ export const CustomerChatWidget: React.FC = () => {
               <div className="flex items-end gap-2">
                 <textarea
                   rows={2}
+                  maxLength={2000}
                   value={messageText}
                   onChange={(e) => handleCustomerTypingInput(e.target.value)}
                   onKeyDown={(e) => {

@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
 import { api, type ChatConversation } from '../api';
+import en from '../../../src/i18n/locales/en.json';
+import fa from '../../../src/i18n/locales/fa.json';
+function chatLabel(key: keyof typeof en.chatDelivery): string { return (localStorage.getItem('lang') === 'fa' ? fa : en).chatDelivery[key]; }
 
 export interface IncomingVisualAlert {
   id: string;
@@ -330,39 +333,6 @@ const S = {
   } as const,
 };
 
-const SAMPLE_DEMO_CONVERSATIONS: ChatConversation[] = [
-  {
-    id: 'chat_demo_kabul_1',
-    customer_name: 'احمد سیرت (Ahmad Seerat)',
-    customer_phone: '+93 78 412 8890',
-    customer_email: 'ahmad.seerat@example.com',
-    property_id: '101',
-    property_name: 'اپارتمان سه اتاقه کرایی در وزیر اکبر خان',
-    page_context: '/properties/101 — اپارتمان سه اتاقه کرایی در وزیر اکبر خان',
-    status: 'open',
-    unread_admin: 2,
-    unread_customer: 0,
-    created_at: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-    messages: [
-      {
-        id: 'm_demo_1',
-        sender: 'customer',
-        sender_name: 'احمد سیرت',
-        text: 'سلام، آیا این اپارتمان سه اتاقه در وزیر اکبر خان هنوز برای کرایه موجود است؟ مرکزگرمی و لفت ۲۴ ساعته دارد؟',
-        created_at: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'm_demo_3',
-        sender: 'customer',
-        sender_name: 'احمد سیرت',
-        text: 'اگر امکان داشته باشد فردا ساعت ۱۰ صبح برای دیدن اپارتمان بیایم.',
-        created_at: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-      },
-    ],
-  },
-];
-
 function isRtlText(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text);
 }
@@ -384,6 +354,8 @@ export default function ChatInbox() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState<string>('');
+  const [chatError, setChatError] = useState('');
+  const replyRequest = useRef<{conversationId:string;text:string;id:string} | null>(null);
   const [sentNotice, setSentNotice] = useState<string | null>(null);
 
   // Real-time visual alert notification state
@@ -406,11 +378,6 @@ export default function ChatInbox() {
   const lastAdminTypingSentRef = useRef<number>(0);
 
   // New conversation modal state
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [newCustomerName, setNewCustomerName] = useState('');
-  const [newCustomerPhone, setNewCustomerPhone] = useState('');
-  const [newCustomerContext, setNewCustomerContext] = useState('');
-  const [newInitialReply, setNewInitialReply] = useState('');
 
   const triggerIncomingVisualAlert = useCallback(
     (conv: ChatConversation, msgId: string, msgText: string, msgCreatedAt: string) => {
@@ -453,18 +420,9 @@ export default function ChatInbox() {
   );
 
   const loadConversations = useCallback(async () => {
-    let list = await api.getChatConversations();
-
-    // Seed sample Kabul customer threads once in preview if none exist yet
-    if (list.length === 0 && !sessionStorage.getItem('attaie_chat_demo_seeded')) {
-      try {
-        sessionStorage.setItem('attaie_chat_demo_seeded', '1');
-        localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(SAMPLE_DEMO_CONVERSATIONS));
-        list = SAMPLE_DEMO_CONVERSATIONS;
-      } catch {
-        // ignore
-      }
-    }
+    try {
+    const list = await api.getChatConversations();
+    setChatError('');
 
     // Detect newly arrived customer messages for real-time visual alerts
     const seen = seenCustomerMsgIdsRef.current;
@@ -511,6 +469,7 @@ export default function ChatInbox() {
       if (prev && list.some(c => c.id === prev)) return prev;
       return list[0]?.id ?? null;
     });
+    } catch { setChatError(chatLabel('unavailable')); setLoading(false); }
   }, [triggerIncomingVisualAlert]);
 
   // Real-time listeners: Polling + Storage Event + BroadcastChannel
@@ -617,7 +576,7 @@ export default function ChatInbox() {
               : c
           )
         );
-      });
+      }).catch(() => setChatError(chatLabel('readError')));
     }
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -631,91 +590,6 @@ export default function ChatInbox() {
       if (next) playNotificationChime();
       return next;
     });
-  };
-
-  /**
-   * Simulates a real-time incoming customer message so the admin can test the visual alert listener immediately.
-   */
-  const handleSimulateIncomingMessage = () => {
-    const now = new Date().toISOString();
-    const msgId = `msg_live_${Date.now()}`;
-    const sampleCustomers = [
-      {
-        id: 'chat_live_sim_1',
-        name: 'فرهاد نوری (Farhad Noori)',
-        phone: '+93 70 554 1920',
-        context: '/properties/102 — اپارتمان چهار اتاقه فروشی در شهر نو',
-        text: 'سلام! آیا این اپارتمان چهار اتاقه در شهر نو قباله شرعی دارد و امکان بازدید امروز عصر هست؟',
-      },
-      {
-        id: 'chat_demo_kabul_1',
-        name: 'احمد سیرت (Ahmad Seerat)',
-        phone: '+93 78 412 8890',
-        context: '/properties/101 — اپارتمان سه اتاقه کرایی در وزیر اکبر خان',
-        text: 'لطفاً آدرس دقیق سرک وزیر اکبر خان را برایم ارسال کنید تا برای بازدید بیایم.',
-      },
-    ];
-    const pick = sampleCustomers[Math.floor(Math.random() * sampleCustomers.length)];
-
-    const existingIdx = conversations.findIndex(c => c.id === pick.id);
-    let updatedConv: ChatConversation;
-    const nextList = [...conversations];
-
-    if (existingIdx >= 0) {
-      const target = nextList[existingIdx];
-      updatedConv = {
-        ...target,
-        status: 'open',
-        unread_admin: (target.unread_admin || 0) + 1,
-        updated_at: now,
-        messages: [
-          ...target.messages,
-          {
-            id: msgId,
-            sender: 'customer',
-            sender_name: pick.name,
-            text: pick.text,
-            created_at: now,
-          },
-        ],
-      };
-      nextList.splice(existingIdx, 1);
-      nextList.unshift(updatedConv);
-    } else {
-      updatedConv = {
-        id: pick.id,
-        customer_name: pick.name,
-        customer_phone: pick.phone,
-        customer_email: '',
-        property_id: '102',
-        property_name: pick.context,
-        page_context: pick.context,
-        status: 'open',
-        unread_admin: 1,
-        unread_customer: 0,
-        created_at: now,
-        updated_at: now,
-        messages: [
-          {
-            id: msgId,
-            sender: 'customer',
-            sender_name: pick.name,
-            text: pick.text,
-            created_at: now,
-          },
-        ],
-      };
-      nextList.unshift(updatedConv);
-    }
-
-    seenCustomerMsgIdsRef.current.add(msgId);
-    setConversations(nextList);
-    try {
-      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(nextList));
-    } catch {
-      // ignore
-    }
-    triggerIncomingVisualAlert(updatedConv, msgId, pick.text, now);
   };
 
   const handleOpenAlertConversation = (alert: IncomingVisualAlert) => {
@@ -767,7 +641,10 @@ export default function ChatInbox() {
     void api.sendAdminTypingSignal(activeConv.id, false, senderLabel);
 
     try {
-      const updated = await api.replyToChat(activeConv.id, trimmedReply, senderLabel);
+      if (!replyRequest.current || replyRequest.current.conversationId !== activeConv.id || replyRequest.current.text !== trimmedReply) replyRequest.current={conversationId:activeConv.id,text:trimmedReply,id:crypto.randomUUID()};
+      const updated = await api.replyToChat(activeConv.id, trimmedReply, senderLabel, replyRequest.current.id);
+      replyRequest.current=null;
+      setChatError('');
       if (updated) {
         setConversations(prev => [updated, ...prev.filter(c => c.id !== updated.id)]);
       }
@@ -775,73 +652,16 @@ export default function ChatInbox() {
       setVisualAlerts(prev => prev.filter(a => a.conversationId !== activeConv.id));
       setSentNotice(`✓ Reply delivered to ${activeConv.customer_name}`);
       setTimeout(() => setSentNotice(null), 3500);
+    } catch { setChatError(chatLabel('replyError'));
     } finally {
       setSending(false);
-    }
-  };
-
-  const handleCreateNewThread = (e: FormEvent) => {
-    e.preventDefault();
-    if (!newCustomerName.trim() || !newCustomerPhone.trim() || !newInitialReply.trim()) return;
-
-    const now = new Date().toISOString();
-    const newThread: ChatConversation = {
-      id: `chat_${Date.now()}`,
-      customer_name: newCustomerName.trim(),
-      customer_phone: newCustomerPhone.trim(),
-      customer_email: '',
-      property_id: null,
-      property_name: newCustomerContext.trim() || 'Direct Advisor Outreach',
-      page_context: newCustomerContext.trim() || 'Direct Advisor Outreach',
-      status: 'open',
-      unread_admin: 0,
-      unread_customer: 1,
-      created_at: now,
-      updated_at: now,
-      messages: [
-        {
-          id: `msg_${Date.now()}_adm`,
-          sender: 'admin',
-          sender_name: adminName.trim() || 'Attaie Advisor',
-          text: newInitialReply.trim(),
-          created_at: now,
-        },
-      ],
-    };
-
-    const nextList = [newThread, ...conversations];
-    setConversations(nextList);
-    setSelectedId(newThread.id);
-    try {
-      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(nextList));
-    } catch {
-      // ignore
-    }
-    setNewCustomerName('');
-    setNewCustomerPhone('');
-    setNewCustomerContext('');
-    setNewInitialReply('');
-    setShowNewModal(false);
-  };
-
-  const handleLoadSampleThreads = () => {
-    const merged = [
-      ...SAMPLE_DEMO_CONVERSATIONS.filter(d => !conversations.some(c => c.id === d.id)),
-      ...conversations,
-    ];
-    setConversations(merged);
-    if (merged[0]) setSelectedId(merged[0].id);
-    try {
-      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(merged));
-    } catch {
-      // ignore
     }
   };
 
   const handleToggleStatus = async () => {
     if (!activeConv) return;
     const nextStatus = activeConv.status === 'resolved' ? 'open' : 'resolved';
-    await api.updateChatStatus(activeConv.id, nextStatus);
+    try { await api.updateChatStatus(activeConv.id, nextStatus); } catch { setChatError(chatLabel('unavailable')); return; }
     setConversations(prev =>
       prev.map(c => (c.id === activeConv.id ? { ...c, status: nextStatus } : c))
     );
@@ -850,7 +670,7 @@ export default function ChatInbox() {
   const handleDelete = async () => {
     if (!activeConv) return;
     const targetId = activeConv.id;
-    await api.deleteChatConversation(targetId);
+    try { await api.deleteChatConversation(targetId); } catch { setChatError(chatLabel('unavailable')); return; }
     setVisualAlerts(prev => prev.filter(a => a.conversationId !== targetId));
     setConversations(prev => {
       const remaining = prev.filter(c => c.id !== targetId);
@@ -885,6 +705,7 @@ export default function ChatInbox() {
       {/* Top Dashboard Header */}
       <div style={S.headerRow}>
         <div>
+      {chatError && <p role="alert" style={{padding:'0.85rem',border:'1px solid #E2E8F0',borderRadius:6,color:'#B91C1C',background:'#FFFFFF'}}>{chatError}</p>}
           <h1 style={S.title}>
             <span>Customer Chat Dashboard</span>
             <span
@@ -924,21 +745,8 @@ export default function ChatInbox() {
           >
             {soundEnabled ? 'Sound On' : 'Sound Muted'}
           </button>
-          <button
-            type="button"
-            style={S.btnSecondary}
-            onClick={handleSimulateIncomingMessage}
-            title="Simulate an incoming customer message to test the real-time visual alert"
-          >
-            Test Incoming Alert
-          </button>
-          <button
-            type="button"
-            style={{ ...S.btnGold, padding: '0.42rem 0.9rem', fontSize: '0.76rem' }}
-            onClick={() => setShowNewModal(v => !v)}
-          >
-            + Message Customer
-          </button>
+
+
           <button
             type="button"
             style={S.btnSecondary}
@@ -1045,84 +853,6 @@ export default function ChatInbox() {
       </div>
 
       {/* Optional New Outbound Customer Thread Form */}
-      {showNewModal && (
-        <form
-          onSubmit={handleCreateNewThread}
-          style={{
-            background: '#FFFFFF',
-            border: '1px solid #0F172A',
-            borderRadius: 10,
-            padding: '1rem 1.25rem',
-            marginBottom: '1rem',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '0.75rem',
-            alignItems: 'end',
-            flexShrink: 0,
-          }}
-        >
-          <div>
-            <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#374151', marginBottom: 4 }}>
-              Customer Name *
-            </label>
-            <input
-              required
-              style={{ ...S.searchInput, marginBottom: 0 }}
-              value={newCustomerName}
-              onChange={e => setNewCustomerName(e.target.value)}
-              placeholder="e.g. حمیدالله کریمی"
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#374151', marginBottom: 4 }}>
-              Customer Phone *
-            </label>
-            <input
-              required
-              style={{ ...S.searchInput, marginBottom: 0 }}
-              value={newCustomerPhone}
-              onChange={e => setNewCustomerPhone(e.target.value)}
-              placeholder="+93 78 222 2279"
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#374151', marginBottom: 4 }}>
-              Property / Context
-            </label>
-            <input
-              style={{ ...S.searchInput, marginBottom: 0 }}
-              value={newCustomerContext}
-              onChange={e => setNewCustomerContext(e.target.value)}
-              placeholder="e.g. ATP-101 Wazir Akbar Khan"
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#374151', marginBottom: 4 }}>
-              Initial Message *
-            </label>
-            <input
-              required
-              style={{ ...S.searchInput, marginBottom: 0 }}
-              value={newInitialReply}
-              onChange={e => setNewInitialReply(e.target.value)}
-              placeholder="سلام، در مورد درخواست ملک شما…"
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="submit" style={{ ...S.btnGold, padding: '0.5rem 1rem', fontSize: '0.78rem' }}>
-              Send & Open
-            </button>
-            <button
-              type="button"
-              style={S.btnSecondary}
-              onClick={() => setShowNewModal(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
       {/* Main Two-Pane Inbox & Reply Workspace */}
       <div style={S.shell}>
         {/* Left Sidebar: Active Customer Conversations List */}
@@ -1163,15 +893,7 @@ export default function ChatInbox() {
             ) : filteredConversations.length === 0 ? (
               <div style={{ padding: '2.5rem 1.25rem', textAlign: 'center', color: '#9CA3AF', fontSize: '0.84rem' }}>
                 <p style={{ marginBottom: '0.75rem' }}>No customer conversations match this filter.</p>
-                {conversations.length === 0 && (
-                  <button
-                    type="button"
-                    style={S.btnSecondary}
-                    onClick={handleLoadSampleThreads}
-                  >
-                    Load Sample Active Conversations
-                  </button>
-                )}
+
               </div>
             ) : (
               filteredConversations.map(conv => {

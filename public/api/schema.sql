@@ -133,6 +133,16 @@ CREATE TABLE IF NOT EXISTS leads (
   stage         VARCHAR(50)  DEFAULT 'New',
   source        VARCHAR(50)  DEFAULT 'Website',
   status        VARCHAR(50)  DEFAULT 'Pending',
+  client_request_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  payload_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  receipt_reference VARCHAR(36) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  receipt_submitted_at DATETIME DEFAULT NULL,
+  followup_status ENUM('new','in_progress','resolved') NOT NULL DEFAULT 'new',
+  followup_notes TEXT DEFAULT NULL,
+  followup_at DATETIME DEFAULT NULL,
+  version INT UNSIGNED NOT NULL DEFAULT 1,
+  UNIQUE KEY uq_inquiry_request (client_request_id),
+  UNIQUE KEY uq_inquiry_receipt (receipt_reference),
   created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_leads_status_stage (status, stage),
   INDEX idx_leads_property_id (property_id),
@@ -384,3 +394,17 @@ CREATE TABLE IF NOT EXISTS ai_chat_rate_limits (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE IF NOT EXISTS website_inquiry_events (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  inquiry_id INT NOT NULL,
+  actor VARCHAR(100) NOT NULL,
+  previous_status VARCHAR(30) NOT NULL,
+  next_status VARCHAR(30) NOT NULL,
+  notes TEXT DEFAULT NULL,
+  followup_at DATETIME DEFAULT NULL,
+  version INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  INDEX idx_inquiry_event (inquiry_id, id),
+  CONSTRAINT fk_inquiry_event FOREIGN KEY (inquiry_id) REFERENCES leads(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
