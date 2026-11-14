@@ -26,7 +26,7 @@
 - Website Admin cookies and Firebase staff sessions cannot cross-authorize APIs (Task 1).
 - Build outputs cannot accidentally package old project data or omit chat/hidden routing files (Task 2).
 - Upgrade schema composition cannot silently reapply destructive or fresh-only imports (Task 2).
-- Local/mock checks cannot be reported as live deployment or real Firebase/call-provider evidence (Tasks 2/3).
+- Local/mock checks cannot be reported as live deployment or real Firebase/call-provider evidence (Tasks 2/4).
 
 ## Task 1: Complete role and workflow acceptance matrix
 
@@ -55,7 +55,20 @@
 - [ ] Run `node scripts/package-dashboard-completion.mjs --audit-source`, `npm.cmd run lint`, `npm.cmd run build:admin`, `npm.cmd --prefix apps/staff run typecheck`, `npm.cmd --prefix apps/staff test`, and the affected packaging/HTTP/browser tests. Run normal packaging only with explicitly supplied public build configuration, without reading `.env.local`; inspect the resulting manifests/archives. Root `npm run build` alone is not deployment evidence and is not needed to obtain an upload tree.
 - [ ] Commit source/docs/tests with `build: package revised v2 workflows for manual staging`. Keep generated/private release artifacts out of the source commit unless the repository's artifact policy explicitly includes a safe manifest.
 
-## Task 3: Owner-run hosted acceptance and evidence handoff
+## Task 3: Department-user onboarding and executable deployment handoff
+
+**Files:** Maintain `docs/staff/v2-cpanel-database-user-setup.md`; modify `docs/staff/dashboard-completion-delivery.md`, `scripts/package-dashboard-completion.mjs`, `apps/staff/src/main.tsx` and staff EN/FA locales only as needed for accurate onboarding controls; create `scripts/create-website-admin-hash.py`, `tests/staff/api/staff-provisioning.mjs`, and `tests/staff/packaging/onboarding.test.mjs`.
+
+**Interfaces:** Existing `POST staff` body is `{name,username,firebaseUid,role,departmentCode,teamLeaderId?}` and existing `POST departments` accepts `{code,name}`. Ordinary staff/department provisioning requires `core.staff.manage`/`core.departments.manage`; current migration 100 grants these to Manager. Do not grant CEO or website Admin new capabilities as a deployment shortcut. Local hash helper accepts `--php PHP_BINARY --output PRIVATE_FILE`, prompts privately twice using `getpass`, passes the password to local PHP through stdin, and writes only `password_hash(..., PASSWORD_DEFAULT)` output to a private file. Never put the password in arguments, SQL, logs, or an upload directory.
+
+- [ ] Add isolated HTTP cases for Manager creating an operational employee with exact Firebase UID/email, intended department and existing role; duplicate UID/email rejection; invalid department/role rejection; inactive/foreign team-leader rejection as applicable to current team-assignment rules; unauthorized provisioning denial for website Admin, ordinary staff, and CEO under current grants. Confirm a department record alone grants no role permissions, and Firebase login without a MySQL mapping grants no staff access.
+- [ ] Add packaging assertions that the new release includes the deployment guide and blank role/UID mapping templates only outside upload roots; includes the private local hash helper/instructions; contains no real account mappings/passwords; and documents all three database targets, four runtime connection users, exact public/private paths, and fresh versus upgrade alternatives. Test hash-helper confirmation mismatch and successful hash verification without outputting plaintext or invoking a public PHP endpoint.
+- [ ] Run `node tests/staff/api/staff-provisioning.mjs` and `node --test tests/staff/packaging/onboarding.test.mjs`; confirm new handoff/helper expectations fail before implementation. Existing correct provisioning behavior can already pass; do not invent product changes to force a red test.
+- [ ] Implement only onboarding gaps identified by these tests. Keep role and department selectors explicit and reviewable, correct inconsistent initial defaults, and show the selected role's canonical department as a guide without inventing an unrestricted role editor. Keep privileged CEO/Manager setup in the reviewed private bootstrap and use Manager for operational staff. Document project/team assignment separately from role selection. New custom roles outside the server allowlist require separately approved implementation, not just a new department label.
+- [ ] Implement the local hash helper and include its invocation instructions/prerequisites in the private handoff. Package a copy of `v2-cpanel-database-user-setup.md` outside the web root and link it from the delivery guide. The runbook must name the exact resulting archive paths and PHP version validated for that release; unresolved hosting paths remain explicit placeholders, never invented values.
+- [ ] Walk through the runbook against a disposable fictional staging fixture: distinct document root, HTTPS/PHP prerequisites, three database names, scoped service-user grants, schema imports, private config, two Firebase bootstrap mappings, separate website Admin hash, public extraction/hidden files, and an employee for each operational department. Record any host-only check as not run. Rerun provisioning/packaging tests and affected staff typechecks; commit with `docs: deliver cpanel database and department onboarding workflow`.
+
+## Task 4: Owner-run hosted acceptance and evidence handoff
 
 **Files:** Complete `docs/staff/v2-revised-workflow-acceptance.md` and the release-specific external handoff checklist. No new hosted installer or automatic database migration.
 
@@ -63,6 +76,7 @@
 
 - [ ] Before external operations, verify the intended testing origin, distinct V2 database names/users, document root, private directory, and current installation state. Fresh SQL is only for new empty V2 databases. For populated targets inspect versions and back up records/uploads/configuration before authorized additive imports.
 - [ ] Hand the owner the exact new upload ZIP contents, private ZIP outside all roots, three separate SQL targets/upgrade guidance, and concise cPanel/phpMyAdmin steps. Explain required hidden files and private paths. Leave V1 entirely outside the instructions.
+- [ ] Follow `docs/staff/v2-cpanel-database-user-setup.md` sections 1–13 in order. Record the actual testing document root, distinct database names and user/grant matrix privately; provision CEO plus Manager, then add operational users through Manager with Firebase UID/email and intended department/role. Do not confuse cPanel service accounts, employee identities, CRM roles, or website Admin.
 - [ ] After the owner confirms upload/import, observe or collect concrete hosted results: real Firebase sign-in/session expiry and UID mappings; separate website Admin auth; Apache/deep routes/PHP extensions; private file protection; all configured role checks; Editor review/publication; public inquiry offline recovery/barcode receipt; Admin follow-up/chat; lead uniqueness. Add hosted custom roles to the matrix before acceptance.
 - [ ] Record real outcomes without converting not-run checks into passes. If no host access/evidence exists, report locally verified package with hosted checks pending. Keep CTC disabled until separately authorized provider testing; document its PHP routing configuration and simulation results without claiming a live call succeeded.
 - [ ] Publish the final handoff with changed-file summary, local evidence, package identity, hosted outcomes, and explicit remaining uncertainty. Commit safe acceptance documentation only after evidence is recorded; no private setup or login details enter git.

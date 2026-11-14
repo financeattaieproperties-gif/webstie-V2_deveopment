@@ -57,6 +57,12 @@ Within this architecture, the following are implementation choices made for this
 
 Keep website Admin session authentication separate from Firebase staff authentication. A website Admin cookie must not authorize staff APIs; a Firebase staff session must not authorize website Admin APIs. Source role `admin` inside staff is not the website Admin account.
 
+### Staff roles and department onboarding
+
+Roles are persisted in internal CRM MySQL: `core_departments`, `core_roles`, `core_permissions`, and `core_role_permissions`. Employee `core_users.firebase_uid` maps Firebase identity to one `core_users.role`, optional explicit `department_code`, and optional `team_leader_id`. Firebase manages identity/password verification; MySQL is the application authorization authority. Website Admin is separate in website `admin_users`.
+
+Deployment includes a manual onboarding guide and verified provisioning workflow. Bootstrap separate CEO and Manager Firebase identities and MySQL mappings. Current migration 100 reserves staff/department management for Manager; preserve that policy. Manager creates departments and operational employees after each employee is created in V2 Firebase and its exact UID/email is available. Department creation does not create an unrestricted custom role or grant permissions. Role selection, department assignment, Sales project/team assignments, and live allowed/denied login checks must each be explained and verified. Ordinary employees do not need cPanel, database service-user, or Firebase project IAM accounts.
+
 ## Website inquiry lifecycle
 
 Persist a validated form payload and `clientRequestId` before the network attempt. States are `pending`, `sending`, `needs_attention`, and `confirmed`. If local persistence fails, retain entered fields and show an actionable error; do not claim the form was saved offline.
@@ -100,6 +106,8 @@ Build a permission matrix from current configured staff roles and grants, not an
 Rebuild public website, `/admin/`, `/dashboard/`, `/management/`, and `/callcenter/` into a new manual staging directory. Require Firebase configuration, no bundled projects/units/artwork, hidden routing files, private configuration outside all roots, and separate fresh/upgrade SQL. Package chat explicitly with private storage configuration; keep unrelated AI chat blocked. Leave chargeable CTC disabled in test packages; verify configuration and simulated calls locally. A real provider call, if later requested, must target V2 and be recorded separately from mocked evidence.
 
 Owner manually uploads ZIP contents and imports SQL through phpMyAdmin after checking the V2 target. Fresh schemas apply only to new empty V2 databases; upgrades preserve existing V2 records/uploads/configuration. Record import, live authentication, routing, role-denial, workflow, responsive/RTL, and receipt results. Server verification flags remain false until those observations exist. V1 source/deployment/database are outside this work.
+
+The implementation handoff must include `docs/staff/v2-cpanel-database-user-setup.md` outside public upload roots. It gives ordered cPanel instructions for the isolated domain, certificate/HTTPS and per-domain PHP, three database creation/imports, scoped application service users, private configuration/session/chat paths, exact UID bootstrap mappings, separate website Admin password hash generated locally, department onboarding, and hosted acceptance/rollback. Provide a private local prompt-based hash helper; do not require cPanel Terminal, plaintext SQL passwords, or a public hashing page. Record actual hosting values privately rather than filling unknown paths/credentials into source.
 
 ## Non-goals and handoff
 

@@ -37,6 +37,8 @@ The three product plans can be reviewed independently. Execute sequentially by d
 3. [Editor submission revisions and website publication](2026-11-13-v2-publication-review-plan.md)
 4. [Acceptance matrix and manual staging delivery](2026-11-13-v2-acceptance-staging-plan.md)
 
+Deployment is part of implementation delivery, including tested onboarding, not an undocumented action after building. Follow the [step-by-step cPanel, database, and department-user setup guide](../../staff/v2-cpanel-database-user-setup.md) after the revised package is prepared. It covers separate document root/HTTPS/PHP, three databases and scoped connection users, fresh/upgrade imports, private files, Firebase CEO/Manager bootstrap, website Admin, operational department users, and hosted acceptance/rollback. Current role/permission storage is documented there; Manager provisions operational staff under the existing grants.
+
 - [ ] Review the written design, including the explicitly labeled implementation choices.
 - [ ] Complete each product plan's tests and review before integration packaging.
 - [ ] Complete local integrated acceptance and prepare a new manual staging package.
