@@ -37,6 +37,8 @@ import {
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import type {
   DashboardData,
@@ -60,9 +62,9 @@ import {
   taskState,
 } from "../../../packages/staff-contracts/workflow.mjs";
 import {
-  getRoleDashboardLayout,
-  readPreferredWorkspaceRole,
+  getPasswordVisibilityProps,
   resolvePageForRole,
+  resolvePanelSpec,
   resolveWorkspaceRoleOnSignIn,
   writePreferredWorkspaceRole,
 } from "../../../packages/staff-contracts/role-preference.mjs";
@@ -97,31 +99,36 @@ type Page =
   | "profile";
 
 const searchParams = new URLSearchParams(location.search);
-const isDashboardPath = location.pathname.startsWith("/dashboard");
+const panelSpec = resolvePanelSpec(
+  location.pathname,
+  location.hostname,
+  __STAFF_ROLE__,
+);
+const isDashboardPath = panelSpec.panelId === "dashboard";
 const isPreview =
   (__STAFF_PREVIEW_ALLOWED__ && searchParams.get("preview") === "1") ||
   (__STAFF_PREVIEW_ALLOWED__ && isDashboardPath);
-const management = __STAFF_PREVIEW_ALLOWED__
-  ? location.pathname.startsWith("/management") || isDashboardPath
-  : __STAFF_ROLE__ === "management" || __STAFF_ROLE__ === "dashboard";
+const management = panelSpec.panelId !== "callcenter";
 
 const initialRoleParam = searchParams.get("role") as Role | null;
-const initialPreferredRole = resolveWorkspaceRoleOnSignIn({
-  urlRoleParam: initialRoleParam,
-  management,
-}) as Role;
+const initialPreferredRole = (
+  initialRoleParam ||
+  (panelSpec.panelId !== "dashboard"
+    ? panelSpec.defaultRole
+    : resolveWorkspaceRoleOnSignIn({
+        urlRoleParam: initialRoleParam,
+        management,
+      }))
+) as Role;
 
-document.documentElement.dataset.staffRole = isDashboardPath
-  ? "dashboard"
-  : management
-    ? "management"
-    : "callcenter";
+document.documentElement.dataset.staffRole =
+  panelSpec.panelId === "callcenter"
+    ? "callcenter"
+    : panelSpec.panelId === "management" || panelSpec.panelId === "ceo"
+      ? "management"
+      : "dashboard";
 
-const base = isDashboardPath
-  ? "/dashboard"
-  : management
-    ? "/management"
-    : "/callcenter";
+const base = panelSpec.basePath;
 
 const client: Client = isPreview
   ? await import("./preview").then((m) =>
@@ -257,25 +264,46 @@ function App() {
           setSession(null);
           return;
         }
-        const preferredRole = resolveWorkspaceRoleOnSignIn({
-          urlRoleParam: initialRoleParam,
-          sessionRole: s.user.role,
-          management,
-        }) as Role;
         let resolvedUser = s.user;
-        if (preferredRole && preferredRole !== s.user.role) {
-          const switched = client.setActiveRole(preferredRole);
-          if (switched) {
-            resolvedUser = switched;
-          } else if (isDashboardPath || isPreview) {
-            resolvedUser = { ...s.user, role: preferredRole };
+        if (isPreview) {
+          const previewRole = (
+            initialRoleParam ||
+            (panelSpec.panelId !== "dashboard"
+              ? panelSpec.defaultRole
+              : resolveWorkspaceRoleOnSignIn({
+                  urlRoleParam: initialRoleParam,
+                  sessionRole: s.user.role,
+                  management,
+                }))
+          ) as Role;
+          if (previewRole && previewRole !== s.user.role) {
+            resolvedUser =
+              client.setActiveRole(previewRole) || {
+                ...s.user,
+                role: previewRole,
+              };
           }
         }
         writePreferredWorkspaceRole(resolvedUser.role);
         setSession({ ...s, user: resolvedUser });
-        setPage((current) => resolvePageForRole(resolvedUser.role, current, false) as Page);
+        const pathTail = location.pathname.replace(/\/$/, "").split("/").pop() || "";
+        const isRootPath = [
+          "ceo",
+          "management",
+          "sales-leader",
+          "sales",
+          "callcenter",
+          "finance",
+          "marketing",
+          "engineering",
+          "dashboard",
+          "",
+        ].includes(pathTail);
+        setPage((current) => resolvePageForRole(resolvedUser.role, current, isRootPath) as Page);
       })
-      .catch((e) => setError(e.message))
+      .catch(() => {
+        setSession(null);
+      })
       .finally(() => setStarting(false));
     const expire = () => {
       setSession(null);
@@ -348,28 +376,6 @@ function App() {
     setQuery("");
     setNumber(0);
     setMenu(false);
-  };
-
-  const handleSwitchRole = async (nextRole: Role) => {
-    writePreferredWorkspaceRole(nextRole);
-    const updatedUser =
-      client.setActiveRole(nextRole) ||
-      (session ? { ...session.user, role: nextRole } : null);
-    if (updatedUser && session) {
-      setSession({ ...session, user: updatedUser });
-      const resolvedPage = resolvePageForRole(nextRole, page, false) as Page;
-      if (resolvedPage !== page) {
-        navigate(resolvedPage);
-      }
-      setNotice(
-        `Switched active workspace role to ${ROLE_LABELS[nextRole] || nextRole} (saved to browser preferences).`,
-      );
-      const s = await client.session();
-      if (s.user) {
-        setSession({ ...s, user: updatedUser });
-      }
-      await refresh();
-    }
   };
 
   const format = (value: string) =>
@@ -690,17 +696,13 @@ function App() {
       <Login
         t={t}
         error={error}
-        onLogin={(s, preferredRole) => {
-          const targetRole = preferredRole || s.user.role;
-          writePreferredWorkspaceRole(targetRole);
-          const switched =
-            targetRole !== s.user.role ? client.setActiveRole(targetRole) : null;
-          const effectiveUser = switched || { ...s.user, role: targetRole };
+        onLogin={(s) => {
+          writePreferredWorkspaceRole(s.user.role);
           setPlayingEntrance(true);
-          setSession({ ...s, user: effectiveUser });
+          setSession(s);
           setPage((current) =>
             resolvePageForRole(
-              effectiveUser.role,
+              s.user.role,
               current,
               current === "overview",
             ) as Page,
@@ -724,8 +726,7 @@ function App() {
   if (
     !isDashboardPath &&
     !isPreview &&
-    ((management && !manager) ||
-      (!management && session.user.role !== "callcenter"))
+    !(panelSpec.allowedRoles as readonly string[]).includes(session.user.role)
   )
     return (
       <div className="center-screen">
@@ -991,32 +992,6 @@ function App() {
             </span>
           </div>
         </header>
-        {isPreview && (
-          <div className="role-switcher-bar" data-testid="role-switcher-bar">
-            <span>
-              <strong>{t("Internal Office CRM Role Switcher")}</strong> ·{" "}
-              Active: <strong>{session.user.name}</strong> ({roleLabel})
-            </span>
-            <div className="role-switcher-controls">
-              <label htmlFor="preview-role-select" style={{ fontWeight: 600 }}>
-                Switch Department Role:
-              </label>
-              <select
-                id="preview-role-select"
-                data-testid="preview-role-select"
-                value={session.user.role}
-                onChange={(e) => void handleSwitchRole(e.target.value as Role)}
-              >
-                {SWITCHABLE_ROLES.map((r) => (
-                  <option key={r.role} value={r.role}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-              <a href={base + "/"}>{t("Exit preview")}</a>
-            </div>
-          </div>
-        )}
         <main className="content">
           <div className="page-heading">
             <div>
@@ -1924,24 +1899,6 @@ function App() {
                 <h2>{session.user.name}</h2>
                 <p>{t(roleLabel)}</p>
                 <p>{t("All times in Kabul · UTC+04:30")}</p>
-                <div style={{ marginBlock: 16 }}>
-                  <Field label={t("Preferred Workspace Role")}>
-                    <select
-                      data-testid="profile-preferred-role-select"
-                      value={session.user.role}
-                      onChange={(e) => void handleSwitchRole(e.target.value as Role)}
-                    >
-                      {SWITCHABLE_ROLES.map((r) => (
-                        <option key={r.role} value={r.role}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <small style={{ display: "block", marginTop: 6, color: "#64748B", fontSize: 11 }}>
-                    {t("Saved in localStorage — automatically loads the matching dashboard layout on sign-in.")}
-                  </small>
-                </div>
                 <button
                   className="button secondary"
                   onClick={() =>
@@ -2919,56 +2876,89 @@ function Login({
   t,
   error,
   onLogin,
-  management,
 }: {
   t: Translate;
   error: string;
-  onLogin: (s: Session, preferredRole: Role) => void;
+  onLogin: (s: Session) => void;
   management: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
-  const [preferredRole, setPreferredRole] = useState<Role>(
-    () =>
-      (readPreferredWorkspaceRole(
-        undefined,
-        management ? "manager" : "sales",
-      ) as Role) || (management ? "manager" : "sales"),
-  );
-  const preferredLayout = getRoleDashboardLayout(preferredRole);
+  const [showPassword, setShowPassword] = useState(false);
+  const passwordId = React.useId();
+  const pwdProps = getPasswordVisibilityProps(showPassword);
+
+  const PanelIcon =
+    panelSpec.panelId === "ceo" || panelSpec.panelId === "management"
+      ? ShieldCheck
+      : panelSpec.panelId === "sales" || panelSpec.panelId === "sales-leader"
+        ? Briefcase
+        : panelSpec.panelId === "finance"
+          ? DollarSign
+          : panelSpec.panelId === "marketing"
+            ? Film
+            : panelSpec.panelId === "engineering"
+              ? Compass
+              : Headphones;
 
   return (
-    <div className="login-screen">
+    <div className="login-screen" data-panel-id={panelSpec.panelId}>
       <div className="login-brand">
         <AttaieLogoEntrance mode="header" variant="navy" />
-        <span>{t("Workspace")}</span>
+        <span>{t(panelSpec.loginTitle)}</span>
       </div>
       <main className="login-card">
         <span className="login-icon">
-          <Headphones size={25} />
+          <PanelIcon size={24} />
         </span>
-        <div className="eyebrow">ATTAIE PROPERTIES</div>
-        <h1>{t(management ? "Staff management" : "Welcome back.")}</h1>
-        <p>
-          {t(
-            management
-              ? "Sign in to support your team."
-              : "Sign in to your call center workspace.",
-          )}
-        </p>
+        <div className="eyebrow">{t(panelSpec.loginEyebrow)}</div>
+        <h1>{t(panelSpec.loginTitle)}</h1>
+        <p>{t(panelSpec.loginSubtitle)}</p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            padding: "8px 12px",
+            marginBottom: 20,
+            borderRadius: 6,
+            background: "#F8FAFC",
+            border: "1px solid #E2E8F0",
+            fontSize: 11,
+            color: "#334155",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          <span>
+            <strong>{t("Role")}:</strong> {t(panelSpec.fixedRoleLabel)}
+          </span>
+          <code
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#0F172A",
+              background: "#FFFFFF",
+              padding: "2px 6px",
+              borderRadius: 4,
+              border: "1px solid #E2E8F0",
+            }}
+          >
+            {panelSpec.basePath}
+          </code>
+        </div>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
             setBusy(true);
             setFailure("");
-            writePreferredWorkspaceRole(preferredRole);
             try {
               const loggedIn = await client.login(
                 String(f.get("username")),
                 String(f.get("password")),
               );
-              onLogin(loggedIn, preferredRole);
+              onLogin(loggedIn);
             } catch (err) {
               setFailure((err as Error).message);
             } finally {
@@ -2976,24 +2966,6 @@ function Login({
             }
           }}
         >
-          <Field label={t("Preferred Workspace Role")}>
-            <select
-              name="preferredRole"
-              data-testid="login-preferred-role-select"
-              value={preferredRole}
-              onChange={(e) => {
-                const next = e.target.value as Role;
-                setPreferredRole(next);
-                writePreferredWorkspaceRole(next);
-              }}
-            >
-              {SWITCHABLE_ROLES.map((r) => (
-                <option key={r.role} value={r.role}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field label={t("Email")}>
             <input
               name="username"
@@ -3002,14 +2974,28 @@ function Login({
               required
             />
           </Field>
-          <Field label={t("Password")}>
-            <input
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-          </Field>
+          <div className="field">
+            <label htmlFor={passwordId}>{t("Password")}</label>
+            <div className="password-input-wrap">
+              <input
+                id={passwordId}
+                name="password"
+                type={pwdProps.inputType}
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={t(pwdProps.buttonLabel)}
+                aria-pressed={pwdProps.ariaPressed}
+                title={t(pwdProps.buttonLabel)}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
           <FormError message={t(failure || error)} />
           <button className="button full" disabled={busy}>
             {t(busy ? "Signing in…" : "Sign in")}
@@ -3020,19 +3006,9 @@ function Login({
           <summary>{t("Forgot password?")}</summary>
           <PasswordForm t={t} done={() => {}} />
         </details>
-        {__STAFF_PREVIEW_ALLOWED__ && (
-          <a
-            className="preview-link"
-            data-testid="login-preview-role-link"
-            href={`${base}/${preferredLayout.defaultPage === "overview" ? "" : preferredLayout.defaultPage}?preview=1&role=${preferredRole}`}
-          >
-            Explore {ROLE_LABELS[preferredRole] || preferredRole} workspace{" "}
-            <ArrowUpRight size={14} />
-          </a>
-        )}
         <p className="login-private">
           <ShieldCheck size={14} />
-          {t("Private, authorized staff access only")}
+          {t("Private, authorized staff access only · Fixed Role Workspace")}
         </p>
       </main>
       <footer>Attaie Properties · Kabul, Afghanistan</footer>

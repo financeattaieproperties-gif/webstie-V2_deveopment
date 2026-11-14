@@ -673,16 +673,42 @@ function createMockPhpApiPlugin(): Plugin {
         return sendJson(res, statusOnly);
       }
 
-      // Serve sub-application HTML entries for /admin, /callcenter, /management, and /dashboard
-      const subAppMatch = pathname.match(/^\/(admin|callcenter|management|dashboard)(?:\/.*)?$/);
-      if (subAppMatch && method === 'GET' && !/\.[a-zA-Z0-9]+$/.test(pathname)) {
+      // Serve sub-application static assets and HTML entries for all standalone panels
+      const subAppMatch = pathname.match(/^\/(admin|callcenter|management|dashboard|ceo|sales-leader|sales|finance|marketing|engineering)(\/.*)?$/);
+      if (subAppMatch && method === 'GET') {
         const subApp = subAppMatch[1];
-        const candidateHtml = path.resolve(import.meta.dirname, `./public/${subApp}/index.html`);
-        if (fs.existsSync(candidateHtml)) {
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.end(fs.readFileSync(candidateHtml, 'utf8'));
-          return;
+        if (/\.[a-zA-Z0-9]+$/.test(pathname)) {
+          const candidateAsset = path.resolve(import.meta.dirname, `./public${pathname}`);
+          if (fs.existsSync(candidateAsset) && fs.statSync(candidateAsset).isFile()) {
+            const ext = path.extname(candidateAsset).toLowerCase();
+            const mimeMap: Record<string, string> = {
+              '.js': 'application/javascript; charset=utf-8',
+              '.mjs': 'application/javascript; charset=utf-8',
+              '.css': 'text/css; charset=utf-8',
+              '.html': 'text/html; charset=utf-8',
+              '.json': 'application/json; charset=utf-8',
+              '.svg': 'image/svg+xml',
+              '.png': 'image/png',
+              '.jpg': 'image/jpeg',
+              '.jpeg': 'image/jpeg',
+              '.webp': 'image/webp',
+              '.ttf': 'font/ttf',
+              '.woff': 'font/woff',
+              '.woff2': 'font/woff2',
+            };
+            res.statusCode = 200;
+            res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
+            res.end(fs.readFileSync(candidateAsset));
+            return;
+          }
+        } else {
+          const candidateHtml = path.resolve(import.meta.dirname, `./public/${subApp}/index.html`);
+          if (fs.existsSync(candidateHtml)) {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(fs.readFileSync(candidateHtml, 'utf8'));
+            return;
+          }
         }
       }
 

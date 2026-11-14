@@ -7,7 +7,8 @@
     "dev": "vite --port 3000 --host 0.0.0.0",
     "generate:sitemap": "node scripts/generate-sitemap.mjs",
     "build:admin": "tsc --noEmit -p admin-panel/tsconfig.json && vite build admin-panel --config admin-panel/vite.config.ts",
-    "build": "node scripts/generate-sitemap.mjs && npm run build:admin && tsc --noEmit && vite build",
+    "build:staff": "node scripts/build-public-staff.mjs",
+    "build": "node scripts/generate-sitemap.mjs && npm run build:admin && npm run build:staff && tsc --noEmit && vite build",
     "preview": "vite preview --port 3000 --host 0.0.0.0",
     "lint": "tsc --noEmit"
   },

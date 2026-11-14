@@ -1,14 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  PANEL_SPECS,
   STAFF_PREFERRED_ROLE_KEY,
   UNIFIED_PREFERRED_ROLE_KEY,
   clearPreferredWorkspaceRole,
+  getPasswordVisibilityProps,
   getRoleDashboardLayout,
   isValidWorkspaceRole,
   mapStaffRoleToUnifiedLens,
   readPreferredWorkspaceRole,
   resolvePageForRole,
+  resolvePanelSpec,
   resolveWorkspaceRoleOnSignIn,
   writePreferredWorkspaceRole,
 } from "../../../packages/staff-contracts/role-preference.mjs";
@@ -27,6 +30,18 @@ function createMemoryStorage() {
     },
   };
 }
+
+test("getPasswordVisibilityProps toggles inputType, buttonLabel, and ariaPressed cleanly", () => {
+  const hidden = getPasswordVisibilityProps(false);
+  assert.equal(hidden.inputType, "password");
+  assert.equal(hidden.buttonLabel, "Show password");
+  assert.equal(hidden.ariaPressed, false);
+
+  const visible = getPasswordVisibilityProps(true);
+  assert.equal(visible.inputType, "text");
+  assert.equal(visible.buttonLabel, "Hide password");
+  assert.equal(visible.ariaPressed, true);
+});
 
 test("workspace role persistence reads, writes, validates, and syncs Sales vs Manager roles across sessions", () => {
   const storage = createMemoryStorage();
@@ -87,22 +102,40 @@ test("resolveWorkspaceRoleOnSignIn prioritizes URL role param, then stored local
   assert.equal(readPreferredWorkspaceRole(storage), "manager");
 });
 
-test("getRoleDashboardLayout and resolvePageForRole map each role to its appropriate dashboard layout", () => {
+test("getRoleDashboardLayout, resolvePageForRole, and resolvePanelSpec map each role and /address endpoint to its dedicated panel and login screen", () => {
   const salesLayout = getRoleDashboardLayout("sales");
   assert.equal(salesLayout.defaultPage, "leads");
   assert.equal(salesLayout.defaultPillar, "sales");
+  assert.equal(salesLayout.workspacePath, "/sales");
   assert.ok(salesLayout.allowedPages.includes("followups"));
   assert.ok(!salesLayout.allowedPages.includes("contracts"));
 
   const managerLayout = getRoleDashboardLayout("manager");
   assert.equal(managerLayout.defaultPage, "overview");
   assert.equal(managerLayout.defaultPillar, "command");
+  assert.equal(managerLayout.workspacePath, "/management");
   assert.ok(managerLayout.allowedPages.includes("contracts"));
   assert.ok(managerLayout.allowedPages.includes("projects"));
 
   const financeLayout = getRoleDashboardLayout("finance_manager");
   assert.equal(financeLayout.defaultPage, "finance");
   assert.equal(financeLayout.defaultPillar, "operations");
+  assert.equal(financeLayout.workspacePath, "/finance");
+
+  // Every dedicated panel endpoint resolves its fixed role and separate login screen spec
+  assert.equal(resolvePanelSpec("/ceo/").defaultRole, "ceo");
+  assert.equal(resolvePanelSpec("/management/").defaultRole, "manager");
+  assert.equal(resolvePanelSpec("/sales-leader/").defaultRole, "sales_leader");
+  assert.equal(resolvePanelSpec("/sales/").defaultRole, "sales");
+  assert.equal(resolvePanelSpec("/callcenter/").defaultRole, "callcenter");
+  assert.equal(resolvePanelSpec("/finance/").defaultRole, "finance_manager");
+  assert.equal(resolvePanelSpec("/marketing/").defaultRole, "marketing_manager");
+  assert.equal(resolvePanelSpec("/engineering/").defaultRole, "architect");
+
+  // Subdomain resolution works for standalone web / PC / Android / Xcode builds
+  assert.equal(resolvePanelSpec("/", "sales.attaieproperties.com").panelId, "sales");
+  assert.equal(resolvePanelSpec("/", "finance.attaieproperties.com").panelId, "finance");
+  assert.ok(Object.keys(PANEL_SPECS).length >= 9);
 
   // When a Sales user is on a page they cannot access (e.g. "contracts"), resolvePageForRole redirects to a valid page
   assert.equal(resolvePageForRole("sales", "contracts", false), "overview");
