@@ -39,6 +39,14 @@ import {
   PanelLeftOpen,
   Eye,
   EyeOff,
+  Fingerprint,
+  WifiOff,
+  Smartphone,
+  BatteryCharging,
+  BatteryFull,
+  BatteryLow,
+  BatteryMedium,
+  BatteryWarning,
 } from "lucide-react";
 import type {
   DashboardData,
@@ -62,13 +70,34 @@ import {
   taskState,
 } from "../../../packages/staff-contracts/workflow.mjs";
 import {
+  getMobilePrimaryTabs,
   getPasswordVisibilityProps,
   resolvePageForRole,
   resolvePanelSpec,
   resolveWorkspaceRoleOnSignIn,
+  shouldAutoPromptBiometric,
   writePreferredWorkspaceRole,
 } from "../../../packages/staff-contracts/role-preference.mjs";
+import {
+  clearOfflineSnapshot,
+  isNetworkOfflineError,
+  readOfflineSnapshot,
+  readOfflineViewData,
+  writeOfflineSessionUser,
+  writeOfflineViewData,
+} from "../../../packages/staff-contracts/offline-cache.mjs";
 import { api } from "./api";
+import {
+  authenticateWithBiometric,
+  clearBiometricEnrollment,
+  enrollBiometric,
+  getBiometricStatus,
+  setQuickSignInPreference,
+} from "./auth/biometric";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
+import { usePWAInstall } from "./hooks/usePWAInstall";
+import { useBatteryStatus } from "./hooks/useBatteryStatus";
+import { registerSalesServiceWorker } from "./pwa/register";
 import { AttaieLogoEntrance } from "./components/AttaieLogoEntrance";
 import { ProjectInventoryWizard } from "./components/ProjectInventoryWizard";
 import { HrContractsWorkspace } from "./components/HrContractsWorkspace";
@@ -79,6 +108,10 @@ import {
   SubmissionsStatusView,
 } from "./components/MarketingWorkspace";
 import { EngineeringWorkspace } from "./components/EngineeringWorkspace";
+import {
+  MobileFollowupCardList,
+  MobileLeadCardList,
+} from "./components/SalesMobileCards";
 import "./styles.css";
 import "./callcenter-theme.css";
 
@@ -129,6 +162,7 @@ document.documentElement.dataset.staffRole =
       : "dashboard";
 
 const base = panelSpec.basePath;
+registerSalesServiceWorker(panelSpec.panelId);
 
 const client: Client = isPreview
   ? await import("./preview").then((m) =>
@@ -221,6 +255,15 @@ function App() {
   const [isCompact, setIsCompact] = useState<boolean>(() => readStaffSidebarCompact());
   const [filter, setFilter] = useState("today");
   const [notice, setNotice] = useState("");
+  const [justSignedOut, setJustSignedOut] = useState(false);
+  const isOnline = useOnlineStatus();
+  const battery = useBatteryStatus(panelSpec.panelId === "sales");
+  const {
+    canInstall: canInstallPwa,
+    isInstalled: isPwaInstalled,
+    promptInstall,
+  } = usePWAInstall();
+  const [offlineSavedAt, setOfflineSavedAt] = useState<string | null>(null);
 
   const handleToggleCompact = () => {
     setIsCompact((prev) => {
@@ -257,10 +300,62 @@ function App() {
   }, [language, isCallCenterOnly]);
 
   useEffect(() => {
-    client
-      .session()
-      .then((s) => {
+    const restoreOfflineSession = () => {
+      const snapshot = readOfflineSnapshot(panelSpec.panelId);
+      const cachedUser = snapshot?.user as StaffUser | undefined;
+      if (
+        !cachedUser ||
+        (!isPreview &&
+          !(panelSpec.allowedRoles as readonly string[]).includes(cachedUser.role))
+      ) {
+        return false;
+      }
+      setSession({
+        user: cachedUser,
+        csrfToken: "",
+        serverTime: snapshot?.savedAt || new Date().toISOString(),
+      });
+      setOfflineSavedAt(snapshot?.savedAt || new Date().toISOString());
+      const pathTail = location.pathname.replace(/\/$/, "").split("/").pop() || "";
+      const isRootPath = [
+        "ceo",
+        "management",
+        "sales-leader",
+        "sales",
+        "callcenter",
+        "finance",
+        "marketing",
+        "engineering",
+        "dashboard",
+        "",
+      ].includes(pathTail);
+      setPage((current) => {
+        const resolvedPage = resolvePageForRole(
+          cachedUser.role,
+          current,
+          isRootPath,
+        ) as Page;
+        const cachedView = readOfflineViewData(
+          panelSpec.panelId,
+          resolvedPage === "profile" ? "overview" : resolvedPage,
+        );
+        if (cachedView?.data) {
+          setData(cachedView.data as DashboardData);
+          setOfflineSavedAt(cachedView.savedAt);
+        }
+        return resolvedPage;
+      });
+      return true;
+    };
+
+    const bootSession = async () => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        if (restoreOfflineSession()) return;
+      }
+      try {
+        const s = await client.session();
         if (!s.user) {
+          clearOfflineSnapshot(panelSpec.panelId);
           setSession(null);
           return;
         }
@@ -285,6 +380,8 @@ function App() {
           }
         }
         writePreferredWorkspaceRole(resolvedUser.role);
+        writeOfflineSessionUser(panelSpec.panelId, resolvedUser);
+        setOfflineSavedAt(null);
         setSession({ ...s, user: resolvedUser });
         const pathTail = location.pathname.replace(/\/$/, "").split("/").pop() || "";
         const isRootPath = [
@@ -300,14 +397,20 @@ function App() {
           "",
         ].includes(pathTail);
         setPage((current) => resolvePageForRole(resolvedUser.role, current, isRootPath) as Page);
-      })
-      .catch(() => {
-        setSession(null);
-      })
-      .finally(() => setStarting(false));
+      } catch (err) {
+        if (!(isNetworkOfflineError(err) && restoreOfflineSession())) {
+          setSession(null);
+        }
+      }
+    };
+
+    void bootSession().finally(() => setStarting(false));
     const expire = () => {
+      clearOfflineSnapshot(panelSpec.panelId);
+      setOfflineSavedAt(null);
       setSession(null);
       setData(null);
+      setJustSignedOut(false);
       setError("Your session ended. Please sign in again.");
     };
     window.addEventListener("staff-session-expired", expire);
@@ -317,24 +420,54 @@ function App() {
   const refresh = useCallback(async () => {
     if (!session) return;
     const current = ++generation.current;
+    const targetView = page === "profile" ? "overview" : page;
     setLoading(true);
     try {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        const cached = readOfflineViewData(panelSpec.panelId, targetView, query);
+        if (cached?.data && current === generation.current) {
+          setData(cached.data as DashboardData);
+          setOfflineSavedAt(cached.savedAt);
+          setError("");
+          return;
+        }
+      }
       const result = await client.load(
-        page === "profile" ? "overview" : page,
+        targetView,
         query,
         number,
         page === "followups" ? filter : "all",
       );
       if (current === generation.current) {
         setData(result);
+        setOfflineSavedAt(null);
         setError("");
+        writeOfflineViewData(panelSpec.panelId, targetView, result, {
+          query,
+          page: number,
+        });
       }
     } catch (e) {
+      if (isNetworkOfflineError(e)) {
+        const cached = readOfflineViewData(panelSpec.panelId, targetView, query);
+        if (cached?.data && current === generation.current) {
+          setData(cached.data as DashboardData);
+          setOfflineSavedAt(cached.savedAt);
+          setError("");
+          return;
+        }
+      }
       if (current === generation.current) setError((e as Error).message);
     } finally {
       if (current === generation.current) setLoading(false);
     }
   }, [session, page, query, number, filter]);
+
+  useEffect(() => {
+    if (isOnline && offlineSavedAt && session) {
+      void refresh();
+    }
+  }, [isOnline, offlineSavedAt, session, refresh]);
 
   useEffect(() => {
     const timer = window.setTimeout(refresh, 180);
@@ -346,9 +479,15 @@ function App() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!document.hidden) void refresh();
+      if (!document.hidden && (typeof navigator === "undefined" || navigator.onLine)) {
+        void refresh();
+      }
     }, 60000);
-    const focus = () => void refresh();
+    const focus = () => {
+      if (typeof navigator === "undefined" || navigator.onLine) {
+        void refresh();
+      }
+    };
     window.addEventListener("focus", focus);
     return () => {
       clearInterval(timer);
@@ -612,67 +751,82 @@ function App() {
 
   const followupTable = (items: Followup[]) =>
     items.length ? (
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>{t("Customer")}</th>
-              <th>{t("Scheduled")}</th>
-              <th>{t("Deadline")}</th>
-              <th>{t("Status")}</th>
-              <th>
-                <span className="sr-only">{t("Action")}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <button
-                    className="person-link"
-                    onClick={() =>
-                      setModal({
-                        kind: "detail",
-                        item: { id: item.leadId } as Lead,
-                      })
-                    }
-                  >
-                    <span className="avatar">
-                      {initials(item.customerName)}
-                    </span>
-                    <span>
-                      <strong>{item.customerName}</strong>
-                      <small className="serial">{item.serial}</small>
-                    </span>
-                  </button>
-                </td>
-                <td>{format(item.scheduledAt)}</td>
-                <td className="muted">
-                  {format(feedbackDeadline(item.scheduledAt))}
-                </td>
-                <td>{badge(followupState(item, data?.serverTime))}</td>
-                <td>
-                  <button
-                    className="text-button"
-                    onClick={() =>
-                      setModal({
-                        kind: item.completedAt ? "detail" : "feedback",
-                        item: item.completedAt
-                          ? ({ id: item.leadId } as Lead)
-                          : item,
-                      })
-                    }
-                  >
-                    {t(item.completedAt ? "Open" : "Feedback")}
-                    <ArrowUpRight size={15} />
-                  </button>
-                </td>
+      <>
+        <div className="table-scroll desktop-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("Customer")}</th>
+                <th>{t("Scheduled")}</th>
+                <th>{t("Deadline")}</th>
+                <th>{t("Status")}</th>
+                <th>
+                  <span className="sr-only">{t("Action")}</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <button
+                      className="person-link"
+                      onClick={() =>
+                        setModal({
+                          kind: "detail",
+                          item: { id: item.leadId } as Lead,
+                        })
+                      }
+                    >
+                      <span className="avatar">
+                        {initials(item.customerName)}
+                      </span>
+                      <span>
+                        <strong>{item.customerName}</strong>
+                        <small className="serial">{item.serial}</small>
+                      </span>
+                    </button>
+                  </td>
+                  <td>{format(item.scheduledAt)}</td>
+                  <td className="muted">
+                    {format(feedbackDeadline(item.scheduledAt))}
+                  </td>
+                  <td>{badge(followupState(item, data?.serverTime))}</td>
+                  <td>
+                    <button
+                      className="text-button"
+                      onClick={() =>
+                        setModal({
+                          kind: item.completedAt ? "detail" : "feedback",
+                          item: item.completedAt
+                            ? ({ id: item.leadId } as Lead)
+                            : item,
+                        })
+                      }
+                    >
+                      {t(item.completedAt ? "Open" : "Feedback")}
+                      <ArrowUpRight size={15} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <MobileFollowupCardList
+          followups={items}
+          serverTime={data?.serverTime}
+          t={t}
+          format={format}
+          statusLabel={(s) => labels[s] || s}
+          onSelectFollowup={(item, kind) =>
+            setModal({
+              kind,
+              item: kind === "detail" ? ({ id: item.leadId } as Lead) : item,
+            })
+          }
+        />
+      </>
     ) : (
       <Empty
         title={t("No records to show")}
@@ -696,8 +850,12 @@ function App() {
       <Login
         t={t}
         error={error}
+        justSignedOut={justSignedOut}
         onLogin={(s) => {
           writePreferredWorkspaceRole(s.user.role);
+          writeOfflineSessionUser(panelSpec.panelId, s.user);
+          setOfflineSavedAt(null);
+          setJustSignedOut(false);
           setPlayingEntrance(true);
           setSession(s);
           setPage((current) =>
@@ -738,6 +896,9 @@ function App() {
             client
               .logout()
               .then(() => {
+                clearOfflineSnapshot(panelSpec.panelId);
+                setOfflineSavedAt(null);
+                setJustSignedOut(true);
                 setSession(null);
                 setData(null);
               })
@@ -813,10 +974,13 @@ function App() {
   const shortTagForPage = (id: Page) =>
     pillars.find((p) => p.items.some((i) => i.id === id))?.shortTag || "Core";
 
+  const mobileTabs = getMobilePrimaryTabs(tabs);
+
   return (
     <div
       className={`staff-shell ${isCompact ? "is-compact" : ""}`}
       data-sidebar-mode={isCompact ? "compact" : "expanded"}
+      data-panel-id={panelSpec.panelId}
     >
       {menu && (
         <button
@@ -976,7 +1140,51 @@ function App() {
             <strong>{t(headings[page][0])}</strong>
           </div>
           <div className="topbar-actions">
+            {panelSpec.panelId === "sales" && battery.visible && (
+              <span
+                className={`header-battery-indicator tone-${battery.tone}`}
+                data-testid="header-battery-indicator"
+                data-battery-tone={battery.tone}
+                role="status"
+                aria-label={`${t("Device battery")} ${battery.text}${battery.charging ? ` · ${t("Charging")}` : ""}`}
+                title={`${t("Device battery")}: ${battery.text}${battery.charging ? ` (${t("Charging")})` : !isOnline ? ` · ${t("Offline")}` : ""}`}
+              >
+                {battery.charging ? (
+                  <BatteryCharging size={14} aria-hidden="true" />
+                ) : battery.percent <= 15 ? (
+                  <BatteryWarning size={14} aria-hidden="true" />
+                ) : battery.percent <= 35 ? (
+                  <BatteryLow size={14} aria-hidden="true" />
+                ) : battery.percent <= 75 ? (
+                  <BatteryMedium size={14} aria-hidden="true" />
+                ) : (
+                  <BatteryFull size={14} aria-hidden="true" />
+                )}
+                <span className="header-battery-percent">{battery.text}</span>
+              </span>
+            )}
+            {panelSpec.panelId === "sales" && canInstallPwa && !isPwaInstalled && (
+              <button
+                type="button"
+                className="button secondary pwa-install-topbar-btn"
+                data-testid="pwa-install-btn"
+                onClick={() => void promptInstall()}
+              >
+                <Download size={15} />
+                {t("Install App")}
+              </button>
+            )}
             <span className="timezone">Kabul · UTC+04:30</span>
+            <button
+              type="button"
+              className="icon-button mobile-refresh-btn"
+              onClick={refresh}
+              disabled={loading}
+              aria-label={t("Refresh")}
+              title={t("Refresh")}
+            >
+              <RefreshCw className={loading ? "spinning" : ""} size={16} />
+            </button>
             {!isCallCenterOnly && (
               <button
                 className="language-toggle"
@@ -1030,6 +1238,38 @@ function App() {
               )}
             </div>
           </div>
+          {(!isOnline || offlineSavedAt) && (
+            <div
+              className="offline-indicator-banner"
+              role="status"
+              data-testid="offline-indicator-banner"
+            >
+              <div className="offline-indicator-copy">
+                <span className="offline-indicator-icon">
+                  <WifiOff size={16} />
+                </span>
+                <div>
+                  <strong>{t("Offline mode · Showing saved leads")}</strong>
+                  <small>
+                    {offlineSavedAt
+                      ? `${t("Last synced")} ${format(offlineSavedAt)}`
+                      : t("Reconnect to sync updates and save new entries.")}
+                  </small>
+                </div>
+              </div>
+              {isOnline && (
+                <button
+                  type="button"
+                  className="offline-retry-btn"
+                  onClick={refresh}
+                  disabled={loading}
+                >
+                  <RefreshCw size={14} className={loading ? "spinning" : ""} />
+                  {t("Sync now")}
+                </button>
+              )}
+            </div>
+          )}
           {error && (
             <div className="alert error" role="alert">
               <AlertCircle size={18} />
@@ -1389,7 +1629,7 @@ function App() {
 
               {page === "leads" && (
                 <section
-                  className="panel"
+                  className="panel pipeline-health-panel"
                   style={{ marginBottom: 16 }}
                   data-testid="leads-pipeline-summary-card"
                 >
@@ -1399,22 +1639,22 @@ function App() {
                       <h2>{t("Pipeline Health Summary")}</h2>
                       <p>{t("Quick glance at lead pipeline distribution by status.")}</p>
                     </div>
-                    <span className="badge active">
-                      {t("Total Leads")}: {leadsPipelineSummary.total}
+                    <span className="crm-status-inline">
+                      {t("Total Leads")}: <strong>{leadsPipelineSummary.total}</strong>
                     </span>
                   </div>
 
-                  <div style={{ padding: "16px 24px 20px" }}>
+                  <div className="pipeline-health-body" style={{ padding: "14px 16px 18px" }}>
                     {/* Proportional Pipeline Health Bar */}
                     <div
                       style={{
                         display: "flex",
-                        height: 8,
+                        height: 6,
                         borderRadius: 6,
                         overflow: "hidden",
                         background: "#F1F5F9",
                         border: "1px solid #E2E8F0",
-                        marginBottom: 16,
+                        marginBottom: 12,
                       }}
                       aria-label="Pipeline status distribution bar"
                     >
@@ -1456,13 +1696,7 @@ function App() {
                       )}
                     </div>
 
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
-                        gap: 12,
-                      }}
-                    >
+                    <div className="pipeline-stat-grid">
                       {[
                         {
                           key: "all",
@@ -1507,61 +1741,15 @@ function App() {
                             type="button"
                             data-testid={stat.testId}
                             onClick={() => setLeadStatusFilter(stat.key)}
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "flex-start",
-                              justifyContent: "space-between",
-                              padding: "12px 14px",
-                              borderRadius: 6,
-                              border: isSelected
-                                ? "1.5px solid #0F172A"
-                                : "1px solid #E2E8F0",
-                              background: isSelected ? "#F1F5F9" : "#FFFFFF",
-                              cursor: "pointer",
-                              textAlign: "start",
-                              fontVariantNumeric: "tabular-nums",
-                            }}
+                            className={`pipeline-stat-chip ${isSelected ? "selected" : ""}`}
                           >
-                            <div
-                              style={{
-                                display: "flex",
-                                width: "100%",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                marginBottom: 6,
-                              }}
-                            >
-                              <span
-                                style={{
-                                  fontSize: 12,
-                                  fontWeight: 600,
-                                  color: "#64748B",
-                                }}
-                              >
-                                {stat.label}
-                              </span>
-                              <small
-                                style={{
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                  color: "#64748B",
-                                  fontVariantNumeric: "tabular-nums",
-                                }}
-                              >
+                            <div className="pipeline-stat-chip-top">
+                              <span>{stat.label}</span>
+                              <small>
                                 {stat.key === "all" ? "100%" : `${stat.pct}%`}
                               </small>
                             </div>
-                            <strong
-                              style={{
-                                fontSize: 22,
-                                lineHeight: 1.1,
-                                color: "#0F172A",
-                                fontVariantNumeric: "tabular-nums",
-                              }}
-                            >
-                              {stat.count}
-                            </strong>
+                            <strong>{stat.count}</strong>
                           </button>
                         );
                       })}
@@ -1719,75 +1907,94 @@ function App() {
                   ))}
                 {page === "leads" &&
                   (visibleLeads.length ? (
-                    <div className="table-scroll">
-                      <table data-testid="staff-leads-table">
-                        <thead>
-                          <tr>
-                            <th>{t("Customer")}</th>
-                            <th>{t("Requirements")}</th>
-                            <th>{t("Call date and time")}</th>
-                            <th>{t("Status")}</th>
-                            <th>{t("Action")}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {visibleLeads.map((lead) => (
-                            <tr key={lead.id}>
-                              <td>
-                                <strong>
-                                  {lead.customerName || t("New inquiry")}
-                                </strong>
-                                <small className="serial">{lead.serial}</small>
-                                <small dir="ltr">{lead.phone}</small>
-                                {lead.projectName && (
-                                  <small>
-                                    Project: {lead.projectName}{" "}
-                                    {lead.apartmentNumber || ""}
-                                  </small>
-                                )}
-                              </td>
-                              <td>
-                                <p className="truncate-text">
-                                  {lead.requirements || "—"}
-                                </p>
-                              </td>
-                              <td>
-                                {format(lead.callAt)}
-                                <small>
-                                  {t(
-                                    lead.source === "provider"
-                                      ? "Provider event"
-                                      : "Manual entry",
-                                  )}
-                                </small>
-                              </td>
-                              <td>{badge(lead.status)}</td>
-                              <td>
-                                <button
-                                  className="text-button"
-                                  onClick={() =>
-                                    setModal({
-                                      kind:
-                                        lead.status === "draft"
-                                          ? "entry"
-                                          : "detail",
-                                      item: lead,
-                                    })
-                                  }
-                                >
-                                  {t(
-                                    lead.status === "draft"
-                                      ? "Complete entry"
-                                      : "Open",
-                                  )}
-                                  <ArrowUpRight size={14} />
-                                </button>
-                              </td>
+                    <>
+                      <div className="table-scroll desktop-table-wrap">
+                        <table data-testid="staff-leads-table">
+                          <thead>
+                            <tr>
+                              <th>{t("Customer")}</th>
+                              <th>{t("Requirements")}</th>
+                              <th>{t("Call date and time")}</th>
+                              <th>{t("Status")}</th>
+                              <th>{t("Action")}</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {visibleLeads.map((lead) => (
+                              <tr key={lead.id}>
+                                <td>
+                                  <strong>
+                                    {lead.customerName || t("New inquiry")}
+                                  </strong>
+                                  <small className="serial">{lead.serial}</small>
+                                  <small dir="ltr">
+                                    <a
+                                      href={`tel:${lead.phone}`}
+                                      className="phone-call-link"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {lead.phone}
+                                    </a>
+                                  </small>
+                                  {lead.projectName && (
+                                    <small>
+                                      Project: {lead.projectName}{" "}
+                                      {lead.apartmentNumber || ""}
+                                    </small>
+                                  )}
+                                </td>
+                                <td>
+                                  <p className="truncate-text">
+                                    {lead.requirements || "—"}
+                                  </p>
+                                </td>
+                                <td>
+                                  {format(lead.callAt)}
+                                  <small>
+                                    {t(
+                                      lead.source === "provider"
+                                        ? "Provider event"
+                                        : "Manual entry",
+                                    )}
+                                  </small>
+                                </td>
+                                <td>{badge(lead.status)}</td>
+                                <td>
+                                  <button
+                                    className="text-button"
+                                    onClick={() =>
+                                      setModal({
+                                        kind:
+                                          lead.status === "draft"
+                                            ? "entry"
+                                            : "detail",
+                                        item: lead,
+                                      })
+                                    }
+                                  >
+                                    {t(
+                                      lead.status === "draft"
+                                        ? "Complete entry"
+                                        : "Open",
+                                    )}
+                                    <ArrowUpRight size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <MobileLeadCardList
+                        leads={visibleLeads}
+                        t={t}
+                        format={format}
+                        statusLabel={(s) => labels[s] || s}
+                        onSelectLead={(lead, kind) =>
+                          setModal({ kind, item: lead })
+                        }
+                      />
+                    </>
                   ) : (
                     <Empty
                       title={t("No records to show")}
@@ -1901,10 +2108,14 @@ function App() {
                 <p>{t("All times in Kabul · UTC+04:30")}</p>
                 <button
                   className="button secondary"
+                  data-testid="profile-signout-btn"
                   onClick={() =>
                     client
                       .logout()
                       .then(() => {
+                        clearOfflineSnapshot(panelSpec.panelId);
+                        setOfflineSavedAt(null);
+                        setJustSignedOut(true);
                         setSession(null);
                         setData(null);
                       })
@@ -1918,9 +2129,52 @@ function App() {
               <PasswordForm
                 t={t}
                 done={() => {
+                  clearOfflineSnapshot(panelSpec.panelId);
+                  setOfflineSavedAt(null);
+                  setJustSignedOut(true);
                   setSession(null);
                   setData(null);
                 }}
+              />
+              {panelSpec.panelId === "sales" && canInstallPwa && !isPwaInstalled && (
+                <section
+                  className="panel biometric-profile-card"
+                  data-testid="profile-install-app-card"
+                >
+                  <div className="biometric-profile-head">
+                    <div className="biometric-profile-identity">
+                      <span className="biometric-quick-icon">
+                        <Smartphone size={20} />
+                      </span>
+                      <div>
+                        <h3>{t("Install Sales App on Phone")}</h3>
+                        <p>
+                          {t(
+                            "Add Attaie Sales to your home screen for quick launch and offline lead viewing.",
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="button"
+                      data-testid="profile-install-app-btn"
+                      onClick={() => void promptInstall()}
+                    >
+                      <Download size={16} />
+                      {t("Install App")}
+                    </button>
+                  </div>
+                </section>
+              )}
+              <BiometricSecurityCard
+                t={t}
+                session={session}
+                onNotify={(m) => {
+                  setError("");
+                  setNotice(m);
+                }}
+                onError={(m) => setError(m)}
               />
             </div>
           )}
@@ -1932,6 +2186,53 @@ function App() {
             </span>
           </footer>
         </main>
+        {(activeRole === "sales" || activeRole === "callcenter") &&
+          !modal &&
+          ["overview", "leads", "followups", "customers"].includes(page) && (
+            <button
+              type="button"
+              className="mobile-fab"
+              data-testid="mobile-fab-new-entry"
+              onClick={() => setModal({ kind: "entry" })}
+              aria-label={t("New entry")}
+            >
+              <Plus size={18} />
+              <span>{t("New entry")}</span>
+            </button>
+          )}
+        <nav
+          className="mobile-bottom-nav"
+          aria-label={t("Workspace")}
+          data-testid="mobile-bottom-nav"
+        >
+          {mobileTabs.map((item) => {
+            const Icon = item.icon as React.ElementType;
+            const isActive = page === item.id;
+            const overdueCount =
+              item.id === "followups" ? data?.counts.overtime || 0 : 0;
+            return (
+              <button
+                key={`mobile-nav-${item.id}`}
+                type="button"
+                data-testid={`mobile-nav-${item.id}`}
+                className={`mobile-bottom-nav-btn ${isActive ? "active" : ""}`}
+                onClick={() => navigate(item.id as Page)}
+              >
+                <span className="mobile-bottom-nav-icon">
+                  <Icon size={18} />
+                  {overdueCount > 0 && (
+                    <span className="mobile-bottom-nav-badge">
+                      {overdueCount}
+                    </span>
+                  )}
+                </span>
+                <span className="mobile-bottom-nav-label">
+                  {t(item.mobileLabel || item.label)}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
       {modal && (
         <Modal
@@ -1992,7 +2293,15 @@ function App() {
               format={format}
             />
           ) : (
-            <LeadDetail t={t} id={modal.item!.id} format={format} />
+            <LeadDetail
+              t={t}
+              id={modal.item!.id}
+              fallbackLead={
+                data?.leads.find((l) => l.id === modal.item!.id) ||
+                (modal.item as Lead)
+              }
+              format={format}
+            />
           )}
         </Modal>
       )}
@@ -2649,28 +2958,45 @@ function TaskDetail({
 function LeadDetail({
   t,
   id,
+  fallbackLead,
   format,
 }: {
   t: Translate;
   id: number;
+  fallbackLead?: Lead;
   format: (s: string) => string;
 }) {
-  const [lead, setLead] = useState<Lead | null>(null);
+  const [lead, setLead] = useState<Lead | null>(fallbackLead || null);
   const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
+    if (typeof navigator !== "undefined" && navigator.onLine === false && fallbackLead) {
+      setLead(fallbackLead);
+      setError("");
+      return;
+    }
     client
       .lead(id)
       .then((l) => {
-        if (active) setLead(l);
+        if (active) {
+          setLead(l);
+          setError("");
+        }
       })
       .catch((e) => {
-        if (active) setError(e.message);
+        if (active) {
+          if (fallbackLead && isNetworkOfflineError(e)) {
+            setLead(fallbackLead);
+            setError("");
+          } else {
+            setError(e.message);
+          }
+        }
       });
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, fallbackLead]);
   return (
     <div className="detail">
       <FormError message={error} />
@@ -2872,21 +3198,263 @@ function PasswordForm({ t }: { t: Translate; done: () => void }) {
     </form>
   );
 }
+function BiometricSecurityCard({
+  t,
+  session,
+  onNotify,
+  onError,
+}: {
+  t: Translate;
+  session: Session;
+  onNotify: (message: string) => void;
+  onError: (message: string) => void;
+}) {
+  const [status, setStatus] = useState(() => getBiometricStatus());
+  const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const pwdProps = getPasswordVisibilityProps(showPassword);
+  const pwdId = React.useId();
+
+  if (!status.available) return null;
+
+  const defaultEmail = session.user.username?.includes("@")
+    ? session.user.username
+    : "";
+
+  return (
+    <section
+      className="panel biometric-profile-card"
+      data-testid="profile-biometric-card"
+    >
+      <div className="biometric-profile-head">
+        <div className="biometric-profile-identity">
+          <span className="biometric-quick-icon">
+            <Fingerprint size={20} />
+          </span>
+          <div>
+            <h3>{t("Fingerprint & Face Unlock")}</h3>
+            <p>
+              {t(
+                "Use device biometrics on this phone instead of re-entering your password.",
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {status.enrolled ? (
+        <>
+          <div className="biometric-status-row">
+            <span>
+              {t("Enabled for")} <strong>{status.email}</strong>
+            </span>
+            <button
+              type="button"
+              className="button secondary"
+              data-testid="profile-biometric-disable"
+              onClick={() => {
+                clearBiometricEnrollment();
+                setStatus(getBiometricStatus());
+                onNotify(t("Biometric unlock disabled on this device."));
+              }}
+            >
+              {t("Disable biometric unlock")}
+            </button>
+          </div>
+          <div className="biometric-toggle-row" style={{ marginTop: 12 }}>
+            <div className="biometric-toggle-copy">
+              <strong>{t("Quick Sign-in")}</strong>
+              <small>
+                {t("Prompt fingerprint or face immediately on app launch")}
+              </small>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={status.quickSignInEnabled}
+              aria-label={t("Quick Sign-in")}
+              data-testid="profile-quick-signin-toggle"
+              className="alabaster-switch"
+              onClick={() => {
+                const next = !status.quickSignInEnabled;
+                setQuickSignInPreference(next);
+                setStatus(getBiometricStatus());
+              }}
+            >
+              <span className="alabaster-switch-thumb" />
+            </button>
+          </div>
+        </>
+      ) : (
+        <form
+          className="biometric-enable-form"
+          data-testid="profile-biometric-enable-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            const email = String(f.get("email") || "").trim();
+            const password = String(f.get("password") || "");
+            if (!email || !password) return;
+            setBusy(true);
+            onError("");
+            try {
+              await client.login(email, password);
+              const res = await enrollBiometric(email, password, {
+                title: t("Attaie Sales CRM"),
+                subtitle: t(
+                  "Confirm your fingerprint or face to enable quick sign-in",
+                ),
+                cancelLabel: t("Cancel"),
+              });
+              if (res.ok) {
+                setStatus(getBiometricStatus());
+                onNotify(t("Biometric unlock enabled on this device."));
+                e.currentTarget.reset();
+              } else if (!res.cancelled && res.message) {
+                onError(t(res.message));
+              }
+            } catch (err) {
+              onError((err as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <p style={{ width: "100%", fontSize: 12, color: "#64748B", margin: 0 }}>
+            {t("Confirm your password once to lock biometric unlock on this device.")}
+          </p>
+          <Field label={t("Email")}>
+            <input
+              name="email"
+              type="email"
+              defaultValue={defaultEmail}
+              autoComplete="username"
+              required
+            />
+          </Field>
+          <div className="field">
+            <label htmlFor={pwdId}>{t("Password")}</label>
+            <div className="password-input-wrap">
+              <input
+                id={pwdId}
+                name="password"
+                type={pwdProps.inputType}
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={t(pwdProps.buttonLabel)}
+                aria-pressed={pwdProps.ariaPressed}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="button"
+            disabled={busy}
+            data-testid="profile-biometric-enable-btn"
+          >
+            <Fingerprint size={16} />
+            {t("Enable biometric unlock")}
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}
+
 function Login({
   t,
   error,
+  justSignedOut = false,
   onLogin,
 }: {
   t: Translate;
   error: string;
+  justSignedOut?: boolean;
   onLogin: (s: Session) => void;
   management: boolean;
 }) {
   const [busy, setBusy] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
   const [failure, setFailure] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [bioStatus, setBioStatus] = useState(() => getBiometricStatus());
+  const [enableBiometric, setEnableBiometric] = useState(true);
+  const autoPromptTriggeredRef = useRef(false);
   const passwordId = React.useId();
   const pwdProps = getPasswordVisibilityProps(showPassword);
+
+  const handleBiometricSignIn = useCallback(async () => {
+    if (!bioStatus.available || !bioStatus.enrolled) return;
+    setBioBusy(true);
+    setFailure("");
+    try {
+      const bioResult = await authenticateWithBiometric({
+        title: t(panelSpec.loginTitle),
+        subtitle: t("Verify your fingerprint or face to sign in"),
+        cancelLabel: t("Use password"),
+      });
+      if (!bioResult.ok) {
+        if (!bioResult.cancelled && bioResult.message) {
+          setFailure(t(bioResult.message));
+        }
+        return;
+      }
+      const email = bioResult.email || "";
+      const password = bioResult.password || "";
+      const loggedIn = await client.login(email, password);
+      if (
+        !isPreview &&
+        !(panelSpec.allowedRoles as readonly string[]).includes(
+          loggedIn.user.role,
+        )
+      ) {
+        clearBiometricEnrollment();
+        setBioStatus(getBiometricStatus());
+        setFailure(t("This account does not have access to this workspace."));
+        return;
+      }
+      onLogin(loggedIn);
+    } catch {
+      setFailure(
+        t(
+          "Saved biometric credentials are no longer valid. Please sign in with your password.",
+        ),
+      );
+    } finally {
+      setBioBusy(false);
+    }
+  }, [bioStatus.available, bioStatus.enrolled, onLogin, t]);
+
+  useEffect(() => {
+    if (
+      !autoPromptTriggeredRef.current &&
+      shouldAutoPromptBiometric({
+        available: bioStatus.available,
+        enrolled: bioStatus.enrolled,
+        quickSignInEnabled: bioStatus.quickSignInEnabled,
+        justSignedOut,
+        attemptFailed: Boolean(error || failure),
+      })
+    ) {
+      autoPromptTriggeredRef.current = true;
+      void handleBiometricSignIn();
+    }
+  }, [
+    bioStatus.available,
+    bioStatus.enrolled,
+    bioStatus.quickSignInEnabled,
+    error,
+    failure,
+    handleBiometricSignIn,
+    justSignedOut,
+  ]);
 
   const PanelIcon =
     panelSpec.panelId === "ceo" || panelSpec.panelId === "management"
@@ -2947,17 +3515,111 @@ function Login({
             {panelSpec.basePath}
           </code>
         </div>
+        {bioStatus.available && bioStatus.enrolled && (
+          <>
+            <div
+              className="biometric-quick-card"
+              data-testid="biometric-quick-card"
+            >
+              <div className="biometric-quick-meta">
+                <span className="biometric-quick-icon">
+                  <Fingerprint size={19} />
+                </span>
+                <div className="biometric-quick-text">
+                  <strong>{t("Quick biometric sign-in")}</strong>
+                  <span dir="ltr">{bioStatus.email}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="button full"
+                data-testid="biometric-signin-btn"
+                disabled={busy || bioBusy}
+                onClick={handleBiometricSignIn}
+              >
+                <Fingerprint size={17} />
+                {t(
+                  bioBusy
+                    ? "Verifying fingerprint or face…"
+                    : "Sign in with Fingerprint / Face",
+                )}
+              </button>
+              <div className="biometric-toggle-row">
+                <div className="biometric-toggle-copy">
+                  <strong>{t("Quick Sign-in")}</strong>
+                  <small>
+                    {t("Prompt fingerprint or face immediately on app launch")}
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={bioStatus.quickSignInEnabled}
+                  aria-label={t("Quick Sign-in")}
+                  data-testid="biometric-quick-signin-toggle"
+                  className="alabaster-switch"
+                  disabled={busy || bioBusy}
+                  onClick={() => {
+                    const next = !bioStatus.quickSignInEnabled;
+                    setQuickSignInPreference(next);
+                    setBioStatus((prev) => ({
+                      ...prev,
+                      quickSignInEnabled: next,
+                    }));
+                  }}
+                >
+                  <span className="alabaster-switch-thumb" />
+                </button>
+              </div>
+              <button
+                type="button"
+                className="biometric-clear-link"
+                data-testid="biometric-clear-btn"
+                disabled={busy || bioBusy}
+                onClick={() => {
+                  clearBiometricEnrollment();
+                  setBioStatus(getBiometricStatus());
+                  setFailure("");
+                }}
+              >
+                {t("Remove saved biometric")}
+              </button>
+            </div>
+            <div className="biometric-divider">
+              <span>{t("Or sign in with email & password")}</span>
+            </div>
+          </>
+        )}
         <form
           onSubmit={async (e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
+            const email = String(f.get("username") || "").trim();
+            const password = String(f.get("password") || "");
             setBusy(true);
             setFailure("");
             try {
-              const loggedIn = await client.login(
-                String(f.get("username")),
-                String(f.get("password")),
-              );
+              const loggedIn = await client.login(email, password);
+              if (
+                bioStatus.available &&
+                enableBiometric &&
+                (isPreview ||
+                  (panelSpec.allowedRoles as readonly string[]).includes(
+                    loggedIn.user.role,
+                  ))
+              ) {
+                try {
+                  await enrollBiometric(email, password, {
+                    title: t(panelSpec.loginTitle),
+                    subtitle: t(
+                      "Confirm your fingerprint or face to enable quick sign-in",
+                    ),
+                    cancelLabel: t("Cancel"),
+                  });
+                } catch {
+                  // Never block a verified login if biometric confirmation fails
+                }
+              }
               onLogin(loggedIn);
             } catch (err) {
               setFailure((err as Error).message);
@@ -2971,6 +3633,7 @@ function Login({
               name="username"
               type="email"
               autoComplete="username"
+              defaultValue={bioStatus.enrolled ? bioStatus.email : ""}
               required
             />
           </Field>
@@ -2996,8 +3659,22 @@ function Login({
               </button>
             </div>
           </div>
+          {bioStatus.available && !bioStatus.enrolled && (
+            <label className="biometric-check-row">
+              <input
+                type="checkbox"
+                data-testid="biometric-enroll-checkbox"
+                checked={enableBiometric}
+                onChange={(e) => setEnableBiometric(e.target.checked)}
+              />
+              <span>{t("Enable Fingerprint / Face unlock for faster sign-in")}</span>
+            </label>
+          )}
           <FormError message={t(failure || error)} />
-          <button className="button full" disabled={busy}>
+          <button
+            className={`button full ${bioStatus.available && bioStatus.enrolled ? "secondary" : ""}`}
+            disabled={busy || bioBusy}
+          >
             {t(busy ? "Signing in…" : "Sign in")}
             <ArrowRight size={16} />
           </button>

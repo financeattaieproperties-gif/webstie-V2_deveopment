@@ -19,7 +19,10 @@ import type {
 } from "../../../packages/staff-contracts/types";
 
 import { signIn, resetPassword } from "./auth/firebase.mjs";
+import { resolveStaffApiEndpoint } from "../../../packages/staff-contracts/role-preference.mjs";
+
 const firebaseKey = import.meta.env.VITE_STAFF_FIREBASE_API_KEY || "";
+const envApiBaseUrl = import.meta.env.VITE_STAFF_API_BASE_URL || "";
 let csrf = "";
 async function request<T>(
   path: string,
@@ -27,30 +30,49 @@ async function request<T>(
   body?: unknown,
   key?: string,
 ): Promise<T> {
-  const response = await fetch(`/staff-api/v1/${path}`, {
-    method,
-    credentials: "same-origin",
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
-      ...(method !== "GET"
-        ? {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": csrf,
-            "Idempotency-Key": key || crypto.randomUUID(),
-          }
-        : {}),
-    },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
+  const runtimeBaseUrl =
+    typeof window !== "undefined"
+      ? (window as { __ATTAIE_STAFF_API_BASE_URL__?: string })
+          .__ATTAIE_STAFF_API_BASE_URL__ || ""
+      : "";
+  const endpoint = resolveStaffApiEndpoint(path, envApiBaseUrl, runtimeBaseUrl);
+  let response: Response;
+  try {
+    response = await fetch(endpoint.url, {
+      method,
+      credentials: endpoint.credentials as RequestCredentials,
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        ...(method !== "GET"
+          ? {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": csrf,
+              "Idempotency-Key": key || crypto.randomUUID(),
+            }
+          : {}),
+      },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch {
+    const netErr = new Error(
+      typeof navigator !== "undefined" && !navigator.onLine
+        ? "You are offline. Reconnect to sync or save changes."
+        : "Unable to reach the staff server. Check your internet connection.",
+    ) as Error & { isNetworkError?: boolean };
+    netErr.isNetworkError = true;
+    throw netErr;
+  }
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload || !("data" in payload)) {
     if (response.status === 401)
       window.dispatchEvent(new Event("staff-session-expired"));
-    throw new Error(
+    const httpErr = new Error(
       payload?.error?.message ||
         "The staff service could not confirm your request. Please try again.",
-    );
+    ) as Error & { status?: number };
+    httpErr.status = response.status;
+    throw httpErr;
   }
   return payload.data as T;
 }

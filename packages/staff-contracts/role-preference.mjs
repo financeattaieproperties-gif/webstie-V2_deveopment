@@ -478,3 +478,209 @@ export function getPasswordVisibilityProps(showPassword = false) {
   };
 }
 
+/**
+ * Resolves the staff API URL and fetch credentials mode for both web (same-origin)
+ * and standalone Android/iOS/Electron apps (cross-origin with credentials: "include").
+ * @param {string} path
+ * @param {string} [envBaseUrl]
+ * @param {string} [runtimeBaseUrl]
+ */
+export function resolveStaffApiEndpoint(
+  path,
+  envBaseUrl = "",
+  runtimeBaseUrl = "",
+) {
+  const cleanPath = String(path || "").replace(/^\/+/, "");
+  const rawBase = String(runtimeBaseUrl || envBaseUrl || "/staff-api/v1")
+    .trim()
+    .replace(/\/+$/, "");
+  const isCrossOrigin = /^https?:\/\//i.test(rawBase);
+  return {
+    url: `${rawBase}/${cleanPath}`,
+    credentials: isCrossOrigin ? "include" : "same-origin",
+    isCrossOrigin,
+  };
+}
+
+/**
+ * Selects up to 5 primary navigation tabs for the mobile bottom navigation bar,
+ * prioritizing everyday Sales Agent workflows (Overview, Follow-ups, Leads, Customers, Projects).
+ * @param {Array<{ id: string; label: string; icon?: any }>} tabs
+ */
+export function getMobilePrimaryTabs(tabs = []) {
+  const shortLabels = {
+    overview: "Overview",
+    followups: "Follow-ups",
+    leads: "Leads",
+    customers: "Customers",
+    projects: "Projects",
+    tasks: "Tasks",
+    finance: "Finance",
+    contracts: "Contracts",
+    marketing: "Marketing",
+    deliverables: "3D / Eng",
+    profile: "Profile",
+  };
+  const priorityOrder = [
+    "leads",
+    "followups",
+    "customers",
+    "projects",
+    "overview",
+    "tasks",
+  ];
+  const byId = new Map(tabs.map((t) => [t.id, t]));
+  const selected = [];
+  for (const id of priorityOrder) {
+    if (byId.has(id) && selected.length < 5) {
+      const item = byId.get(id);
+      selected.push({
+        ...item,
+        mobileLabel: shortLabels[id] || item.label,
+      });
+    }
+  }
+  for (const item of tabs) {
+    if (selected.length >= 5) break;
+    if (!selected.some((s) => s.id === item.id)) {
+      selected.push({
+        ...item,
+        mobileLabel: shortLabels[item.id] || item.label,
+      });
+    }
+  }
+  return selected;
+}
+
+/**
+ * Formats a customer phone number into safe native Android tel: and WhatsApp links.
+ * Normalizes local Afghan numbers (e.g. "0700112233" -> "+93700112233") while preserving international numbers.
+ * @param {string} [phone]
+ */
+export function formatMobileContactLinks(phone = "") {
+  const cleaned = String(phone || "").replace(/[^\d+]/g, "");
+  if (!cleaned) {
+    return { display: "—", telHref: "", whatsappHref: "" };
+  }
+  let e164 = cleaned;
+  if (cleaned.startsWith("00")) {
+    e164 = `+${cleaned.slice(2)}`;
+  } else if (cleaned.startsWith("0") && cleaned.length >= 9) {
+    e164 = `+93${cleaned.slice(1)}`;
+  } else if (!cleaned.startsWith("+") && cleaned.length === 9) {
+    e164 = `+93${cleaned}`;
+  } else if (!cleaned.startsWith("+")) {
+    e164 = `+${cleaned}`;
+  }
+  const waDigits = e164.replace(/[^\d]/g, "");
+  return {
+    display: phone.trim() || e164,
+    telHref: `tel:${e164}`,
+    whatsappHref: waDigits ? `https://wa.me/${waDigits}` : "",
+  };
+}
+
+export const STAFF_QUICK_BIOMETRIC_KEY = "attaie_sales_quick_signin";
+
+/**
+ * Reads whether immediate biometric Quick Sign-in on app launch is enabled.
+ * Defaults to true when an account is enrolled unless explicitly disabled.
+ * @param {any} [storage]
+ */
+export function readQuickSignInPreference(storage = undefined) {
+  const s =
+    storage !== undefined
+      ? storage
+      : typeof window !== "undefined"
+        ? window.localStorage
+        : null;
+  if (!s) return true;
+  try {
+    const raw = s.getItem(STAFF_QUICK_BIOMETRIC_KEY);
+    if (raw === "false") return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Persists whether biometric authentication should trigger immediately upon app launch.
+ * @param {boolean} enabled
+ * @param {any} [storage]
+ */
+export function writeQuickSignInPreference(enabled, storage = undefined) {
+  const s =
+    storage !== undefined
+      ? storage
+      : typeof window !== "undefined"
+        ? window.localStorage
+        : null;
+  if (!s) return false;
+  try {
+    s.setItem(STAFF_QUICK_BIOMETRIC_KEY, enabled ? "true" : "false");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safely parses the JSON status payload returned by Android's BiometricAuthBridge.getStatusJson().
+ * @param {string | null | undefined} rawJson
+ */
+export function parseBiometricBridgeStatus(rawJson) {
+  const empty = {
+    available: false,
+    enrolled: false,
+    email: "",
+    quickSignInEnabled: true,
+    statusCode: -1,
+  };
+  if (typeof rawJson !== "string" || !rawJson.trim()) {
+    return empty;
+  }
+  try {
+    const parsed = JSON.parse(rawJson);
+    const available = Boolean(parsed?.available);
+    const email = typeof parsed?.email === "string" ? parsed.email.trim() : "";
+    const enrolled = Boolean(available && parsed?.enrolled && email);
+    const quickSignInEnabled =
+      typeof parsed?.quickSignInEnabled === "boolean"
+        ? parsed.quickSignInEnabled
+        : true;
+    const statusCode =
+      typeof parsed?.statusCode === "number" ? parsed.statusCode : -1;
+    return {
+      available,
+      enrolled,
+      email: enrolled ? email : "",
+      quickSignInEnabled,
+      statusCode,
+    };
+  } catch {
+    return empty;
+  }
+}
+
+/**
+ * Determines whether the Android Sales App should automatically launch AndroidX BiometricPrompt
+ * when entering the Login screen (requires Quick Sign-in toggle enabled and is suppressed right
+ * after an intentional Sign Out or failed attempt).
+ * @param {{ available?: boolean; enrolled?: boolean; quickSignInEnabled?: boolean; justSignedOut?: boolean; attemptFailed?: boolean }} state
+ */
+export function shouldAutoPromptBiometric({
+  available = false,
+  enrolled = false,
+  quickSignInEnabled = true,
+  justSignedOut = false,
+  attemptFailed = false,
+} = {}) {
+  return Boolean(
+    available &&
+      enrolled &&
+      quickSignInEnabled &&
+      !justSignedOut &&
+      !attemptFailed,
+  );
+}

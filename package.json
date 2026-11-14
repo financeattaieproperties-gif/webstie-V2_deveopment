@@ -7,7 +7,8 @@
     "dev": "vite --port 3000 --host 0.0.0.0",
     "generate:sitemap": "node scripts/generate-sitemap.mjs",
     "build:admin": "tsc --noEmit -p admin-panel/tsconfig.json && vite build admin-panel --config admin-panel/vite.config.ts",
-    "build:staff": "node scripts/build-public-staff.mjs",
+    "build:staff": "node scripts/build-public-staff.mjs && node scripts/build-sales-android.mjs",
+    "build:sales-android": "node scripts/build-sales-android.mjs",
     "build": "node scripts/generate-sitemap.mjs && npm run build:admin && npm run build:staff && tsc --noEmit && vite build",
     "preview": "vite preview --port 3000 --host 0.0.0.0",
     "lint": "tsc --noEmit"
@@ -47,7 +48,8 @@
     "playwright": "^1.65.0",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vite-plugin-pwa": "^2.0.0"
   },
   "overrides": {
     "esbuild": "^0.25.0",

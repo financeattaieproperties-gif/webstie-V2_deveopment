@@ -4,12 +4,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const roles = ["callcenter", "management", "dashboard"];
+const roles = ["callcenter", "management", "dashboard", "sales"];
 
 const standalonePanels = [
   { id: "ceo", title: "CEO Executive Command · Attaie Properties" },
   { id: "sales-leader", title: "Sales Team Leader Workspace · Attaie Properties" },
-  { id: "sales", title: "Sales Agent Workspace · Attaie Properties" },
   { id: "finance", title: "Finance Manager Workspace · Attaie Properties" },
   { id: "marketing", title: "Marketing & Media Workspace · Attaie Properties" },
   { id: "engineering", title: "Engineering & 3D Workspace · Attaie Properties" },
@@ -18,6 +17,7 @@ const standalonePanels = [
 for (const role of roles) {
   const outDir = path.join(root, "public", role);
   process.env.STAFF_ROLE = role;
+  process.env.STAFF_MOBILE_APP = "0";
   process.env.STAFF_ALLOW_PREVIEW = "1";
 
   await build({
@@ -29,11 +29,27 @@ for (const role of roles) {
     },
   });
 
-  const nestedHtml = path.join(outDir, role, "index.html");
+  const nestedRoleDir = role === "sales" ? "dashboard" : role;
+  const nestedHtml = path.join(outDir, nestedRoleDir, "index.html");
   const rootHtml = path.join(outDir, "index.html");
   if (fs.existsSync(nestedHtml)) {
     fs.copyFileSync(nestedHtml, rootHtml);
-    fs.rmSync(path.join(outDir, role), { recursive: true, force: true });
+    fs.rmSync(path.join(outDir, nestedRoleDir), { recursive: true, force: true });
+  }
+
+  if (role === "sales" && fs.existsSync(rootHtml)) {
+    let html = fs.readFileSync(rootHtml, "utf8");
+    html = html.replace(
+      /<title>.*?<\/title>/,
+      "<title>Sales Agent Workspace · Attaie Properties</title>",
+    );
+    if (!html.includes("apple-touch-icon")) {
+      html = html.replace(
+        "</head>",
+        '<link rel="apple-touch-icon" sizes="180x180" href="/sales/apple-touch-icon.png"/></head>',
+      );
+    }
+    fs.writeFileSync(rootHtml, html, "utf8");
   }
 
   const htaccessSrc = path.join(root, "deployment/staff/dashboard.htaccess");
