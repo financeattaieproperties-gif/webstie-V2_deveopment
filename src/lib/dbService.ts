@@ -59,6 +59,7 @@ export interface Branch {
 }
 
 export interface Lead {
+  clientRequestId?: string;
   name: string;
   email: string;
   phone: string;
@@ -397,7 +398,13 @@ export async function getSeoSettings(): Promise<SiteSeoSettings | null> {
   return null;
 }
 
-export async function createLead(lead: Lead): Promise<{ success: boolean; id: number }> {
+export interface InquirySubmissionResult {
+  success: true;
+  id: number;
+  receipt: { reference: string; submittedAt: string; customerName: string; propertyName: string };
+}
+
+export async function createLead(lead: Lead): Promise<InquirySubmissionResult> {
   const res = await fetch(`${API}/submit-lead.php`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
