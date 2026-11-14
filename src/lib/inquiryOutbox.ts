@@ -6,6 +6,7 @@ export type InquiryDelivery = Unconfirmed | { clientRequestId: string; status: '
 const listeners = new Set<() => void>();
 let database: Promise<IDBDatabase> | undefined;
 let flight: Promise<void> | undefined;
+let flushAgain = false;
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
 let retryCount = 0;
 let channel: BroadcastChannel | undefined;
@@ -109,10 +110,15 @@ async function drain(): Promise<void> {
 }
 
 export function flushInquiries(): Promise<void> {
-  if (flight) return flight;
+  if (flight) { flushAgain = true; return flight; }
   if (retryTimer) { clearTimeout(retryTimer); retryTimer = undefined; }
   // Web Locks suppress duplicate sends across tabs. The server UUID constraint remains authoritative.
-  flight = (navigator.locks ? navigator.locks.request('attaie-inquiry-delivery', drain) : drain())
+  flight = (async () => {
+    do {
+      flushAgain = false;
+      await (navigator.locks ? navigator.locks.request('attaie-inquiry-delivery', drain) : drain());
+    } while (flushAgain);
+  })()
     .catch(() => { /* Keep durable rows intact on storage failure; the next explicit retry/startup can recover. */ })
     .finally(() => { flight = undefined; });
   return flight;

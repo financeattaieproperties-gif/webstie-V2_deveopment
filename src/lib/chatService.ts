@@ -11,6 +11,7 @@ export interface ChatMessage {
 }
 export interface ChatConversation {
   id: string;
+  version?: number;
   customer_name: string;
   customer_phone: string;
   customer_email?: string;
@@ -31,6 +32,7 @@ const SESSION_KEY = 'attaie_customer_chat_session_v1';
 const CACHE_KEY = 'attaie_customer_chat_cache_v2';
 const flights = new Map<string, Promise<void>>();
 const tokens = new Map<string, string>();
+let cacheFlight: Promise<unknown> = Promise.resolve();
 function endpoint(): string { return `${((import.meta.env?.VITE_API_URL as string | undefined) || '').replace(/\/api\/?$/, '')}/chat-service.php`; }
 function readCache(): ChatConversation[] {
   try { const rows = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]'); return Array.isArray(rows) ? rows : []; }
@@ -39,6 +41,17 @@ function readCache(): ChatConversation[] {
 function store(conv: ChatConversation): void {
   // Persistence failures propagate to the composer; never claim an unsaved message is queued.
   localStorage.setItem(CACHE_KEY, JSON.stringify([conv, ...readCache().filter(row => row.id !== conv.id)]));
+}
+async function updateCache(id: string, update: (current?: ChatConversation) => ChatConversation | undefined): Promise<ChatConversation | undefined> {
+  const mutate = () => {
+    const next = update(readCache().find(conv => conv.id === id));
+    if (next) store(next);
+    return next;
+  };
+  if (navigator.locks) return navigator.locks.request('attaie-customer-chat-cache', mutate);
+  const next = cacheFlight.then(mutate, mutate);
+  cacheFlight = next.catch(() => undefined);
+  return next;
 }
 function tokenFor(sessionId: string): string {
   if (tokens.has(sessionId)) return tokens.get(sessionId)!;
@@ -65,6 +78,7 @@ export function saveCustomerSession(session: {sessionId:string;name:string;phone
   localStorage.setItem(SESSION_KEY,JSON.stringify({...session,ownerToken:tokenFor(session.sessionId)}));
 }
 function mergeRemote(remote: ChatConversation, local?: ChatConversation): ChatConversation {
+  if (local && (remote.version ?? 0) < (local.version ?? 0)) return local;
   const ids = new Set(remote.messages.map(message => message.client_message_id));
   const pending = (local?.messages || []).filter(message => message.delivery_status !== 'confirmed' && !ids.has(message.client_message_id));
   return {...remote,messages:[...remote.messages.map(message => ({...message,delivery_status:'confirmed' as const})),...pending]};
@@ -89,12 +103,11 @@ export function flushCustomerChatMessages(sessionId: string): Promise<void> {
       try {
         const remote = await request('customer_message',sessionId,{customer_name:local!.customer_name,customer_phone:local!.customer_phone,customer_email:local!.customer_email || '',page_context:local!.page_context || '',message:message.text,client_message_id:message.client_message_id});
         if (!remote) throw new Error('No chat confirmation');
-        store(mergeRemote(remote,readCache().find(conv => conv.id === sessionId)));
+        await updateCache(sessionId,current=>mergeRemote(remote,current));
       } catch (error) {
         const status = (error as {status?:number})?.status;
         if (status && status >= 400 && status < 500 && ![408,429].includes(status)) {
-          const latest=readCache().find(conv=>conv.id===sessionId);
-          if (latest) store({...latest,messages:latest.messages.map(item=>item.client_message_id===message.client_message_id ? {...item,delivery_status:'needs_attention'} : item)});
+          await updateCache(sessionId,latest=>latest ? {...latest,messages:latest.messages.map(item=>item.client_message_id===message.client_message_id && item.delivery_status!=='confirmed' ? {...item,delivery_status:'needs_attention'} : item)} : latest);
         }
         break;
       }
@@ -107,13 +120,13 @@ export async function fetchCustomerThread(sessionId: string, markRead=false): Pr
   const local=readCache().find(conv=>conv.id===sessionId);
   try {
     const remote=await request('thread',sessionId);
-    if (remote) { const merged=mergeRemote(remote,local);store(merged);return markRead ? await markCustomerMessagesRead(sessionId) || merged : merged; }
+    if (remote) { const merged=(await updateCache(sessionId,current=>mergeRemote(remote,current)))!;return markRead ? await markCustomerMessagesRead(sessionId) || merged : merged; }
   } catch { /* Cached records retain explicit pending/confirmed delivery states. */ }
-  return local || null;
+  return readCache().find(conv=>conv.id===sessionId) || local || null;
 }
 /** Updates read receipts only after the server confirms the mutation. */
 export async function markCustomerMessagesRead(sessionId:string): Promise<ChatConversation|null> {
-  try { const remote=await request('customer_mark_read',sessionId,{});if(remote) {const merged=mergeRemote(remote,readCache().find(conv=>conv.id===sessionId));store(merged);return merged;} }
+  try { const remote=await request('customer_mark_read',sessionId,{});if(remote) return (await updateCache(sessionId,current=>mergeRemote(remote,current)))!; }
   catch { /* Read status stays unchanged during transport failure. */ }
   return null;
 }
@@ -123,25 +136,22 @@ export async function sendCustomerTypingSignal(sessionId:string,isTyping:boolean
   catch { /* A missed typing signal expires naturally; no local receipt is fabricated. */ }
 }
 export async function retryCustomerChatMessages(sessionId:string): Promise<void> {
-  const local=readCache().find(conv=>conv.id===sessionId);
-  if(local) store({...local,messages:local.messages.map(message=>message.delivery_status==='needs_attention'?{...message,delivery_status:'pending'}:message)});
+  await updateCache(sessionId,local=>local ? {...local,messages:local.messages.map(message=>message.delivery_status==='needs_attention'?{...message,delivery_status:'pending'}:message)} : local);
   await flushCustomerChatMessages(sessionId);
 }
 export async function sendCustomerChatMessage(input:{sessionId:string;name?:string;phone?:string;email?:string;pageContext?:string;message:string}): Promise<ChatConversation> {
   const sessionId=input.sessionId;
   const now=new Date().toISOString(), clientId=crypto.randomUUID();
-  const existing=readCache().find(conv=>conv.id===sessionId);
   const session=getStoredCustomerSession();
   saveCustomerSession({...session,sessionId,name:input.name || session.name,phone:input.phone || session.phone,email:input.email || session.email});
-  const conv:ChatConversation={
+  await updateCache(sessionId,existing=>({
     id:sessionId,customer_name:input.name || existing?.customer_name || `Visitor #${sessionId.slice(-4).toUpperCase()}`,
     customer_phone:input.phone || existing?.customer_phone || '',customer_email:input.email || existing?.customer_email || '',page_context:input.pageContext || existing?.page_context || '',
     status:'open',unread_admin:existing?.unread_admin || 0,unread_customer:existing?.unread_customer || 0,
     created_at:existing?.created_at || now,updated_at:now,
     ...existing,
     messages:[...(existing?.messages || []),{id:clientId,client_message_id:clientId,sender:'customer',text:input.message,created_at:now,delivery_status:'pending'}],
-  };
-  store(conv);
+  }));
   await flushCustomerChatMessages(sessionId);
   return readCache().find(item=>item.id===sessionId)!;
 }

@@ -72,7 +72,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 async function chatRequest<T>(action:string,body?:Record<string,unknown>):Promise<T> {
   const root=BASE.replace(/\/api\/?$/,'');
   const token=body ? await getCsrfToken() : '';
-  const response=await fetch(`${root}/chat-service.php?action=${action}`,{method:body?'POST':'GET',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json',...(token?{'X-CSRF-Token':token}:{})},...(body?{body:JSON.stringify(body)}:{})});
+  const headers:Record<string,string>={'Content-Type':'application/json',...(token?{'X-CSRF-Token':token}:{})};
+  const options:RequestInit={method:body?'POST':'GET',credentials:'include',cache:'no-store',headers,...(body?{body:JSON.stringify(body)}:{})};
+  let response=await fetch(`${root}/chat-service.php?action=${action}`,options);
+  if(response.status===403 && body) {
+    const fresh=await getCsrfToken(true);
+    if(fresh) {headers['X-CSRF-Token']=fresh;response=await fetch(`${root}/chat-service.php?action=${action}`,options);}
+  }
+  if(response.status===401) {
+    sessionStorage.removeItem('admin_logged_in');sessionStorage.removeItem(CSRF_STORAGE_KEY);window.location.reload();
+  }
   if(!response.ok) throw new Error('Chat request failed. Your change was not confirmed.');
   return response.json() as Promise<T>;
 }
@@ -975,6 +984,7 @@ export interface ChatMessage {
 }
 
 export interface ChatConversation {
+  version?: number;
   id: string;
   customer_name: string;
   customer_phone: string;

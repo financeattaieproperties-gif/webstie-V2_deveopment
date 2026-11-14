@@ -162,6 +162,7 @@ try {
         } elseif ($action==='admin_delete') {
             array_splice($conversations,$index,1);return ['success'=>true];
         }
+        if ($action !== 'thread' || !empty($_GET['mark_read'])) $conv['version']=(int)($conv['version'] ?? 0)+1;
         return ['conversation'=>chat_enrich_conversation($conv)];
     }, $write);
     chat_json_out($result);
