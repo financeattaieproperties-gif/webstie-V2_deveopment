@@ -18,18 +18,30 @@ CREATE TABLE IF NOT EXISTS core_branch_assignment_issues (
   UNIQUE KEY uq_branch_issue (record_type, record_id, issue_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-ALTER TABLE core_branches
-  ADD COLUMN IF NOT EXISTS code VARCHAR(40) NULL,
-  ADD COLUMN IF NOT EXISTS address VARCHAR(255) NOT NULL DEFAULT '',
-  ADD COLUMN IF NOT EXISTS phone VARCHAR(40) NOT NULL DEFAULT '',
-  ADD COLUMN IF NOT EXISTS email VARCHAR(254) NOT NULL DEFAULT '',
-  ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1;
-
-ALTER TABLE core_management_tasks ADD COLUMN IF NOT EXISTS branch_id INT UNSIGNED NULL AFTER id;
-ALTER TABLE cc_customers ADD COLUMN IF NOT EXISTS branch_id INT UNSIGNED NULL AFTER id;
-ALTER TABLE cc_leads ADD COLUMN IF NOT EXISTS branch_id INT UNSIGNED NULL AFTER id;
-ALTER TABLE inv_projects ADD COLUMN IF NOT EXISTS branch_id INT UNSIGNED NULL AFTER id;
-ALTER TABLE mkt_production_entries ADD COLUMN IF NOT EXISTS branch_id INT UNSIGNED NULL AFTER id;
+-- Portable guards work with MySQL 8 and MariaDB; no stored routine privileges required.
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_branches' AND COLUMN_NAME='code'), 'SELECT 1', 'ALTER TABLE core_branches ADD COLUMN code VARCHAR(40) NULL');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_branches' AND COLUMN_NAME='address'), 'SELECT 1', 'ALTER TABLE core_branches ADD COLUMN address VARCHAR(255) NOT NULL DEFAULT ''''');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_branches' AND COLUMN_NAME='phone'), 'SELECT 1', 'ALTER TABLE core_branches ADD COLUMN phone VARCHAR(40) NOT NULL DEFAULT ''''');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_branches' AND COLUMN_NAME='email'), 'SELECT 1', 'ALTER TABLE core_branches ADD COLUMN email VARCHAR(254) NOT NULL DEFAULT ''''');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_branches' AND COLUMN_NAME='version'), 'SELECT 1', 'ALTER TABLE core_branches ADD COLUMN version INT NOT NULL DEFAULT 1');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_management_tasks' AND COLUMN_NAME='branch_id'), 'SELECT 1', 'ALTER TABLE core_management_tasks ADD COLUMN branch_id INT UNSIGNED NULL AFTER id');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cc_customers' AND COLUMN_NAME='branch_id'), 'SELECT 1', 'ALTER TABLE cc_customers ADD COLUMN branch_id INT UNSIGNED NULL AFTER id');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cc_leads' AND COLUMN_NAME='branch_id'), 'SELECT 1', 'ALTER TABLE cc_leads ADD COLUMN branch_id INT UNSIGNED NULL AFTER id');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inv_projects' AND COLUMN_NAME='branch_id'), 'SELECT 1', 'ALTER TABLE inv_projects ADD COLUMN branch_id INT UNSIGNED NULL AFTER id');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mkt_production_entries' AND COLUMN_NAME='branch_id'), 'SELECT 1', 'ALTER TABLE mkt_production_entries ADD COLUMN branch_id INT UNSIGNED NULL AFTER id');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+SET @branch_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_private_files' AND COLUMN_NAME='branch_id'), 'SELECT 1', 'ALTER TABLE core_private_files ADD COLUMN branch_id INT UNSIGNED NULL AFTER id');
+PREPARE branch_stmt FROM @branch_ddl; EXECUTE branch_stmt; DEALLOCATE PREPARE branch_stmt;
+UPDATE core_private_files f JOIN core_users u ON u.id=f.owner_id SET f.branch_id=u.branch_id WHERE f.branch_id IS NULL;
 
 CREATE TABLE IF NOT EXISTS core_branch_managers (
   branch_id INT UNSIGNED PRIMARY KEY,

@@ -193,6 +193,7 @@ export default function PublishingTasks() {
       const res = await api.updateSubmissionStatus({
         id: item.id,
         version: item.version,
+        revision: item.revision,
         action,
         price: action === 'publish' ? priceVal : undefined,
         listing_type: lType,
@@ -334,6 +335,7 @@ export default function PublishingTasks() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                   <span style={S.serialBadge}>{item.property_serial}</span>
                   <span style={S.statusBadge(item.submission_status)}>{item.submission_status}</span>
+                  <span>Revision {item.revision}</span>
                   <span style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: 600 }}>
                     Platform: {item.social_platform}
                   </span>
@@ -454,6 +456,7 @@ export default function PublishingTasks() {
                 Rejected Reason: {item.rejected_reason}
               </div>
             )}
+            {!!item.reviewHistory?.length && <details><summary>Review history</summary>{item.reviewHistory.map((event,index)=><p key={index}>Revision {event.revision}: {event.next_status}{event.notes ? ` — ${event.notes}` : ''}</p>)}</details>}
 
             <div style={S.photoGrid}>
               {(item.photos || []).map((photoUrl, idx) => (

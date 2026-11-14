@@ -33,6 +33,28 @@ if($action==='worker') {
 }
 if($action==='close-first'){$db->exec("UPDATE cc_leads SET status='lost' WHERE id=(SELECT id FROM (SELECT MIN(id) id FROM cc_leads) x)");exit;}
 if($action==='closed-first'){$db->exec("UPDATE cc_leads SET status='closed' WHERE id=(SELECT id FROM (SELECT MIN(id) id FROM cc_leads) x)");exit;}
+if($action==='branch-refresh-four'){
+    $sid=bin2hex(random_bytes(16));$csrf=bin2hex(random_bytes(32));$now=time();$row=$db->query('SELECT auth_version FROM core_users WHERE id=4')->fetch();$session=['user_id'=>4,'auth_version'=>(int)$row['auth_version'],'last_seen'=>$now,'firebase_expiry'=>$now+3600,'firebase_checked'=>$now,'csrf'=>$csrf];$encoded='';foreach($session as $key=>$value)$encoded.=$key.'|'.serialize($value);file_put_contents(getenv('STAFF_LEAD_TEST_DIR').'/sessions/sess_'.$sid,$encoded);echo json_encode(['cookie'=>'attaie_staff_session='.$sid,'csrf'=>$csrf]);exit;
+}
+if($action==='work-lifecycle-setup'){
+    foreach([[1,16,'architect'],[2,17,'graphic_designer'],[3,18,'visual_designer_3d']] as [$id,$assignee,$role]){$q=$db->prepare('INSERT INTO eng_deliverables(id,project_id,title,assigned_role,assignee_id,assigned_by_id,deadline_at) VALUES (?,1,?,?,?,7,?)');$q->execute([$id,'Fictional lifecycle work',$role,$assignee,'2099-01-01 00:00:00']);}
+    foreach([[2,1,'approved',17],[3,1,'approved',18],[3,2,'submitted',18]] as [$deliverable,$version,$status,$author]){$q=$db->prepare("INSERT INTO eng_deliverable_versions(deliverable_id,version_number,file_url,file_name,format,notes,submitted_by_id,status) VALUES (?,?,'/fictional-test-file','fictional.pdf','pdf','Fictional lifecycle version',?,?)");$q->execute([$deliverable,$version,$author,$status]);}
+    $db->exec("INSERT INTO mkt_production_entries(id,branch_id,customer_name,address,property_type,submitted_by_id,editor_id,stage) VALUES (1,1,'Fictional Owner','Fictional Address','Apartment',7,13,'editing_scheduled')");
+    $db->exec("INSERT INTO mkt_production_entries(id,branch_id,customer_name,address,property_type,submitted_by_id,videographer_id,stage) VALUES (2,1,'Fictional Owner','Fictional Address','Apartment',7,14,'filming_scheduled')");
+    exit;
+}
+if($action==='branch-setup'){
+    foreach([[7,'ceo',null],[8,'manager',2],[9,'sales',null],[10,'sales',2]] as [$id,$role,$branch]){
+        $q=$db->prepare('INSERT INTO core_users(id,firebase_uid,name,username,role,branch_id) VALUES (?,?,?,?,?,?)');$q->execute([$id,'fictional-'.$id,'Fictional '.$role.' '.$id,'fixture'.$id.'@example.test',$role,$branch]);
+    }
+    foreach(['sales_leader','marketing_manager','editor','videographer','finance_manager','architect','graphic_designer','visual_designer_3d'] as $index=>$role){$id=$index+11;$q=$db->prepare('INSERT INTO core_users(id,firebase_uid,name,username,role,branch_id) VALUES (?,?,?,?,?,1)');$q->execute([$id,'fictional-'.$id,'Fictional '.$role,'fixture'.$id.'@example.test',$role]);}
+    $db->exec("INSERT INTO core_roles(code,department_code,name) VALUES ('hr_manager','management','Retired fixture HR'),('admin','management','Retired fixture Admin')");
+    $db->exec("INSERT INTO core_users(id,firebase_uid,name,username,role,branch_id) VALUES (19,'fictional-19','Retired fixture HR','retired-hr@example.test','hr_manager',1),(20,'fictional-20','Retired fixture Admin','retired-admin@example.test','admin',1)");
+    $db->exec('INSERT INTO core_branch_managers(branch_id,manager_user_id,assigned_by) VALUES (1,6,7),(2,8,7)');
+    $dir=getenv('STAFF_LEAD_TEST_DIR');$sessions=[];
+    foreach(range(7,20) as $id){$sid=bin2hex(random_bytes(16));$csrf=bin2hex(random_bytes(32));$now=time();$session=['user_id'=>$id,'auth_version'=>1,'last_seen'=>$now,'firebase_expiry'=>$now+3600,'firebase_checked'=>$now,'csrf'=>$csrf];$encoded='';foreach($session as $key=>$value)$encoded.=$key.'|'.serialize($value);file_put_contents($dir.'/sessions/sess_'.$sid,$encoded);$sessions[(string)$id]=['cookie'=>'attaie_staff_session='.$sid,'csrf'=>$csrf];}
+    echo json_encode(['sessions'=>$sessions]);exit;
+}
 foreach(['001-core.sql','010-callcenter.sql','020-inventory.sql','030-sales-crm.sql','040-hr-finance.sql','050-marketing-production.sql','060-engineering.sql','090-role-migration.sql','095-retire-finance-assistant.sql','100-dashboard-completion.sql','103-customer-property-leads.sql'] as $file)$db->exec(file_get_contents(__DIR__.'/../database/'.$file));
 $db->exec("INSERT INTO core_branches(id,code,name) VALUES (1,'FIX-1','Fictional branch'),(2,'FIX-2','Foreign fictional branch')");
 $roles=['sales','sales','callcenter','sales','sales','manager'];

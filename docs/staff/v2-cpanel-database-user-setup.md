@@ -1,6 +1,6 @@
 # V2 manual deployment, database setup, and department users
 
-Target: `https://website.attaieproperties.com` only. This is the step-by-step deployment deliverable for the revised implementation plans, not evidence that the revised package exists or is installed. Complete implementation/local acceptance first, then use the exact newly prepared release. No cPanel Terminal or automated installer is required.
+Target: `https://website.attaieproperties.com` only. Use the newly prepared manual-staging-dashboard-completion release and its BUILD-STATUS.json. Local package checks and hosted installation are separate. No cPanel Terminal or automated installer is required.
 
 Menu labels vary by host. Current official references: [cPanel domain creation](https://docs.cpanel.net/cpanel/domains/domains/create-a-new-domain/134/), [database/user management](https://docs.cpanel.net/cpanel/databases/manage-my-databases/), [PHP selection](https://docs.cpanel.net/cpanel/software/multiphp-manager-for-cpanel/), [SSL certificates](https://docs.cpanel.net/cpanel/security/ssl-tls-certificates/), [Firebase password authentication](https://firebase.google.com/docs/auth/web/password-auth), and [Firebase user management](https://firebase.google.com/docs/auth/web/manage-users). The environment-specific paths and access rules below come from this repository.
 
@@ -19,7 +19,7 @@ Checkpoint: testing origin/root identified, V1 excluded, and fresh/upgrade branc
 1. Open **SSL/TLS Status**, or the host's **SSL/TLS Certificates** interface. Confirm a valid certificate covers `website.attaieproperties.com`. Run available AutoSSL for that domain if needed; ask the host to resolve an unavailable certificate feature.
 2. After the certificate works, enable **Force HTTPS Redirect** for the testing domain in **Domains**. Verify the HTTPS address without browser certificate warnings.
 3. Open **MultiPHP Manager**, select only the testing domain, and choose the same PHP version used for the release's validation (current local validation uses PHP 8.4). Do not change the account-wide/default PHP version or V1's selection.
-4. Through the host's PHP extension interface, or hosting support if extensions are not exposed, verify `mysqli`, `pdo_mysql`, `curl`, `openssl`, `fileinfo`, and session support. Firebase verification also needs working outbound HTTPS and CA certificates. MultiPHP Manager selects a version; it does not itself guarantee these extensions are installed.
+4. Through the host's PHP extension interface, or hosting support if extensions are not exposed, verify `mysqli`, `pdo_mysql`, `curl`, `openssl`, `fileinfo`, `mbstring`, and session support. Firebase verification also needs working outbound HTTPS and CA certificates. MultiPHP Manager selects a version; it does not itself guarantee these extensions are installed.
 5. Use the testing domain's PHP INI interface to check upload/post limits against application file-size requirements. Keep PHP errors out of public responses and use the host's private error log for diagnostics. Preserve the packaged `.user.ini`; verify it is compatible with the host rather than changing V1 settings.
 
 Checkpoint: correct domain-specific PHP runtime, HTTPS, extensions, and private error reporting. Do not leave public `phpinfo()` or diagnostic installers online.
@@ -76,13 +76,13 @@ Checkpoint: each import is tied to its verified database and result. Fresh schem
 
 1. In **File Manager**, open your account home, for example `/home/CPANEL_USER/`. Enable hidden-file display in Settings.
 2. Create a directory outside **every** domain's document root, for example `/home/CPANEL_USER/attaie-v2-private/`. Confirm the actual host path and that no domain serves it.
-3. Upload/extract `UPLOAD-PRIVATE-OUTSIDE-WEBROOT.zip` there. Inspect the archive layout and resulting paths instead of creating an extra nested directory accidentally. Confirm `app/src/App.php`, `Completion.php`, `CompletionRules.php`, and all newly added service files exist under the configured app directory.
+3. The private ZIP already contains a top-level `attaie-v2-private/` folder. Upload it to your account home and extract **there**, producing `/home/CPANEL_USER/attaie-v2-private/`. Do not extract into an already named private folder and create a duplicate nested folder. Confirm `app/src/App.php`, `BranchAccess.php`, `Completion.php`, `CompletionRules.php`, and all service files exist under that private directory. Remove the uploaded ZIP after verifying extraction.
 4. Copy `config.example.php` to private `config.php`. Fill in the internal CRM DSN/user/password, the staff submission-bridge connection, exact testing `origin`, V2 Firebase project ID/public web API key, and a private writable session directory.
 5. Copy `website-db.example.php` to private `website-db.php`. Enter the website connection and Admin's submission-bridge connection only. Keep `ATTAIE_MANUAL_SCHEMA=true`. Do not put CRM credentials in this file. Disable legacy example Admin credentials; the separate Admin account will use its password hash.
-6. Create private session/chat directories. The revised release will expose `WEBSITE_CHAT_STORE_DIR` in its template; point it to a private chat directory. On upgrades, copy and verify existing V2 chat history before switching paths; preserve the old copy until acceptance.
+6. Create private session/chat directories. The private website template exposes `WEBSITE_CHAT_STORE_DIR` in its template; point it to a private chat directory. On upgrades, copy and verify existing V2 chat history before switching paths; preserve the old copy until acceptance.
 7. Restrict private file access to the hosting account/PHP process using the host's supported permissions. Avoid world-writable permissions. Confirm PHP can write sessions/chat while HTTP cannot fetch private files.
 
-Checkpoint: configured private paths and connections, no SQL/secrets in public roots. The revised chat setting is an implementation deliverable, not a claim about today's package.
+Checkpoint: configured private paths and connections, no SQL/secrets in public roots. Confirm the configured directory exists and PHP can write to it.
 
 ## 7. Set up V2 Firebase Authentication
 
@@ -94,10 +94,10 @@ Checkpoint: configured private paths and connections, no SQL/secrets in public r
 
 Checkpoint: two distinct Firebase identities and matching frontend/backend project configuration. Firebase identity alone does not grant a CRM role.
 
-## 8. Bootstrap CEO and Manager in the CRM database
+## 8. Bootstrap CEO, then branch and Manager
 
 1. Return to phpMyAdmin, select the internal CRM database, and verify `SELECT DATABASE();`.
-2. Open a private copy of `database/04-firebase-owner.template.sql`. Fill its CEO UID/email/name and separate Manager UID/email/name from the Firebase records. Do not add passwords.
+2. Open a private copy of `database/04-firebase-owner.template.sql`. Fill its CEO UID/email/name from the Firebase CEO record; Manager is provisioned next through CEO controls. Do not add passwords.
 3. Review the role mapping: CEO uses `ceo`; Manager uses `manager`. Apply the template once to the verified CRM database. For an upgrade, first check whether those UIDs/emails already exist; do not insert duplicates or overwrite existing role mappings blindly.
 4. Verify mappings with this read-only query in the CRM database:
 
@@ -110,24 +110,32 @@ Checkpoint: two distinct Firebase identities and matching frontend/backend proje
    WHERE u.role IN ('ceo', 'manager');
    ```
 
-5. Current migration 100 grants staff/department management to **Manager**, not CEO. Bootstrap both; use Manager for ordinary department/user creation. CEO, Manager, and website Admin are distinct accounts/authorities. Changing those management permissions is a separate business decision, not a deployment workaround.
+5. Only **CEO** provisions staff, creates branches, and assigns Managers. First map the CEO using the template. Sign in as CEO, create an inactive branch, provision its Manager using the exact Firebase UID/email and branch, then assign that Manager and activate the branch. Do not insert an active branchless Manager. Each active branch requires one active Manager.
 
 Checkpoint: exact Firebase identities mapped once in MySQL; no passwords in bootstrap SQL. Complete live login checks after the public upload.
 
 ## 9. Create the separate website Admin
 
-1. Generate a strong password hash locally using a trusted local PHP tool provided with the final handoff, or another trusted local password-hashing tool. The implementation must provide a local prompt-based helper; no cPanel Terminal, public hashing page, or online password-sharing service is required.
+1. Generate a strong password hash locally using a provided helper: python tools/create-website-admin-hash.py --php PATH_TO_LOCAL_PHP --output PRIVATE_PATH/admin-hash.txt, or another trusted local password-hashing tool. The helper prompts twice and writes only a hash; no cPanel Terminal, public hashing page, or online password-sharing service is required.
 2. In a private copy of `database/05-website-admin.template.sql`, replace the username/hash placeholders and enable only the intended INSERT statement. Do not put plaintext passwords into SQL.
 3. In phpMyAdmin, select and verify the **website database**, then apply the prepared statement once. For existing V2 Admin accounts, preserve them or follow an explicitly approved account update instead of blindly inserting another copy.
 4. This creates `admin_users` credentials for `/admin/`; it does not create a Firebase staff account, role mapping, cPanel login, or CRM access.
 
 Checkpoint: separate website account stored as a password hash in website `admin_users`.
 
+On this Windows checkout, the validated PHP executable is already under `releases/validation/php/php.exe`. Run the helper from the repository folder in PowerShell:
+
+```powershell
+python scripts/create-website-admin-hash.py --php releases/validation/php/php.exe --output "$env:TEMP/attaie-v2-admin-hash.txt"
+```
+
+Enter the password twice at the private prompts. Open the resulting private text file, copy its hash into `05-website-admin.template.sql`, and enable that INSERT by removing its leading `--`. Import into the **website** database. Keep the password in your password manager. The helper preserves an existing output file; use another private filename if necessary. Python and local PHP are preparation tools, not hosting requirements.
+
 ## 10. Upload public files to the testing document root
 
 1. In File Manager, select the verified testing root from step 1. Confirm the full path again before replacing any files. Use the backed-up upgrade procedure if files already exist.
 2. Upload `UPLOAD-WEBSITE-CONTENTS.zip` from the exact newly prepared release and extract its **contents** into that root. Do not upload the whole release directory, SQL, private ZIP, or setup worksheets there. Remove the public ZIP after extraction/verification.
-3. Confirm the root contains `index.html`, `.htaccess`, `.user.ini`, `api/`, `admin/`, `staff-api/`, `dashboard/`, `management/`, and `callcenter/`. The revised package must include `chat-service.php`; unrelated AI chat stays blocked.
+3. Confirm the root contains `index.html`, `.htaccess`, `.user.ini`, `api/`, `admin/`, `staff-api/`, `dashboard/`, `management/`, `callcenter/`, `ceo/`, `sales/`, `sales-leader/`, `finance/`, `marketing/`, and `engineering/`. The package includes `chat-service.php`; unrelated AI chat stays blocked.
 4. Edit public `staff-api/paths.php` to the actual private app/config paths. Edit public `api/db.php` to require the actual private `website-db.php`. These public bridge files contain paths only, not credentials.
 5. Confirm uploads are writable as required and packaged script-execution denial rules remain present. Confirm private directories and files are inaccessible from public URLs.
 6. Load the homepage, empty catalog, `/admin/`, `/dashboard/`, `/management/`, `/callcenter/`, and their deep links. Check browser network errors and private PHP logs.
@@ -138,24 +146,24 @@ Checkpoint: only V2 public files replaced, hidden files present, all route entry
 
 Each employee requires a Firebase identity **and** a MySQL mapping. Do not create cPanel accounts, MySQL service users, or Firebase project IAM memberships for ordinary employees.
 
-1. Sign in as **Manager** at `/management/` after testing its real Firebase login.
+1. Sign in as **CEO** at `/ceo/` or `/dashboard/` after testing its real Firebase login.
 2. Open staff/department management. Built-in departments/roles are installed by the CRM SQL. If a new department is needed, choose **Create department**, enter its stable code and display name, then save. A new department does not automatically create a new permission-bearing role.
 3. In the V2 Firebase console, add the employee under Authentication Users. Copy the exact UID and email; issue/reset the password privately through Firebase.
-4. Back in Manager's **Create agent/staff** form, enter name, the same email, exact Firebase UID, intended department, and appropriate existing operational role. Review both selectors; the current form's defaults must not be assumed to match the new employee.
+4. Back in CEO's **Create agent/staff** form, enter name, the same email, exact Firebase UID, the active branch, and appropriate existing operational role (department follows the role). Review both selectors; the current form's defaults must not be assumed to match the new employee.
 5. Use this mapping as the ordinary onboarding guide:
 
 | Department | Role codes |
 | --- | --- |
 | Call Center (`callcenter`) | `callcenter` |
 | Sales (`sales`) | `sales_leader`, `sales` |
-| Human Resources (`hr`) | `hr_manager` |
-| Marketing and Production (`production`) | `marketing_manager`, `production_manager`, `editor`, `videographer`, `photographer` |
+| Contracts / Management (`management`) | `manager` |
+| Marketing and Production (`production`) | `marketing_manager`, `editor`, `videographer` |
 | Finance (`finance`) | `finance_manager` |
 | Engineering and Graphic (`engineering`) | `architect`, `graphic_designer`, `visual_designer_3d` |
 
-6. Save and confirm that the employee is active. Duplicate email/UID errors require checking existing mappings, not creating another Firebase identity to bypass the error. CEO/Manager privileged provisioning uses the reviewed private bootstrap route; ordinary staff creation intentionally excludes those roles.
-7. For Sales, assign the appropriate projects through Manager's inventory/project assignment workflow. Use the existing Sales leader/team assignment controls if available in the completed implementation. Selecting Sales role alone does not grant every project's records.
-8. Have the employee sign in with their own credentials. Callcenter uses `/callcenter/`; other operational roles use the staff entry provided by the application, normally `/dashboard/`. Verify their own authorized workspace and at least one denied protected action. Do not give employees Manager's session as a login workaround.
+6. Save and confirm that the employee is active. Duplicate email/UID errors require checking existing mappings, not creating another Firebase identity to bypass the error. CEO is bootstrapped privately; CEO then provisions Manager and operational accounts. Creating another CEO through the dashboard is disallowed.
+7. For Sales, assign the appropriate projects through CEO's inventory/project assignment workflow. Selecting Sales role alone does not grant every project's records.
+8. Have the employee sign in with their own credentials. Callcenter uses `/callcenter/`; other operational roles use the staff entry provided by the application, normally `/dashboard/`. Verify their own authorized workspace and at least one denied protected action. Do not give employees another employee's session as a login workaround.
 9. Repeat for each department, including at least one Editor for the five-photo publication acceptance. Verify deactivation/revocation through authorized controls and account for active work that blocks deactivation.
 
 Checkpoint: each employee has one UID mapping, intended department/role, correct assignments, and observed allowed/denied access. Custom roles outside the server's operational allowlist require explicit implementation and permission tests, not merely a new SQL label or Firebase claim.
@@ -199,3 +207,38 @@ ORDER BY r.department_code, r.code, rp.permission_code;
 7. Mark deployment verified only after these hosted observations exist. Retain the prior application/database/upload backups and document a coordinated V2-only restore if needed; do not restore one database version against an incompatible application or reset V1.
 
 Checkpoint: actual hosted results recorded, remaining failures explicit, and recoverable V2 backups retained.
+
+## 14. Panel addresses and common problems
+
+| Address | Intended user |
+| --- | --- |
+| `/admin/` | Separate website Admin; PHP session account |
+| `/ceo/` | CEO; Firebase identity mapped to `ceo` |
+| `/management/` | Branch Manager; contracts and branch operations |
+| `/callcenter/` | Call Center |
+| `/sales/` | Sales Agent; installable browser PWA |
+| `/sales-leader/` | Sales Team Leader |
+| `/finance/` | Finance Manager |
+| `/marketing/` | Marketing Manager, Editor, Videographer |
+| `/engineering/` | Architect, Graphic Designer, 3D Visual Designer |
+| `/dashboard/` | Shared staff entry; permissions come from the signed-in account |
+
+Role URL selection never grants a role. Sign in with the matching employee account.
+
+| Symptom | Check |
+| --- | --- |
+| Blank page or asset 404 | Extract ZIP contents into the actual testing root; preserve all asset directories and hidden files. Clear stale site/PWA cache after an upgrade. |
+| Deep links return 404 | Verify root and panel `.htaccess` files and Apache rewrite support. |
+| Entire domain returns 500 | Inspect cPanel Errors/private PHP log. Confirm host allows the packaged Apache directives and PHP 8.4 extensions. |
+| Website says DB connection failed | Verify full cPanel-prefixed website DB/user names, host, password, and that user's assigned grants in private `website-db.php`. |
+| Staff API returns 503 | Verify absolute paths in `staff-api/paths.php`, private `config.php`, PDO MySQL, CRM schema, and private sessions directory. |
+| Firebase sign-in fails | Confirm Email/Password enabled, matching V2 project/public API key in frontend and PHP, and Firebase account exists. Check key restrictions/outbound HTTPS. |
+| Login succeeds in Firebase but CRM denies access | Match exact UID/email; account must be active, use an active canonical role, and belong to an active branch. Manager must be the assigned Manager of that branch. |
+| Cannot activate a branch | Create its Manager Firebase identity, provision that Manager through CEO, then assign it. One active Manager per active branch is required. |
+| Projects are empty | Expected on fresh install. CEO creates internal inventory; public catalog requires website Admin publishing. |
+| Editor submission stays pending | Check staff submission-writer credentials, third schema including migration 106, five authorized photos, and private PHP log. Preserve pending outbox entries. |
+| Chat reports unavailable | Set `WEBSITE_CHAT_STORE_DIR` to an existing private directory outside every document root; verify PHP write access. |
+| Duplicate lead returns 409 | Choose the correct customer/property pair. Closed/lost leads retain their claim. Preserve the recorded call; do not bypass the uniqueness check. |
+| Click-to-call is denied | This testing release disables chargeable provider calls intentionally. Provider activation is a separate configured acceptance step. |
+
+Use [cPanel Domains](https://docs.cpanel.net/cpanel/domains/domains/), [Manage My Databases](https://docs.cpanel.net/cpanel/databases/manage-my-databases/), and [Firebase Email/Password documentation](https://firebase.google.com/docs/auth/web/password-auth) for host/interface-specific details. No automated installer or cPanel Terminal is needed.

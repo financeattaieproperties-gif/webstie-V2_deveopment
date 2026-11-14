@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
-import type { InventoryApartment, InventoryProject, Role, StaffUser } from '../../../../packages/staff-contracts/types';
+import React, { useEffect, useRef, useState } from 'react';
+import type { Branch, InventoryApartment, InventoryProject, Role, StaffUser } from '../../../../packages/staff-contracts/types';
 import { apartmentNumber, copyTypicalFloor, validateInventoryLayout } from '../../../../packages/staff-contracts/inventory.mjs';
 import './ProjectInventoryWizard.css';
 export interface ProjectInventoryWizardProps {
+    onLoadBranches?: () => Promise<Branch[]>;
     projects: InventoryProject[];
     staffUsers: StaffUser[];
     actorRole: Role;
@@ -36,7 +37,7 @@ const fa: Record<string, string> = {
 };
 const blank = () => ({ name: '', code: '', location: '', description: '', totalAreaSqm: 0, floors: 12, corridorCount: 1, commercialFloors: [] as number[], residentialFloors: [] as number[], coverPhotoUrl: '', assignedTeamLeaderId: null as number | null, assignedSalesAgentIds: [] as number[] });
 const unitBlank = () => ({ kind: 'apartment' as 'apartment' | 'shop' | 'supermarket', floor: 1, corridor: 'A', suffix: '01', commercialName: '', areaSqm: 0, pricePerSqm: 0, rooms: 3, direction: 'front', customSide: '', isVip: false, roofAreaSqm: 0, currency: 'USD' as 'USD' | 'AFN' });
-export function ProjectInventoryWizard({ projects, staffUsers, actorRole, onSaveProject, onNotice, onError, onUpload, language = 'en' }: ProjectInventoryWizardProps) {
+export function ProjectInventoryWizard({ projects, staffUsers, actorRole, onSaveProject, onNotice, onError, onUpload, onLoadBranches, language = 'en' }: ProjectInventoryWizardProps) {
     const t = (s: string) => language === 'fa' ? fa[s] || s : s;
     const [open, setOpen] = useState(false), [step, setStep] = useState(0), [project, setProject] = useState(blank());
     const [editing, setEditing] = useState<InventoryProject | null>(null), [units, setUnits] = useState<InventoryApartment[]>([]);
@@ -44,7 +45,10 @@ export function ProjectInventoryWizard({ projects, staffUsers, actorRole, onSave
     const [source, setSource] = useState(1), [targets, setTargets] = useState<number[]>([]), [pending, setPending] = useState<InventoryApartment[]>([]);
     const [busy, setBusy] = useState(false), [error, setError] = useState('');
     const errorRef = useRef<HTMLParagraphElement>(null);
-    const canManage = actorRole === 'manager';
+    const canManage = actorRole === 'ceo';
+    const [branches,setBranches]=useState<Branch[]>([]);
+    const [branchId,setBranchId]=useState(0);
+    useEffect(()=>{if(canManage&&onLoadBranches)void onLoadBranches().then(setBranches).catch(e=>setError(e.message));},[canManage,onLoadBranches]);
     const fail = (message: string) => {
         const localized = language === 'fa' ? message
             .replace('Floors must be between 1 and 200.', 'تعداد طبقات باید بین ۱ و ۲۰۰ باشد.')
@@ -126,7 +130,8 @@ export function ProjectInventoryWizard({ projects, staffUsers, actorRole, onSave
         fail(t('Review generated units before confirming.'));
         return;
     } setBusy(true); try {
-        await onSaveProject({ ...project, id: editing?.id, version: editing?.version, status: draft ? 'draft' : editing?.status === 'active' ? 'active' : 'presale', apartments: units });
+        if(!branchId && !editing?.branchId) throw new Error(language==='fa'?'یک شعبه را انتخاب کنید.':'Choose a branch.');
+        await onSaveProject({ ...project, branchId:editing?.branchId||branchId, id: editing?.id, version: editing?.version, status: draft ? 'draft' : editing?.status === 'active' ? 'active' : 'presale', apartments: units });
         setOpen(false);
         onNotice(t('Project saved.'));
     }
@@ -138,7 +143,7 @@ export function ProjectInventoryWizard({ projects, staffUsers, actorRole, onSave
     } };
     const unitTable = (list: InventoryApartment[], editable = false) => <div className="table-scroll"><table><thead><tr>{['Units', 'Kind', 'Floor', 'Area (m²)', 'Price per m²', 'Separate roof area (m²)', 'Side'].map(h => <th key={h}>{t(h)}</th>)}{editable && <th />}</tr></thead><tbody>{list.map((u, i) => <tr key={`${u.unitNumber}-${i}`}><td>{u.unitNumber}{u.isVip ? ' VIP' : ''}</td><td>{t(u.kind === 'shop' ? 'Shop' : u.kind === 'supermarket' ? 'Supermarket' : 'Apartment')}</td><td>{u.floor}</td><td>{u.areaSqm}</td><td>{u.pricePerSqm} {u.currency}<small>{u.totalPrice} {u.currency}</small></td><td>{u.roofAreaSqm || 0}</td><td>{u.direction}</td>{editable && <td><button type="button" className="button secondary" onClick={() => { setUnitIndex(i); setUnit({ kind: u.kind || 'apartment', floor: u.floor, corridor: u.corridor || 'A', suffix: u.unitNumber.slice(-2), commercialName: u.unitNumber, areaSqm: u.areaSqm, pricePerSqm: u.pricePerSqm, rooms: u.rooms, direction: ['front', 'back', 'road'].includes(u.direction) ? u.direction : 'custom', customSide: u.direction, isVip: !!u.isVip, roofAreaSqm: u.roofAreaSqm || 0, currency: u.currency }); }}>{t('Edit unit')}</button> <button type="button" className="button secondary" disabled={u.status !== 'available'} onClick={() => { setUnits(units.filter((_, index) => index !== i)); setPending([]); setUnitIndex(null); }}>{t('Remove')}</button></td>}</tr>)}</tbody></table></div>;
     return <section className="panel inventory-wizard" dir={language === 'fa' ? 'rtl' : 'ltr'} data-testid="inventory-projects-section"><div className="panel-heading"><h2>{t('Project inventory')}</h2>{canManage && <button type="button" className="button" data-testid="open-project-wizard-btn" onClick={() => open ? setOpen(false) : start()}>{t(open ? 'Close' : 'Add New Project')}</button>}</div>
-    {open && canManage && <div className="inventory-editor"><nav className="inventory-steps" aria-label={t('Project details')}>{['Project details', 'Floors and corridors', 'Units', 'Review and assignment'].map((title, i) => <button type="button" key={title} className={`button ${i === step ? '' : 'secondary'}`} aria-current={i === step ? 'step' : undefined} onClick={() => setStep(i)}>{i + 1}. {t(title)}</button>)}</nav>{error && <p ref={errorRef} tabIndex={-1} role="alert" className="error">{error}</p>}
+    {open && canManage && <div className="inventory-editor"><div className="field"><label htmlFor="inventory-branch">{language==='fa'?'شعبه':'Branch'}</label><select id="inventory-branch" value={editing?.branchId||branchId||''} disabled={!!editing} onChange={e=>{setBranchId(Number(e.target.value));patch('assignedTeamLeaderId',null);patch('assignedSalesAgentIds',[]);}}><option value="">{language==='fa'?'یک شعبه را انتخاب کنید':'Choose a branch'}</option>{branches.filter(b=>b.active).map(b=><option key={b.id} value={b.id}>{b.code} — {b.name}</option>)}</select></div><nav className="inventory-steps" aria-label={t('Project details')}>{['Project details', 'Floors and corridors', 'Units', 'Review and assignment'].map((title, i) => <button type="button" key={title} className={`button ${i === step ? '' : 'secondary'}`} aria-current={i === step ? 'step' : undefined} onClick={() => setStep(i)}>{i + 1}. {t(title)}</button>)}</nav>{error && <p ref={errorRef} tabIndex={-1} role="alert" className="error">{error}</p>}
     {step === 0 && <div className="form-grid" data-testid="wizard-step-1">{field('Project name', project.name, v => patch('name', v))}{field('Project code', project.code, v => patch('code', v.toUpperCase().replace(/\s/g, '')))}{field('Project address', project.location, v => patch('location', v))}{field('Total building area (m²)', project.totalAreaSqm, v => patch('totalAreaSqm', Number(v)), 'number', 1)}{field('Total floors', project.floors, v => { patch('floors', Number(v)); setPending([]); }, 'number', 1, 200)}<label className="field"><span>{t('Exterior cover photo')}</span><input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || !onUpload} onChange={e => void upload(e.target.files?.[0])}/>{project.coverPhotoUrl && <img className="inventory-cover" src={project.coverPhotoUrl} alt={project.name}/>}</label></div>}
     {step === 1 && <div data-testid="wizard-step-2">{field('Corridor count (A–Z)', project.corridorCount, v => patch('corridorCount', Number(v)), 'number', 1, 26)}<p>{t('Select each exact floor; every floor belongs to one category.')}</p>{floorChecks('Commercial floors', project.commercialFloors, v => patch('commercialFloors', v))}{floorChecks('Residential floors', project.residentialFloors, v => patch('residentialFloors', v))}</div>}
     {step === 2 && <div data-testid="wizard-step-3"><div className="form-grid"><label className="field"><span>{t('Kind')}</span><select value={unit.kind} onChange={e => unitPatch('kind', e.target.value)}>{[['apartment', 'Apartment'], ['shop', 'Shop'], ['supermarket', 'Supermarket']].map(([v, l]) => <option key={v} value={v}>{t(l)}</option>)}</select></label><label className="field"><span>{t('Floor')}</span><select value={unit.floor} onChange={e => unitPatch('floor', Number(e.target.value))}><option value={unit.floor}>{unit.floor}</option>{(unit.kind === 'apartment' ? project.residentialFloors : project.commercialFloors).filter(f => f !== unit.floor).map(f => <option key={f}>{f}</option>)}</select></label>

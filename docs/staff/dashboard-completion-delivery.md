@@ -6,9 +6,9 @@ Target: `https://website.attaieproperties.com` only. V1's document root and data
 
 Run `node scripts/package-dashboard-completion.mjs --audit-source` for source checks. After all tests and type checks pass, run `node scripts/package-dashboard-completion.mjs`. An optional first argument names a new `releases/manual-staging-dashboard-completion-*` directory.
 
-The script builds website, `/admin/`, `/dashboard/`, `/management/`, and `/callcenter/` fresh. It never copies repository-root `dist`, reads `.env.local` or private Firebase PHP configuration, or copies the entire public asset tree. It copies only referenced public artwork, shared fonts/logo, and bundled source assets. Reusable explorer code remains; new project/unit catalogs contain no showcase records.
+The script builds website, `/admin/`, `/dashboard/`, `/management/`, `/callcenter/`, and the Sales PWA fresh. It includes `/ceo/`, `/sales-leader/`, `/finance/`, `/marketing/`, and `/engineering/` entry points into the same authorized staff app. It never copies repository-root `dist`, reads `.env.local` or private Firebase PHP configuration, or copies the entire public asset tree. It copies only referenced public artwork, shared fonts/logo, and bundled source assets. Reusable explorer code remains; new project/unit catalogs contain no showcase records.
 
-Set `VITE_STAFF_FIREBASE_API_KEY` in the packaging process environment before building. It is Firebase's public web API identifier, not a service-account secret. If `BUILD-STATUS.json` reports `firebasePublicKeyConfigured: false`, staff login is unconfigured: rebuild with the correct public key before upload. Maps likewise accept `VITE_GOOGLE_MAPS_API_KEY` from process environment only.
+Set `VITE_STAFF_FIREBASE_API_KEY` in the packaging process environment before building. It is Firebase's public web API identifier, not a service-account secret. Missing configuration stops packaging before upload output is created. Maps likewise accept `VITE_GOOGLE_MAPS_API_KEY` from process environment only.
 
 ## Three separate databases
 
@@ -30,13 +30,13 @@ Copy `config.example.php` to `config.php`. Enter the separate internal CRM conne
 
 Edit the paths in public `staff-api/paths.php` and `api/db.php` to the absolute private directory. These public files contain paths only, never credentials. Confirm private source includes every file under `app/src/`, including `Completion.php` and `CompletionRules.php`.
 
-Provision first Admin (CEO) in the **V2 Firebase Authentication** console. Enable Email/Password, authorize `website.attaieproperties.com`, and map exact UID/email using `database/04-firebase-owner.template.sql` in Internal CRM. Map a separate authorized Manager UID for inventory and department/user management. No staff password belongs in SQL or upload files. Website `/admin/` authentication is separate: use the commented website-admin SQL template after generating its password hash privately.
+Provision first Admin (CEO) in the **V2 Firebase Authentication** console. Enable Email/Password, authorize `website.attaieproperties.com`, and map exact UID/email using `database/04-firebase-owner.template.sql` in Internal CRM. Only CEO provisions staff. Sign in as CEO, create an inactive branch, provision its Firebase Manager with the exact UID/email and branch, assign that Manager, then activate the branch. No staff password belongs in SQL or upload files. Website `/admin/` authentication is separate: use `tools/create-website-admin-hash.py` locally, then the website-admin SQL template. Follow `CPANEL-STEP-BY-STEP.md` for all steps.
 
 ## Upload and check
 
 Extract the **contents** of `UPLOAD-WEBSITE-CONTENTS.zip` into the testing document root, including `.htaccess` and `.user.ini`. Do not upload the entire release directory. Keep `database/`, `private/`, manifests, setup materials, and login details outside the web root. Ensure intended upload directories are writable by PHP without enabling script execution.
 
-Check homepage and empty project catalog; `/admin/`; all three staff entry URLs and deep links; Firebase login/session expiry; Manager project creation and upload; HR party portraits/boundaries and contract issuance; agreement QR verification privacy; Finance payments/receipts/reversals; and role-denied API requests. Use fictional test entries only. Check browser console/network errors, 375/768/1024/1440 layouts, keyboard controls, Dari/RTL, print layouts, and PHP error logs. Confirm website Admin cannot read CRM and staff cannot read website data.
+Check homepage and empty project catalog; `/admin/`; every staff entry URL and deep links; Firebase login/session expiry; CEO project creation and upload; Manager party portraits/boundaries and contract issuance; agreement QR verification privacy; Finance payments/receipts/reversals; Editor five-photo review/corrections/publication; public inquiry receipts and private chat; and role-denied API requests. Use fictional test entries only. Check browser console/network errors, 375/768/1024/1440 layouts, keyboard controls, Dari/RTL, print layouts, and PHP error logs. Confirm website Admin cannot read CRM and staff cannot read website data.
 
 The package includes no default credentials, project/unit seeds, private account mappings, or claim of successful installation. Record actual import results and server checks before accepting delivery as deployed. Keep `BUILD-STATUS.json` as a local build record; its upload/import/server flags remain false.
 

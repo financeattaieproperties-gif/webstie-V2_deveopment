@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { readUpload } from './readUpload';
 import type {
   MarketingProductionEntry,
   Role,
   StaffUser,
   SubmissionPost,
+  Branch,
 } from '../../../../packages/staff-contracts/types';
 
 export interface MarketingWorkspaceProps {
+  t?: (value: string) => string;
+  onLoadBranches?: () => Promise<Branch[]>;
   entries: MarketingProductionEntry[];
   submissions: SubmissionPost[];
   staffUsers: StaffUser[];
@@ -17,6 +20,7 @@ export interface MarketingWorkspaceProps {
     customerName: string;
     address: string;
     propertyType: 'Villa' | 'Block' | 'Building' | 'Apartment';
+    branchId?: number;
   }) => Promise<unknown>;
   onAdvanceEntry: (
     entryId: number,
@@ -25,7 +29,9 @@ export interface MarketingWorkspaceProps {
       | 'complete_filming'
       | 'schedule_editing'
       | 'ready_for_post'
-      | 'mark_posted',
+      | 'mark_posted'
+      | 'submit_website'
+      | 'resubmit_website',
     payload: Record<string, unknown>
   ) => Promise<unknown>;
   onNotice: (msg: string) => void;
@@ -33,6 +39,8 @@ export interface MarketingWorkspaceProps {
 }
 
 export function MarketingWorkspace({
+  t = value => value,
+  onLoadBranches,
   entries,
   submissions,
   staffUsers,
@@ -45,12 +53,21 @@ export function MarketingWorkspace({
 }: MarketingWorkspaceProps) {
   const [customerName, setCustomerName] = useState('');
   const [address, setAddress] = useState('');
+  const [branchId,setBranchId] = useState('');
+  const [branches,setBranches] = useState<Branch[]>([]);
+  const [branchError,setBranchError] = useState('');
+  useEffect(()=>{
+    let active=true;
+    if(actorRole==='ceo'&&onLoadBranches) void onLoadBranches().then(rows=>{if(active){setBranches(rows.filter(branch=>branch.active));setBranchError('');}}).catch(error=>{if(active)setBranchError(error instanceof Error?error.message:'Unable to load branches.');});
+    return ()=>{active=false;};
+  },[actorRole,onLoadBranches]);
   const [propertyType, setPropertyType] = useState<
     'Villa' | 'Block' | 'Building' | 'Apartment'
   >('Villa');
 
   // Editor "Mark Posted" modal/inline state
   const [postingEntryId, setPostingEntryId] = useState<number | null>(null);
+  const [websiteAction,setWebsiteAction] = useState(false);
   const [postSerial, setPostSerial] = useState('');
   const [postNote, setPostNote] = useState('');
   const [postPlatform, setPostPlatform] = useState<
@@ -76,7 +93,8 @@ export function MarketingWorkspace({
   const handleSubmitProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await onCreateEntry({ customerName, address, propertyType });
+      if(actorRole==='ceo'&&!branchId)throw new Error(t('Choose an active branch.'));
+      await onCreateEntry({ customerName, address, propertyType, ...(actorRole==='ceo'?{branchId:Number(branchId)}:{}) });
       setCustomerName('');
       setAddress('');
       onNotice('Property submitted to Marketing & Production queue.');
@@ -87,16 +105,18 @@ export function MarketingWorkspace({
 
   const handleCompletePosted = async (entryId: number) => {
     try {
-      await onAdvanceEntry(entryId, 'mark_posted', {
+      const entry=entries.find(e=>e.id===entryId);
+      await onAdvanceEntry(entryId, websiteAction ? (entry?.websiteRevision ? 'resubmit_website' : 'submit_website') : 'mark_posted', {
         version: entries.find(e => e.id === entryId)?.version,
         serialNumber: postSerial,
         propertyInfoNote: postNote,
         photos: postPhotos,
         platform: postPlatform,
+        rejectedRevision: entry?.websiteRevision,
       });
       setPostingEntryId(null);
       onNotice(
-        `Entry marked Posted (${postSerial}) and queued as 'Submitted' in the isolated Submission Database for Admin publishing.`
+        websiteAction ? `Submitted ${postSerial} for website review. It becomes public only after Admin publishes it.` : `Social post recorded for ${postSerial}.`
       );
     } catch (err) {
       onError((err as Error).message);
@@ -115,7 +135,7 @@ export function MarketingWorkspace({
             Active Production: {entries.filter((e) => e.stage !== 'posted').length}
           </span>
           <span className="badge closed">
-            Posted & Sent to Submissions DB: {entries.filter((e) => e.stage === 'posted').length}
+            Social posts: {entries.filter((e) => e.stage === 'posted').length}
           </span>
         </div>
       </div>
@@ -131,6 +151,7 @@ export function MarketingWorkspace({
           Submit Property for Filming & Media Production
         </h3>
         <div className="form-grid">
+          {actorRole==='ceo' && <div className="field"><label htmlFor="marketing-branch">{t('Branch')}</label><select id="marketing-branch" aria-label={t('Branch')} required value={branchId} onChange={event=>setBranchId(event.target.value)}><option value="">{t('Choose an active branch.')}</option>{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</select>{branchError&&<small role="alert">{branchError}</small>}</div>}
           <div className="field">
             <label>Customer / Owner Name</label>
             <input
@@ -231,6 +252,9 @@ export function MarketingWorkspace({
                 </td>
                 <td>
                   <span className={`badge ${entry.stage}`}>{entry.stage}</span>
+                  {entry.websiteRevision ? <small>{t('Website revision')} {entry.websiteRevision}: {t(entry.websiteStatus || 'Delivery pending')}</small> : null}
+                  {entry.rejectionReason && <small role="status">{entry.rejectionReason}</small>}
+                  {!!entry.reviewHistory?.length && <details><summary>{t('Review history')}</summary>{entry.reviewHistory.map((event,index)=><small key={index}>{t('Website revision')} {event.revision}: {t(event.next_status)} {event.notes}</small>)}</details>}
                 </td>
                 <td>
                   {entry.stage === 'submitted' && canScheduleFilming && (
@@ -312,11 +336,12 @@ export function MarketingWorkspace({
                       type="button"
                       className="button"
                       data-testid={`open-mark-posted-btn-${entry.id}`}
-                      onClick={() => { setPostingEntryId(entry.id); setPostSerial(''); setPostNote(''); setPostPhotos([]); }}
+                      onClick={() => { setWebsiteAction(false); setPostingEntryId(entry.id); setPostSerial(entry.serialNumber || ''); setPostNote(entry.propertyInfoNote || ''); setPostPhotos(entry.photos || []); }}
                     >
                       Complete & Mark Posted
                     </button>
                   )}
+                  {isEditor && ['ready_for_post','posted'].includes(entry.stage) && (!entry.websiteRevision || entry.websiteStatus==='Rejected') && <button type="button" className="button secondary" onClick={()=>{setWebsiteAction(true);setPostingEntryId(entry.id);setPostSerial(entry.serialNumber || '');setPostNote(entry.propertyInfoNote || '');setPostPhotos(entry.photos || []);}}>{t(entry.websiteRevision ? 'Correct and resubmit website listing' : 'Submit website listing')}</button>}
                 </td>
               </tr>
             ))}
@@ -332,7 +357,7 @@ export function MarketingWorkspace({
           data-testid="editor-mark-posted-panel"
         >
           <h3>
-            Complete & Mark Posted (Entry #{postingEntryId} — Sends to Isolated Submission DB)
+            {t(websiteAction ? 'Website review submission' : 'Record social post')} (#{postingEntryId})
           </h3>
           <div className="form-grid">
             <div className="field">
@@ -393,7 +418,7 @@ export function MarketingWorkspace({
               data-testid="confirm-mark-posted-btn"
               onClick={() => handleCompletePosted(postingEntryId)}
             >
-              Mark Posted & Submit 5 Photos to Submission DB
+              {t(websiteAction ? 'Submit website listing' : 'Record social post')}
             </button>
           </div>
         </div>

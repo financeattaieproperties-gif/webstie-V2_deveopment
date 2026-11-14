@@ -174,6 +174,7 @@ export const api = {
   updateSubmissionStatus: (payload: {
     id: number;
     version: number;
+    revision: number;
     action: 'approve' | 'publish' | 'reject';
     price?: number;
     listing_type?: 'sale' | 'rent';
@@ -1006,6 +1007,9 @@ export interface ChatConversation {
 }
 
 export interface SubmissionPost {
+  revision: number;
+  publishedRevision?: number | null;
+  reviewHistory?: {revision: number; previous_status: string | null; next_status: string; notes: string | null; created_at: string}[];
   id: number;
   version: number;
   marketing_entry_id?: number;

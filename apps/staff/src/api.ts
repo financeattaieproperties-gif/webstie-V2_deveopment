@@ -1,5 +1,6 @@
 import type {
   ContractIssueInput,
+  Branch,
   ContractAmendInput,
   ContractVerification,
   ProjectPreparationInput,
@@ -19,6 +20,7 @@ import type {
 } from "../../../packages/staff-contracts/types";
 
 import { signIn, resetPassword } from "./auth/firebase.mjs";
+import { clearLegacyStaffApiCache } from "./pwa/privacy";
 import { resolveStaffApiEndpoint } from "../../../packages/staff-contracts/role-preference.mjs";
 
 const firebaseKey = import.meta.env.VITE_STAFF_FIREBASE_API_KEY || "";
@@ -38,6 +40,7 @@ async function request<T>(
   const endpoint = resolveStaffApiEndpoint(path, envApiBaseUrl, runtimeBaseUrl);
   let response: Response;
   try {
+    await clearLegacyStaffApiCache();
     response = await fetch(endpoint.url, {
       method,
       credentials: endpoint.credentials as RequestCredentials,
@@ -109,6 +112,8 @@ export const api = {
     request<Lead>("call-drafts", "POST", body, key),
   entry: (id: number, body: unknown, key: string) =>
     request<Lead & { duplicateConflict?: boolean }>(`leads/${id}/submit-entry`, "POST", body, key),
+  createSalesLead: (body: unknown, key: string) =>
+    request<Lead & { duplicateConflict?: boolean }>("sales/leads", "POST", body, key),
   feedback: (id: number, body: Feedback, key: string) =>
     request(`followups/${id}/feedback`, "POST", body, key),
   createTask: (body: unknown, key: string) =>
@@ -120,6 +125,12 @@ export const api = {
     request("departments", "POST", body),
   createStaff: (body: unknown, key: string) =>
     request("staff", "POST", body, key),
+  branches: () => request<Branch[]>("branches"),
+  createBranch: (body: Partial<Branch>) => request<Branch>("branches", "POST", body),
+  assignBranchManager: (id: number, body: {managerUserId:number;version:number}) => request<Branch>(`branches/${id}/manager`, "POST", body),
+  updateBranch: (id: number, body: Partial<Branch> & {version:number}) => request<Branch>(`branches/${id}`, "PATCH", body),
+  setStaffActive: (id:number, active:boolean) => request(`staff/${id}`,"PATCH",{active}),
+  transferStaff: (id:number,body:{branchId:number;version:number;resolutionNote:string}) => request(`staff/${id}/branch`,"POST",body),
   saveProject: (projectInput: Partial<InventoryProject>) =>
     request<InventoryProject>("inventory/projects", "POST", projectInput),
   resolveCustomerReview: (reviewId: number, decision: "approved_shared" | "rejected") =>
@@ -145,6 +156,7 @@ export const api = {
     reason?: string;
   }) => request<FinanceDeposit>("finance/deposits", "POST", payload),
   createMarketingEntry: (payload: {
+    branchId?: number;
     customerName: string;
     address: string;
     propertyType: "Villa" | "Block" | "Building" | "Apartment";
@@ -156,7 +168,9 @@ export const api = {
       | "complete_filming"
       | "schedule_editing"
       | "ready_for_post"
-      | "mark_posted",
+      | "mark_posted"
+      | "submit_website"
+      | "resubmit_website",
     payload: Record<string, unknown>,
   ) =>
     request<{ entry: MarketingProductionEntry; submission?: SubmissionPost }>(

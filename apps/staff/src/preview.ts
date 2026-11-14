@@ -1,6 +1,7 @@
 import { validateInventoryLayout } from "../../../packages/staff-contracts/inventory.mjs";
 import type {
   ContractIssueInput,
+  Branch,
   ContractAmendInput,
   ProjectPreparationInput,
   Customer,
@@ -14,6 +15,7 @@ import type {
   InventoryApartment,
   InventoryProject,
   Lead,
+  LeadPropertyReference,
   MarketingProductionEntry,
   Role,
   Session,
@@ -42,6 +44,7 @@ const iso = (hours: number) =>
   new Date(Date.now() + hours * 3600000).toISOString();
 let next = 200;
 const contractAmendmentHistory = new Map<number, HrContract[]>();
+const previewBranches: Branch[] = [{id:1,code:'CENTRAL',name:'Central Branch',address:'',phone:'',email:'',active:true,version:1}];
 
 export const INITIAL_DEPARTMENTS: Department[] = [
   { code: "management", name: "Management" },
@@ -168,6 +171,25 @@ let data: DashboardData = {
 
 export function getSharedStaffStore() {
   return data;
+}
+
+function resolvePreviewProperty(value: unknown, user: StaffUser) {
+  const property = value as LeadPropertyReference | undefined;
+  if (!property || !['project', 'unit'].includes(property.kind) || !Number.isSafeInteger(property.id)) {
+    throw new Error('Choose a project or unit before qualifying this lead.');
+  }
+  const project = (data.projects || []).find(p => property.kind === 'project' ? p.id === property.id : p.apartments.some(a => a.id === property.id));
+  if (!project || (user.role === 'sales' && !(project.assignedSalesAgentIds || []).includes(user.id))) {
+    throw new Error('Property not available to this account.');
+  }
+  const apartment = property.kind === 'unit' ? project.apartments.find(a => a.id === property.id) : undefined;
+  return { property, project, apartment };
+}
+
+function assertPreviewPropertyAvailable(phone: string, property: LeadPropertyReference, exceptId?: number) {
+  if (data.leads.some(l => l.id !== exceptId && l.status !== 'draft' && normalizePhone(l.phone) === normalizePhone(phone) && l.property?.kind === property.kind && l.property.id === property.id)) {
+    throw new Error('A lead already exists for this customer and property.');
+  }
 }
 
 export function previewClient(management: boolean, initialRoleOverride?: Role) {
@@ -326,8 +348,11 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         nextAssigneeId: number;
         projectId?: number;
         apartmentId?: number;
+        property?: LeadPropertyReference;
       };
       const lead = data.leads.find((l) => l.id === id)!;
+      const resolved = resolvePreviewProperty(input.property, activeUser);
+      assertPreviewPropertyAvailable(lead.phone, resolved.property, lead.id);
       const reg = resolveCustomerRegistration(data.customers || [], {
         name: input.customerName,
         phone: lead.phone,
@@ -347,11 +372,13 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         ];
       }
 
-      const proj = data.projects?.find((p) => p.id === Number(input.projectId || lead.projectId));
-      const apt = proj?.apartments.find((a) => a.id === Number(input.apartmentId || lead.apartmentId));
+      if (reg.outcome === 'duplicate_conflict') return { ...lead, duplicateConflict: true };
+      const proj = resolved.project;
+      const apt = resolved.apartment;
 
       Object.assign(lead, {
         customerName: input.customerName,
+        property: resolved.property,
         requirements: input.requirements,
         status: "active",
         customerId: reg.customer?.id || ++next,
@@ -363,8 +390,8 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         projectId: proj?.id || lead.projectId || null,
         projectCode: proj?.code || lead.projectCode || null,
         projectName: proj?.name || lead.projectName || null,
-        apartmentId: apt?.id || lead.apartmentId || null,
-        apartmentNumber: apt?.unitNumber || lead.apartmentNumber || null,
+        apartmentId: apt?.id || null,
+        apartmentNumber: apt?.unitNumber || null,
         version: lead.version + 1,
       });
       data.followups.unshift({
@@ -381,6 +408,19 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         version: 1,
       });
       return { ...lead, duplicateConflict: reg.outcome === "duplicate_conflict" };
+    },
+    async createSalesLead(body: unknown, key: string) {
+      if (activeUser.role !== 'sales') throw new Error('Only Sales can create sales leads.');
+      const input = body as {phone: string; property: LeadPropertyReference; customerName: string; requirements: string; nextScheduledAt: string};
+      const resolved = resolvePreviewProperty(input.property, activeUser);
+      assertPreviewPropertyAvailable(input.phone, resolved.property);
+      const draft = await client.draft({...input, callAt: iso(0)}, `${key}-draft`);
+      try {
+        return await client.entry(draft.id, {...input, nextAssigneeId: activeUser.id}, key);
+      } catch (error) {
+        data.leads = data.leads.filter(l => l.id !== draft.id);
+        throw error;
+      }
     },
     async feedback(id: number, body: Feedback, _key: string) {
       validateFeedback(body, activeUser.role);
@@ -522,10 +562,15 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       if (!input.name?.trim() || !input.username?.trim() || !input.firebaseUid?.trim()) {
         throw new Error("Name, email, and Firebase UID are required.");
       }
+      if (input.role === 'ceo') throw new Error('Select an operational role.');
+      const branch=previewBranches.find(b=>b.id===Number(input.branchId));
+      if (!branch || (!branch.active && input.role!=='manager')) throw new Error('Choose an active branch.');
+      if (data.assignees.some(u=>u.username===input.username.trim().toLowerCase() || u.firebaseUid===input.firebaseUid)) throw new Error('That email or Firebase UID is already provisioned.');
       const newUser: StaffUser = {
         id: ++next,
         name: input.name.trim(),
         username: input.username.trim().toLowerCase(),
+        firebaseUid: input.firebaseUid.trim(),
         role: input.role,
         departmentCode: input.departmentCode || "sales",
         teamLeaderId: input.teamLeaderId ? Number(input.teamLeaderId) : null,
@@ -534,6 +579,40 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       };
       data.assignees.push(newUser);
       return { id: newUser.id, user: newUser };
+    },
+    async branches() { return structuredClone(activeUser.role==='ceo' ? previewBranches : previewBranches.filter(b=>b.id===activeUser.branchId)); },
+    async createBranch(body: Partial<Branch>) {
+      if(activeUser.role!=='ceo') throw new Error('Only CEO can create branches.');
+      if(!body.code?.trim() || !body.name?.trim()) throw new Error('Branch code and name are required.');
+      const branch:Branch={id:++next,code:body.code.trim(),name:body.name.trim(),address:body.address||'',phone:body.phone||'',email:body.email||'',active:false,version:1};
+      previewBranches.push(branch);return structuredClone(branch);
+    },
+    async assignBranchManager(id:number,body:{managerUserId:number;version:number}) {
+      if(activeUser.role!=='ceo') throw new Error('Only CEO can assign Managers.');
+      const branch=previewBranches.find(b=>b.id===id);
+      const manager=data.assignees.find(u=>u.id===body.managerUserId && u.role==='manager' && u.branchId===id && u.active);
+      if(!branch || !manager) throw new Error('Choose the branch Manager.');
+      if(branch.version!==body.version) throw new Error('Branch changed. Refresh and retry.');
+      branch.active=true;branch.version++;return structuredClone(branch);
+    },
+    async updateBranch(id:number,body:Partial<Branch>&{version:number}) {
+      if(activeUser.role!=='ceo')throw new Error('Only CEO can update branches.');
+      const branch=previewBranches.find(b=>b.id===id);if(!branch||branch.version!==body.version)throw new Error('Branch changed. Refresh and retry.');
+      Object.assign(branch,body,{version:branch.version+1});return structuredClone(branch);
+    },
+    async setStaffActive(id:number,active:boolean) {
+      if(activeUser.role!=='ceo')throw new Error('Only CEO can update staff.');
+      const user=data.assignees.find(u=>u.id===id);if(!user||user.role==='ceo')throw new Error('This account cannot be changed.');
+      if(!active&&user.role==='manager'&&previewBranches.some(b=>b.id===user.branchId&&b.active))throw new Error('Replace this branch Manager before deactivation.');
+      user.active=active;user.version=(user.version||1)+1;return {success:true};
+    },
+    async transferStaff(id:number,body:{branchId:number;version:number;resolutionNote:string}) {
+      if(activeUser.role!=='ceo')throw new Error('Only CEO can transfer staff.');
+      const user=data.assignees.find(u=>u.id===id);if(!user||user.role==='ceo')throw new Error('This account cannot be transferred.');
+      if((user.version||1)!==body.version)throw new Error('Staff record changed. Refresh before retrying.');
+      if(!body.resolutionNote.trim()||!previewBranches.some(b=>b.id===body.branchId&&b.active))throw new Error('Choose an active branch and enter a reason.');
+      if(user.role==='manager'&&previewBranches.some(b=>b.id===user.branchId&&b.active))throw new Error('Replace this branch Manager before transfer.');
+      user.branchId=body.branchId;user.teamLeaderId=null;user.version=(user.version||1)+1;return {success:true};
     },
     async saveProject(projectInput: Partial<InventoryProject>) {
       if (!isManagerRole(activeUser.role)) throw new Error("Only CEO can save inventory.");
@@ -719,6 +798,7 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
       return existingDep;
     },
     async createMarketingEntry(payload: {
+      branchId?:number;
       customerName: string;
       address: string;
       propertyType: "Villa" | "Block" | "Building" | "Apartment";
@@ -758,12 +838,27 @@ export function previewClient(management: boolean, initialRoleOverride?: Role) {
         | "complete_filming"
         | "schedule_editing"
         | "ready_for_post"
-        | "mark_posted",
+        | "mark_posted"
+        | "submit_website"
+        | "resubmit_website",
       payload: Record<string, unknown>,
     ) {
       const entry = data.marketingEntries?.find((m) => m.id === entryId);
       if (!entry) throw new Error("Marketing entry not found.");
       if (entry.version !== payload.version) throw new Error("Entry changed. Refresh and try again.");
+      if(action==='submit_website'||action==='resubmit_website') {
+        if(activeUser.role!=='editor'||entry.editorId!==activeUser.id) throw new Error('Only the assigned Editor can submit this entry.');
+        if(!['ready_for_post','posted'].includes(entry.stage)) throw new Error('Finish editing before submitting to the website.');
+        const photos=payload.photos as string[];
+        if(!Array.isArray(photos)||photos.length!==5||new Set(photos).size!==5)throw new Error('Choose exactly five distinct photos.');
+        if(action==='resubmit_website'&&(entry.websiteStatus!=='Rejected'||payload.rejectedRevision!==entry.websiteRevision))throw new Error('Entry changed. Refresh and try again.');
+        if(action==='submit_website'&&entry.websiteRevision)throw new Error('Entry was already submitted.');
+        const revision=(entry.websiteRevision||0)+1;
+        const submission:SubmissionPost={id:entry.submissionId||++next,marketingEntryId:entry.id,revision,serialNumber:String(payload.serialNumber),customerName:entry.customerName,address:entry.address,propertyType:entry.propertyType,propertyInfoNote:String(payload.propertyInfoNote),photos,socialPlatform:entry.platform||'Facebook',publishStatus:'Submitted',submittedBy:activeUser.name,submittedAt:iso(0),version:1,reviewHistory:[...(entry.reviewHistory||[])]};
+        Object.assign(entry,{websiteRevision:revision,websiteStatus:'Submitted',rejectionReason:null,serialNumber:submission.serialNumber,propertyInfoNote:submission.propertyInfoNote,photos,submissionId:submission.id,version:entry.version+1});
+        data.submissions=[submission,...(data.submissions||[]).filter(s=>s.marketingEntryId!==entry.id)];
+        return {entry,submission};
+      }
       const res = advanceMarketingProduction(entry, action, payload, activeUser.role);
       if (action === "mark_posted" && "submission" in res) {
         const subId = ++next;

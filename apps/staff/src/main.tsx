@@ -58,6 +58,7 @@ import type {
   Session,
   StaffUser,
   Feedback,
+  Branch,
 } from "../../../packages/staff-contracts/types";
 import {
   canAccessDatabase,
@@ -108,6 +109,8 @@ import {
   SubmissionsStatusView,
 } from "./components/MarketingWorkspace";
 import { EngineeringWorkspace } from "./components/EngineeringWorkspace";
+import { BranchManagement } from "./components/BranchManagement";
+import { StaffPhotoUpload } from "./components/StaffPhotoUpload";
 import {
   MobileFollowupCardList,
   MobileLeadCardList,
@@ -1442,6 +1445,7 @@ function App() {
           {/* Phase 2: Pre-Sale Projects & Apartments Wizard */}
           {page === "projects" && (
             <ProjectInventoryWizard
+                onLoadBranches={client.branches}
               projects={data?.projects || []}
               staffUsers={data?.assignees || []}
               language={language}
@@ -1498,6 +1502,8 @@ function App() {
           {/* Phase 5: Marketing & Media Production Pipeline */}
           {page === "marketing" && (
             <MarketingWorkspace
+                t={t}
+                onLoadBranches={client.branches}
               onUpload={client.upload}
               entries={data?.marketingEntries || []}
               submissions={data?.submissions || []}
@@ -2095,6 +2101,7 @@ function App() {
                   </button>
                 </div>
               )}
+              {page === "team" && session.user.role === "ceo" && <BranchManagement client={client} users={data?.assignees || []} t={t} />}
             </>
           )}
           {page === "profile" && (
@@ -2504,6 +2511,12 @@ function EntryForm({
 }) {
   const draft = useRef<Lead | undefined>(item);
   const draftKey = useRef(crypto.randomUUID());
+  const [selectedProject, setSelectedProject] = useState(String(item?.projectId || ""));
+  const [callRecorded, setCallRecorded] = useState(false);
+  const [callDraftError, setCallDraftError] = useState("");
+  const authorizedProjects = self.role === "sales"
+    ? projects.filter(p => (p.assignedSalesAgentIds || []).includes(self.id)) : projects;
+  const project = authorizedProjects.find(p => String(p.id) === selectedProject);
   const { busy, error, submit } = useSubmission(done);
   return (
     <form
@@ -2515,9 +2528,15 @@ function EntryForm({
           requirements: String(f.get("requirements")),
           nextScheduledAt: toUtc(f.get("nextScheduledAt")),
           nextAssigneeId: Number(f.get("nextAssigneeId")),
-          projectId: f.get("projectId") ? Number(f.get("projectId")) : undefined,
+          projectId: Number(selectedProject),
+          property: (() => { const [kind, id] = String(f.get("propertyId")).split(":"); return {kind: kind as "project" | "unit", id: Number(id)}; })(),
         };
         void submit(body, async (key) => {
+          if (self.role === "sales") {
+            const result = await client.createSalesLead({...body, phone: String(f.get("phone")), source: String(f.get("source"))}, key);
+            if (result.duplicateConflict) throw new Error(t("This customer requires Manager review before another lead can be created."));
+            return result;
+          }
           if (!draft.current)
             draft.current = await client.draft(
               {
@@ -2528,11 +2547,13 @@ function EntryForm({
               },
               draftKey.current,
             );
-          return client.entry(
+          const result = await client.entry(
             draft.current.id,
             { ...body, version: draft.current.version },
             key,
           );
+          if (result.duplicateConflict) throw new Error(t("This customer requires Manager review before another lead can be created."));
+          return result;
         });
       }}
     >
@@ -2547,6 +2568,7 @@ function EntryForm({
             required
             maxLength={160}
             autoComplete="name"
+            defaultValue={item?.customerName}
           />
         </Field>
         <Field label={t("Phone")}>
@@ -2572,18 +2594,39 @@ function EntryForm({
               readOnly={!!draft.current}
             />
           </Field>
-          <Field label={t("Pre-Sale Project (Optional)")}>
-            <select name="projectId" defaultValue="">
-              <option value="">General Inquiry</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} — {p.name}
-                </option>
-              ))}
-            </select>
-          </Field>
         </div>
       )}
+      {self.role === "callcenter" && !item && (
+        <>
+          <button className="button secondary" type="button" disabled={busy || callRecorded} onClick={async (event) => {
+            const form = event.currentTarget.form!;
+            const phone = form.elements.namedItem("phone") as HTMLInputElement;
+            const callAt = form.elements.namedItem("callAt") as HTMLInputElement;
+            if (!phone.reportValidity() || !callAt.reportValidity()) return;
+            try {
+              draft.current = await client.draft({phone:phone.value,callAt:toUtc(callAt.value)}, draftKey.current);
+              setCallRecorded(true);
+            } catch (error) { setCallDraftError((error as Error).message); }
+          }}>{t("Record call draft")}</button>
+          {callRecorded && <p role="status">{t("Call recorded. Select a property to qualify this lead.")}</p>}
+          <FormError message={t(callDraftError)} />
+        </>
+      )}
+      <div className="form-grid">
+        <Field label={t("Property project")}>
+          <select value={selectedProject} required onChange={e => setSelectedProject(e.target.value)}>
+            <option value="">{t("Choose a project")}</option>
+            {authorizedProjects.map(p => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
+          </select>
+        </Field>
+        <Field label={t("Property interest")}>
+          <select name="propertyId" key={selectedProject} required defaultValue={item?.property ? `${item.property.kind}:${item.property.id}` : ""}>
+            <option value="">{t("Choose a project or unit")}</option>
+            {project && <option value={`project:${project.id}`}>{t("Project-level interest")}</option>}
+            {(project?.apartments || []).map(a => <option key={a.id} value={`unit:${a.id}`}>{a.unitNumber}</option>)}
+          </select>
+        </Field>
+      </div>
       {self.role === "sales" && (
         <Field label={t("Lead Source")}>
           <select name="source" defaultValue="walk_in">
@@ -2599,6 +2642,7 @@ function EntryForm({
         <textarea
           name="requirements"
           required
+          defaultValue={item?.requirements}
           rows={4}
           maxLength={4000}
           placeholder={t(
@@ -2651,6 +2695,8 @@ function FeedbackForm({
   const [outcome, setOutcome] = useState<
     "followup" | "visit" | "closed" | "lost"
   >("followup");
+  const [buyerPhotoUrl,setBuyerPhotoUrl]=useState('');
+  const [tazkiraPhotoUrl,setTazkiraPhotoUrl]=useState('');
   const [selectedProjId, setSelectedProjId] = useState<number>(
     projects[0]?.id || 1,
   );
@@ -2673,8 +2719,8 @@ function FeedbackForm({
                   currency: String(f.get("currency")) as "AFN" | "USD",
                   projectId: Number(f.get("projectId")),
                   apartmentId: Number(f.get("apartmentId")),
-                  buyerPhotoUrl: String(f.get("buyerPhotoUrl")),
-                  tazkiraPhotoUrl: String(f.get("tazkiraPhotoUrl")),
+                  buyerPhotoUrl,
+                  tazkiraPhotoUrl,
                 }
               : {
                   notes: String(f.get("notes")),
@@ -2746,12 +2792,11 @@ function FeedbackForm({
               <option value="AFN">AFN</option>
             </select>
           </Field>
-          <Field label={t("Buyer 3×4 Portrait Photo URL")}>
-            <input name="buyerPhotoUrl" defaultValue="/logo.png" required />
-          </Field>
-          <Field label={t("Buyer Tazkira Photo URL")}>
-            <input name="tazkiraPhotoUrl" defaultValue="/logo.png" required />
-          </Field>
+          <StaffPhotoUpload label={t("Buyer portrait photo")} value={buyerPhotoUrl} purpose="portrait" onChange={setBuyerPhotoUrl} onUpload={client.upload} lang={document.documentElement.dir==='rtl'?'fa':'en'} />
+          <StaffPhotoUpload label={t("Buyer Tazkira photo")} value={tazkiraPhotoUrl} purpose="tazkira" onChange={setTazkiraPhotoUrl} onUpload={client.upload} lang={document.documentElement.dir==='rtl'?'fa':'en'} />
+          <input type="hidden" name="buyerPhotoUrl" value={buyerPhotoUrl} />
+          <input type="hidden" name="tazkiraPhotoUrl" value={tazkiraPhotoUrl} />
+          {(!buyerPhotoUrl||!tazkiraPhotoUrl)&&<p className="form-note">{t('Upload both buyer photos before closing this deal.')}</p>}
         </div>
       ) : (
         <>
@@ -2784,7 +2829,7 @@ function FeedbackForm({
         )}
       </p>
       <FormError message={error} />
-      <button className="button full" disabled={busy}>
+      <button className="button full" disabled={busy || (outcome==='closed' && (!buyerPhotoUrl || !tazkiraPhotoUrl))}>
         {busy ? t("Saving…") : t("Submit feedback")}
         <Check size={17} />
       </button>
@@ -3106,6 +3151,10 @@ function StaffForm({
   done: () => Promise<void>;
 }) {
   const { busy, error, submit } = useSubmission(done);
+  const [branches,setBranches]=useState<Branch[]>([]);
+  const [role,setRole]=useState<Role>('callcenter');
+  const roleDepartment:Record<string,string>={manager:'management',callcenter:'callcenter',sales:'sales',sales_leader:'sales',marketing_manager:'production',editor:'production',videographer:'production',finance_manager:'finance',architect:'engineering',graphic_designer:'engineering',visual_designer_3d:'engineering'};
+  useEffect(()=>{void client.branches().then(setBranches);},[]);
   return (
     <form
       onSubmit={(e) => {
@@ -3142,8 +3191,8 @@ function StaffForm({
       </Field>
       <div className="form-grid">
         <Field label={t("Department")}>
-          <select name="departmentCode" defaultValue="sales">
-            {departments.map((d) => (
+          <select name="departmentCode" value={roleDepartment[role]} onChange={()=>{}}>
+            {departments.filter(d=>d.code===roleDepartment[role]).map((d) => (
               <option key={d.code} value={d.code}>
                 {d.name}
               </option>
@@ -3151,8 +3200,8 @@ function StaffForm({
           </select>
         </Field>
         <Field label={t("Role")}>
-          <select name="role" defaultValue="callcenter">
-            {SWITCHABLE_ROLES.map((r) => (
+          <select name="role" value={role} onChange={e=>setRole(e.target.value as Role)}>
+            {SWITCHABLE_ROLES.filter(r=>r.role!=='ceo').map((r) => (
               <option key={r.role} value={r.role}>
                 {r.label}
               </option>
@@ -3160,6 +3209,12 @@ function StaffForm({
           </select>
         </Field>
       </div>
+      <Field label={t('Branch')}>
+        <select name="branchId" required defaultValue="">
+          <option value="">{t('Choose a branch')}</option>
+          {branches.filter(b=>b.active||role==='manager').map(b=><option key={b.id} value={b.id}>{b.code} — {b.name}</option>)}
+        </select>
+      </Field>
       <FormError message={error} />
       <button className="button full" disabled={busy}>
         {t("Create agent")}

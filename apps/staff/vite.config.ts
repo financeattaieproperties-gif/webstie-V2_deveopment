@@ -96,26 +96,9 @@ export default defineConfig(({ command }) => {
               })),
             }),
           ],
-          runtimeCaching: [
-            {
-              urlPattern: ({ url, request }) =>
-                request.method === "GET" &&
-                (url.pathname.includes("/staff-api/v1/dashboard") ||
-                  url.pathname.includes("/staff-api/v1/leads/")),
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "attaie-sales-api-cache",
-                networkTimeoutSeconds: 4,
-                expiration: {
-                  maxEntries: 60,
-                  maxAgeSeconds: 60 * 60 * 24 * 7,
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-          ],
+          // Authenticated API responses must never enter shared Service Worker caches.
+          // The application maintains its own UID/branch-scoped offline snapshot.
+          runtimeCaching: [],
         },
         devOptions: {
           enabled: true,

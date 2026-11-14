@@ -38,15 +38,18 @@ if ($method === 'GET') {
     $items = [];
     while ($row = $res->fetch_assoc()) {
         $postId = (int) $row['id'];
-        $photoStmt = $sdb->prepare('SELECT photo_url FROM sub_post_photos WHERE sub_post_id = ? ORDER BY sort_order ASC');
-        $photoStmt->bind_param('i', $postId);
+        $revision=(int)$row['current_revision'];
+        $photoStmt = $sdb->prepare('SELECT photo_url FROM sub_post_photos WHERE sub_post_id = ? AND revision=? ORDER BY sort_order ASC');
+        $photoStmt->bind_param('ii', $postId,$revision);
         $photoStmt->execute();
         $photoRes = $photoStmt->get_result();
         $photos = [];
         while ($p = $photoRes->fetch_assoc()) {
             $photos[] = $p['photo_url'];
         }
+        $history=$sdb->prepare('SELECT revision,previous_status,next_status,notes,created_at FROM sub_publish_events WHERE sub_post_id=? ORDER BY id');$history->bind_param('i',$postId);$history->execute();
         $items[] = [
+            'revision'=>$revision,'publishedRevision'=>$row['published_revision']===null?null:(int)$row['published_revision'],'reviewHistory'=>$history->get_result()->fetch_all(MYSQLI_ASSOC),
             'property_serial' => $row['serial_number'],
             'customer_name' => $row['customer_name'],
             'property_type' => $row['property_type'],
@@ -98,7 +101,7 @@ if ($method === 'PUT' || $method === 'POST') {
     }
 
     $prevStatus = $current['publish_status'];
-    if (!isset($b['version']) || (int)$b['version'] !== (int)$current['version']) {
+    if (!isset($b['version'],$b['revision']) || (int)$b['version'] !== (int)$current['version'] || (int)$b['revision']!==(int)$current['current_revision']) {
         $sdb->rollback(); json_out(['error'=>'Submission changed. Refresh before updating.'],409);
     }
 
@@ -109,16 +112,25 @@ if ($method === 'PUT' || $method === 'POST') {
         $nextStatus = 'Approved';
         $upd = $sdb->prepare("UPDATE sub_posts SET publish_status = 'Approved', reviewed_at = UTC_TIMESTAMP(), version = version + 1 WHERE id = ?");
         $upd->bind_param('i', $id);
-        $upd->execute();
+        if (!$upd->execute()) {$sdb->rollback();json_out(['error'=>'Review was not saved. Refresh and retry.'],503);}
     } elseif ($action === 'reject') {
-        if ($prevStatus === 'Published') {
-            json_out(['error' => 'Published entries cannot be rejected'], 409);
+        if (!in_array($prevStatus,['Submitted','Approved'],true)) {
+            $sdb->rollback();json_out(['error' => 'Only pending entries can be rejected'], 409);
         }
-        $reason = trim((string) ($b['reason'] ?? 'Rejected by Admin'));
+        // A website transaction may already have committed while its acknowledgement
+        // in the separate submission database failed. That publication must be
+        // recovered, never rejected and replaced by another Editor revision.
+        $publication=db()->prepare('SELECT property_id FROM website_submission_publications WHERE submission_id=?');
+        if (!$publication) {$sdb->rollback();json_out(['error'=>'Publication state is unavailable. Retry after checking the website database.'],503);}
+        $publication->bind_param('i',$id);
+        if (!$publication->execute()) {$sdb->rollback();json_out(['error'=>'Publication state is unavailable. Retry after checking the website database.'],503);}
+        if ($publication->get_result()->fetch_assoc()) {$sdb->rollback();json_out(['error'=>'This listing was already written to the website. Retry Publish to recover its confirmation before further review.'],409);}
+        $reason = trim((string) ($b['reason'] ?? ''));
+        if ($reason==='') {$sdb->rollback();json_out(['error'=>'Enter a rejection reason.'],422);}
         $nextStatus = 'Rejected';
         $upd = $sdb->prepare("UPDATE sub_posts SET publish_status = 'Rejected', rejection_reason = ?, reviewed_at = UTC_TIMESTAMP(), version = version + 1 WHERE id = ?");
         $upd->bind_param('si', $reason, $id);
-        $upd->execute();
+        if (!$upd->execute()) {$sdb->rollback();json_out(['error'=>'Review was not saved. Refresh and retry.'],503);}
     } else {
         // action === 'publish'
         if ($prevStatus !== 'Approved') {
@@ -137,7 +149,7 @@ if ($method === 'PUT' || $method === 'POST') {
                 if (!is_numeric($price)||(float)$price<=0||!in_array($listing,['sale','rent'],true)) { $website->rollback();$sdb->rollback();json_out(['error'=>'Enter verified price and listing type.'],422); }
                 $price=(float)$price;$serial=$current['serial_number'];$title=$serial.' - '.$current['property_type'];$location=$current['address'];$description=$current['property_info_note'];
                 $type=match($current['property_type']){'Apartment'=>'Apartment','Villa'=>'Villa',default=>'Commercial'}; $status='available';
-                $photoStmt=$sdb->prepare('SELECT photo_url FROM sub_post_photos WHERE sub_post_id=? ORDER BY sort_order');$photoStmt->bind_param('i',$id);$photoStmt->execute();$photos=array_column($photoStmt->get_result()->fetch_all(MYSQLI_ASSOC),'photo_url');
+                $revision=(int)$current['current_revision'];$photoStmt=$sdb->prepare('SELECT photo_url FROM sub_post_photos WHERE sub_post_id=? AND revision=? ORDER BY sort_order');$photoStmt->bind_param('ii',$id,$revision);$photoStmt->execute();$photos=array_column($photoStmt->get_result()->fetch_all(MYSQLI_ASSOC),'photo_url');
                 if (count($photos)!==5) throw new RuntimeException('Submission requires five photos.');
                 $image=$photos[0];$gallery=json_encode($photos);
                 $insert=$website->prepare('INSERT INTO properties(serial_number,title,price,location,status,type,listing_type,image_url,description,gallery_images) VALUES (?,?,?,?,?,?,?,?,?,?)');
@@ -148,16 +160,16 @@ if ($method === 'PUT' || $method === 'POST') {
             }
             $website->commit();
         } catch (Throwable $e) { $website->rollback();$sdb->rollback();json_out(['error'=>'Publishing was not confirmed. Check migrations and retry.'],503); }
-        $upd = $sdb->prepare("UPDATE sub_posts SET publish_status = 'Published', published_at = UTC_TIMESTAMP(), website_property_id = ?, version = version + 1 WHERE id = ?");
+        $upd = $sdb->prepare("UPDATE sub_posts SET publish_status = 'Published', published_revision=current_revision, published_at = UTC_TIMESTAMP(), website_property_id = ?, version = version + 1 WHERE id = ?");
         $upd->bind_param('ii', $websitePropId, $id);
-        $upd->execute();
+        if (!$upd->execute()) {$sdb->rollback();json_out(['error'=>'Website write is recorded; retry publication to confirm its status.'],503);}
     }
 
-    $evt = $sdb->prepare("INSERT INTO sub_publish_events (sub_post_id, actor_role, previous_status, next_status, notes) VALUES (?, 'admin', ?, ?, ?)");
+    $evt = $sdb->prepare("INSERT INTO sub_publish_events (sub_post_id,revision, actor_role, previous_status, next_status, notes) VALUES (?, ?, 'admin', ?, ?, ?)");
     $note = trim((string) ($b['reason'] ?? $b['note'] ?? ''));
-    $evt->bind_param('isss', $id, $prevStatus, $nextStatus, $note);
-    $evt->execute();
-    $sdb->commit();
+    $revision=(int)$current['current_revision'];$evt->bind_param('iisss', $id,$revision, $prevStatus, $nextStatus, $note);
+    if (!$evt->execute()) {$sdb->rollback();json_out(['error'=>'Review history was not saved. Retry this operation.'],503);}
+    if (!$sdb->commit()) json_out(['error'=>'Review status was not confirmed. Refresh and retry.'],503);
     if ($action==='publish') @build_and_save_sitemap();
 
     json_out(['success' => true, 'ok'=>true,'id' => $id, 'publishStatus' => $nextStatus,'submission_status'=>$nextStatus,'website_property_id'=>$websitePropId??null]);

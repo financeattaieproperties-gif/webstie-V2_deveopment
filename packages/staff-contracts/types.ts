@@ -42,6 +42,7 @@ export interface Department {
 }
 
 export interface StaffUser {
+  version?: number;
   id: number;
   name: string;
   role: Role;
@@ -249,6 +250,7 @@ export interface InventoryApartment {
 }
 
 export interface InventoryProject {
+  branchId?: number;
   id: number;
   code: string;
   name: string;
@@ -366,6 +368,10 @@ export interface FinanceDeposit {
 }
 
 export interface MarketingProductionEntry {
+  websiteRevision?: number;
+  websiteStatus?: 'Submitted' | 'Approved' | 'Published' | 'Rejected' | null;
+  rejectionReason?: string | null;
+  reviewHistory?: {revision: number; next_status: string; notes: string | null}[];
   id: number;
   customerName: string;
   address: string;
@@ -397,6 +403,9 @@ export interface MarketingProductionEntry {
 }
 
 export interface SubmissionPost {
+  revision?: number;
+  publishedRevision?: number | null;
+  reviewHistory?: {revision: number; next_status: string; notes: string | null}[];
   id: number;
   marketingEntryId: number;
   serialNumber: string;

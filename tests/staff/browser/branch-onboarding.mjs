@@ -1,0 +1,31 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch();
+const page=await browser.newPage();
+try {
+  await page.goto('http://127.0.0.1:5175/dashboard/team?preview=1&role=ceo',{waitUntil:'networkidle'});
+  const branches=page.getByTestId('branch-management');
+  await branches.waitFor({timeout:5000});
+  await branches.getByLabel('Branch code',{exact:true}).fill('UIBR');
+  await branches.getByLabel('Branch name',{exact:true}).fill('Fictional UI branch');
+  await branches.getByRole('button',{name:'Create inactive branch',exact:true}).click();
+  await branches.getByText('UIBR — Fictional UI branch',{exact:true}).waitFor();
+  await page.getByTestId('create-agent-btn').click();
+  const dialog=page.getByRole('dialog');
+  await dialog.getByLabel('Name',{exact:true}).fill('Fictional UI manager');
+  await dialog.getByLabel('Email',{exact:true}).fill('ui-manager@example.invalid');
+  await dialog.getByLabel('Firebase UID',{exact:true}).fill('fictional-ui-manager');
+  await dialog.getByLabel('Role',{exact:true}).selectOption('manager');
+  const branchId=await dialog.getByLabel('Branch',{exact:true}).locator('option').filter({hasText:'UIBR'}).getAttribute('value');
+  await dialog.getByLabel('Branch',{exact:true}).selectOption(branchId);
+  assert.equal(await dialog.getByLabel('Role',{exact:true}).locator('option[value=ceo]').count(),0);
+  await dialog.getByRole('button',{name:'Create agent',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});
+  const row=branches.locator('[data-branch-id]').filter({hasText:'UIBR'});
+  await row.getByLabel('Manager',{exact:true}).selectOption({label:'Fictional UI manager'});
+  await row.getByRole('button',{name:'Assign Manager and activate',exact:true}).click();
+  await row.getByText('Active',{exact:true}).waitFor();
+  await row.getByRole('button',{name:'Deactivate branch',exact:true}).click();
+  await row.getByText('Inactive',{exact:true}).waitFor();
+  console.log('PASS CEO creates branch, maps Firebase Manager UID, activates with Manager; no CEO target role');
+} finally {await browser.close();}
