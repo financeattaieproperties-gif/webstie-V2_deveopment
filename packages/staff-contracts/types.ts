@@ -118,7 +118,10 @@ export type LeadSource =
   | "callcenter"
   | "social_media";
 
+export type LeadPropertyReference = { kind: "project" | "unit"; id: number };
+
 export interface Lead {
+  property?: LeadPropertyReference | null;
   id: number;
   serial: string;
   stageSerial?: string;
