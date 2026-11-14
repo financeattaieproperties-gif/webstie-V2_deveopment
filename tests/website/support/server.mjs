@@ -21,7 +21,7 @@ export async function startWebsiteFixture() {
   fixture('setup');
   const publicDir = path.join(dir, 'public');
   fs.mkdirSync(path.join(publicDir, 'api/admin'), {recursive:true});
-  for (const file of ['bootstrap.php', 'submit-lead.php', 'inquiry-service.php', 'admin/leads.php']) {
+  for (const file of ['bootstrap.php', 'submit-lead.php', 'inquiry-service.php', 'admin/leads.php', 'admin-login.php', 'admin/csrf.php']) {
     if (fs.existsSync(`public/api/${file}`)) fs.copyFileSync(`public/api/${file}`, path.join(publicDir, 'api', file));
   }
   // Copy the public template, never a local/private db.php. Replace its db() with a fixture-only connection.

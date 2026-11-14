@@ -152,6 +152,8 @@ export const api = {
   deleteBranch: (id: number) => request<{ deleted: number }>(`/admin/branches.php?id=${id}`, { method: 'DELETE' }),
 
   getLeads: () => request<Lead[]>('/admin/leads.php'),
+  updateInquiryFollowup: (id: number, body: {version: number; status: 'new' | 'in_progress' | 'resolved'; notes: string; followupAt: string | null}) =>
+    request<Lead>('/admin/leads.php', {method: 'PUT', body: JSON.stringify({id, ...body})}),
   getSubmissions: () => request<SubmissionPost[]>('/admin/submissions.php'),
   updateSubmissionStatus: (payload: {
     id: number;
@@ -1154,6 +1156,12 @@ export interface Branch {
 export type BranchInput = Omit<Branch, 'id' | 'created_at'>;
 
 export interface Lead {
+  receipt_reference?: string | null;
+  receipt_submitted_at?: string | null;
+  followup_status?: 'new' | 'in_progress' | 'resolved';
+  followup_notes?: string | null;
+  followup_at?: string | null;
+  version?: number | string;
   id: number;
   name: string;
   email: string;

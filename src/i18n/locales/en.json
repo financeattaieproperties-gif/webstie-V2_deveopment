@@ -240,6 +240,12 @@
     "youLabel": "You",
     "editContact": "Update Contact Info"
   },
+  "inquiryFollowup": {
+    "title": "Inquiry follow-up", "status": "Follow-up status", "new": "New", "in_progress": "In progress", "resolved": "Resolved",
+    "notes": "Follow-up notes", "nextTime": "Next follow-up (local time)", "save": "Save follow-up", "saving": "Saving…", "close": "Close",
+    "saveError": "Could not save follow-up.", "conflictHint": "If another Admin changed this inquiry, close and reload before editing again.",
+    "search": "Search name, email, phone, property, or receipt reference…", "reference": "Receipt reference", "edit": "Manage follow-up"
+  },
   "inquiryDelivery": {
     "title": "Inquiry deliveries",
     "pending": "Saved on this device. Waiting to send.",

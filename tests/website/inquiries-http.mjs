@@ -45,6 +45,33 @@ try {
   connections.forEach(result => equal(result, connections[0]));
   equal(site.fixture('count'), '5');
   equal(JSON.parse(site.fixture('upgrade')), {name:'Legacy fixture', stage:'Contacted', status:'Existing', receipt_reference:null, client_request_id:null, followup_status:'new', version:'1'});
-  equal((await post({...body, clientRequestId:crypto.randomUUID()})).status, 200);
+  const fresh = await post({...body, clientRequestId:crypto.randomUUID()}); equal(fresh.status, 200);
+  const login = await fetch(`${site.origin}/api/admin-login.php`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'admin',password:'choose_a_strong_password'})});
+  equal(login.status,200);
+  const cookie=login.headers.get('set-cookie').split(';')[0];
+  const csrf=(await login.json()).csrf_token;
+  const followup={id:fresh.data.id,version:1,status:'in_progress',notes:'Fictional follow-up note',followupAt:'2099-01-01T12:30:00Z'};
+  const admin = async (method, payload, headers={Cookie:cookie,'X-CSRF-Token':csrf}, query='') => {
+    const response=await fetch(`${site.origin}/api/admin/leads.php${query}`,{method,headers:{'Content-Type':'application/json',...headers},...(payload?{body:JSON.stringify(payload)}:{})});
+    return {status:response.status,data:await response.json()};
+  };
+  equal((await admin('GET',null,{})).status,401);
+  equal((await admin('PUT',followup,{})).status,401);
+  equal((await admin('PUT',followup,{Cookie:'attaie_staff_session=fictional','Authorization':'Bearer fictional-firebase-token'})).status,401);
+  equal((await admin('PUT',followup,{Cookie:cookie})).status,403);
+  const updated=await admin('PUT',followup);equal(updated.status,200);
+  equal(updated.data.followup_status,'in_progress');equal(Number(updated.data.version),2);
+  equal(updated.data.followup_notes,followup.notes);equal(updated.data.followup_at,'2099-01-01 12:30:00');
+  equal((await admin('PUT',followup)).status,409);
+  equal((await admin('PUT',{...followup,version:2,status:'invalid'})).status,422);
+  equal((await admin('PUT',{...followup,version:2,followupAt:'not-a-date'})).status,422);
+  const events=JSON.parse(site.fixture('events'));equal(events.length,1);equal(events[0].previous_status,'new');equal(events[0].next_status,'in_progress');equal(events[0].notes,followup.notes);
+  const search=await admin('GET',null,undefined,`?search=${fresh.data.receipt.reference}`);
+  equal(search.status,200);equal(search.data.length,1);equal(Number(search.data[0].id),fresh.data.id);
+  equal(search.data[0].followup_notes,followup.notes);
+  equal(search.data[0].version,2);equal(search.data[0].id,fresh.data.id);
+  equal(search.data[0].stage,'New');equal(search.data[0].status,'Pending');
+  const legacyRead=await admin('GET',null,undefined,'?search=Legacy%20fixture');
+  equal(legacyRead.data.length,1);equal(legacyRead.data[0].receipt_reference,null);
   console.log(`${checks} website inquiry HTTP/MySQL assertions passed (${site.database}).`);
 } finally { await site.close(); }

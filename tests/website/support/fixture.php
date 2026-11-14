@@ -14,6 +14,7 @@ if ($action === 'setup') $db->query("CREATE DATABASE `$name` CHARACTER SET utf8m
 $db->select_db($name);
 if ($db->query('SELECT DATABASE()')->fetch_row()[0] !== $name) throw new RuntimeException('Wrong target');
 if ($action === 'count') { echo $db->query('SELECT COUNT(*) FROM leads')->fetch_row()[0]; exit; }
+if ($action === 'events') { echo json_encode($db->query('SELECT inquiry_id,previous_status,next_status,notes,version FROM website_inquiry_events ORDER BY id')->fetch_all(MYSQLI_ASSOC)); exit; }
 if ($action === 'race') {
     require __DIR__ . '/../../../public/api/inquiry-service.php';
     echo json_encode(save_website_inquiry($db, json_decode(getenv('WEBSITE_TEST_PAYLOAD'), true, 512, JSON_THROW_ON_ERROR)));
