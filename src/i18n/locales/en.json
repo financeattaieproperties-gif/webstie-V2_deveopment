@@ -239,7 +239,36 @@
     "advisorLabel": "Attaie Admin",
     "youLabel": "You",
     "editContact": "Update Contact Info"
+  },
+  "inquiryDelivery": {
+    "title": "Inquiry deliveries",
+    "pending": "Saved on this device. Waiting to send.",
+    "sending": "Sending inquiry…",
+    "needs_attention": "Needs attention. Retry or discard this inquiry.",
+    "confirmed": "Inquiry received by website Admin.",
+    "storageError": "Could not save on this device. Keep this form open and try again.",
+    "openBrowser": "Keep the website open to send pending inquiries. Closing the browser pauses delivery.",
+    "retry": "Retry inquiry",
+    "discard": "Discard inquiry",
+    "download": "Download receipt",
+    "general": "General Inquiry",
+    "saving": "Saving…",
+    "receiptTitle": "Inquiry confirmation",
+    "receiptText": "Your inquiry was received by the Attaie Properties website team.",
+    "reference": "Reference",
+    "submittedAt": "Submitted at (UTC)",
+    "customerName": "Customer name",
+    "propertyName": "Property / inquiry context",
+    "noPayment": "This confirms an inquiry submission only. It is not proof of payment.",
+    "print": "Print receipt"
+  },
+  "inquiryForm": {
+    "about": "Inquire about {{propertyName}}",
+    "title": "Contact an Agent",
+    "name": "Full Name",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "message": "Message (Optional)",
+    "send": "Send Inquiry"
   }
 }
-
-

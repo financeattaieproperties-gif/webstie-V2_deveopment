@@ -6,6 +6,7 @@ const CustomerChatWidget = lazy(() =>
   import('./components/chat/CustomerChatWidget').then((m) => ({ default: m.CustomerChatWidget }))
 );
 import HomePage from './pages/HomePage';
+import { startInquiryDelivery } from './lib/inquiryOutbox';
 
 const PropertiesPage = lazy(() => import('./pages/PropertiesPage'));
 const PropertyDetailPage = lazy(() => import('./pages/PropertyDetailPage'));
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
+  useEffect(() => startInquiryDelivery(), []);
   const [gmpQuotaExceeded, setGmpQuotaExceeded] = useState(false);
 
   useEffect(() => {

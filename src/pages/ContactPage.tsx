@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
   AlertCircle,
-  CheckCircle,
   Phone,
   Mail,
   MapPin,
@@ -22,7 +21,8 @@ import {
 } from '../components/layout/Footer';
 import { Button } from '../components/ui/Button';
 import { ClickToCallButton } from '../components/ui/ClickToCallButton';
-import { createLead } from '../lib/dbService';
+import { enqueueInquiry } from '../lib/inquiryOutbox';
+import { InquiryDeliveryStatus } from '../components/forms/InquiryDeliveryStatus';
 import { SeoHead } from '../components/seo/SeoHead';
 import { Breadcrumbs } from '../components/ui/Breadcrumbs';
 import { useTranslation } from 'react-i18next';
@@ -86,7 +86,6 @@ const CONTACT_INFO = [
 export default function ContactPage() {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string>('Buying a Property');
 
@@ -105,17 +104,16 @@ export default function ContactPage() {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      await createLead({
+      await enqueueInquiry({
         name: data.name,
         email: data.email,
         phone: data.phone,
         message: `[${selectedTopic}] ${data.message}`,
         propertyName: data.propertyName || selectedTopic || 'General Inquiry',
       });
-      setIsSuccess(true);
       reset();
     } catch (_err) {
-      setSubmitError('Something went wrong. Please try again or call us directly.');
+      setSubmitError(t('inquiryDelivery.storageError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -284,33 +282,8 @@ export default function ContactPage() {
               className="flex-1 bg-white rounded-2xl border border-brand-navy/10 p-8"
               style={{ boxShadow: 'var(--shadow-lg)' }}
             >
+              <InquiryDeliveryStatus />
               <AnimatePresence mode="wait">
-                {isSuccess ? (
-                  <motion.div
-                    key="success"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.35 }}
-                    className="flex flex-col items-center justify-center gap-4 py-16 text-center"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-status-available/10 flex items-center justify-center">
-                      <CheckCircle size={32} className="text-status-available" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-brand-navy">Message Received!</h3>
-                    <p className="text-neutral-500 max-w-sm">
-                      Thank you for reaching out. One of our agents will contact you within 24
-                      hours.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setIsSuccess(false)}
-                      className="mt-4 text-brand-gold font-semibold text-sm link-underline cursor-pointer"
-                    >
-                      Send another inquiry
-                    </button>
-                  </motion.div>
-                ) : (
                   <motion.form
                     key="form"
                     onSubmit={handleSubmit(onSubmit)}
@@ -521,14 +494,13 @@ export default function ContactPage() {
                     </AnimatePresence>
 
                     <Button type="submit" loading={isSubmitting} className="w-full">
-                      {isSubmitting ? 'Sending…' : 'Send Inquiry →'}
+                      {isSubmitting ? t('inquiryDelivery.saving') : t('inquiryForm.send')}
                     </Button>
 
                     <p className="text-xs text-neutral-400 text-center">
                       We respond within 24 hours. No spam, ever.
                     </p>
                   </motion.form>
-                )}
               </AnimatePresence>
             </motion.div>
           </div>

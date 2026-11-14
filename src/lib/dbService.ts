@@ -404,13 +404,21 @@ export interface InquirySubmissionResult {
   receipt: { reference: string; submittedAt: string; customerName: string; propertyName: string };
 }
 
+export class InquirySubmissionError extends Error {
+  constructor(public status: number) { super('Failed to submit inquiry'); }
+}
+
 export async function createLead(lead: Lead): Promise<InquirySubmissionResult> {
   const res = await fetch(`${API}/submit-lead.php`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(lead),
   });
-  if (!res.ok) throw new Error('Failed to submit inquiry');
-  return res.json();
+  if (!res.ok) throw new InquirySubmissionError(res.status);
+  const result = await res.json() as InquirySubmissionResult;
+  if (result.success !== true || !/^INQ-[A-F0-9]{32}$/.test(result.receipt?.reference || '') ||
+      !Number.isFinite(Date.parse(result.receipt?.submittedAt)) || typeof result.receipt?.customerName !== 'string' ||
+      typeof result.receipt?.propertyName !== 'string') throw new Error('Invalid inquiry confirmation');
+  return result;
 }
 

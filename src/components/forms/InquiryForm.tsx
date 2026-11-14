@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { createLead } from '../../lib/dbService';
+import { enqueueInquiry } from '../../lib/inquiryOutbox';
+import { InquiryDeliveryStatus } from './InquiryDeliveryStatus';
+import { useTranslation } from 'react-i18next';
 
 const inquirySchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -20,7 +21,7 @@ type InquiryFormValues = z.infer<typeof inquirySchema>;
 
 export const InquiryForm = ({ propertyId, propertyName }: { propertyId?: string, propertyName?: string }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const { t } = useTranslation();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<InquiryFormValues>({
@@ -31,16 +32,14 @@ export const InquiryForm = ({ propertyId, propertyName }: { propertyId?: string,
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      await createLead({
+      await enqueueInquiry({
         ...data,
         propertyId,
         propertyName
       });
-      setIsSuccess(true);
       reset();
-      setTimeout(() => setIsSuccess(false), 5000);
     } catch (_error) {
-      setSubmitError('Something went wrong. Please try again.');
+      setSubmitError(t('inquiryDelivery.storageError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -52,29 +51,14 @@ export const InquiryForm = ({ propertyId, propertyName }: { propertyId?: string,
       style={{ boxShadow: 'var(--shadow-lg)' }}
     >
       <h3 className="font-heading text-xl font-bold text-brand-navy mb-4">
-        {propertyName ? `Inquire about ${propertyName}` : 'Contact an Agent'}
+        {propertyName ? t('inquiryForm.about', { propertyName }) : t('inquiryForm.title')}
       </h3>
 
-      <AnimatePresence>
-        {isSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center gap-3 p-6 bg-status-available/10 rounded-xl text-center mb-4"
-          >
-            <CheckCircle size={32} className="text-status-available" />
-            <p className="font-semibold text-status-available">Thank you! We'll be in touch shortly.</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {!isSuccess && (
+      <InquiryDeliveryStatus propertyId={propertyId} />
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
-              Full Name
+              {t('inquiryForm.name')}
             </label>
             <input
               id="name"
@@ -96,7 +80,7 @@ export const InquiryForm = ({ propertyId, propertyName }: { propertyId?: string,
 
           <div>
             <label htmlFor="email" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
-              Email Address
+              {t('inquiryForm.email')}
             </label>
             <input
               id="email"
@@ -119,7 +103,7 @@ export const InquiryForm = ({ propertyId, propertyName }: { propertyId?: string,
 
           <div>
             <label htmlFor="phone" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
-              Phone Number
+              {t('inquiryForm.phone')}
             </label>
             <input
               id="phone"
@@ -142,7 +126,7 @@ export const InquiryForm = ({ propertyId, propertyName }: { propertyId?: string,
 
           <div>
             <label htmlFor="message" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
-              Message (Optional)
+              {t('inquiryForm.message')}
             </label>
             <textarea
               id="message"
@@ -161,10 +145,9 @@ export const InquiryForm = ({ propertyId, propertyName }: { propertyId?: string,
           )}
 
           <Button type="submit" loading={isSubmitting} className="w-full">
-            {isSubmitting ? 'Sending…' : 'Send Inquiry →'}
+            {isSubmitting ? t('inquiryDelivery.saving') : t('inquiryForm.send')}
           </Button>
         </form>
-      )}
     </div>
   );
 };
