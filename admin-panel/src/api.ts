@@ -69,6 +69,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function chatRequest<T>(action:string,body?:Record<string,unknown>):Promise<T> {
+  const root=BASE.replace(/\/api\/?$/,'');
+  const token=body ? await getCsrfToken() : '';
+  const response=await fetch(`${root}/chat-service.php?action=${action}`,{method:body?'POST':'GET',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json',...(token?{'X-CSRF-Token':token}:{})},...(body?{body:JSON.stringify(body)}:{})});
+  if(!response.ok) throw new Error('Chat request failed. Your change was not confirmed.');
+  return response.json() as Promise<T>;
+}
 export const api = {
   login: async (username: string, password: string) => {
     const res = await request<{ success: boolean; csrf_token?: string }>('/admin-login.php', {
@@ -552,283 +559,22 @@ export const api = {
   },
 
   getChatConversations: async (): Promise<ChatConversation[]> => {
-    const baseRoot = BASE.replace(/\/api\/?$/, '');
-    try {
-      const res = await fetch(`${baseRoot}/chat-service.php?action=admin_list&t=${Date.now()}`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { conversations?: ChatConversation[] };
-        if (Array.isArray(data.conversations)) {
-          try {
-            localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(data.conversations));
-          } catch {
-            // ignore
-          }
-          return data.conversations;
-        }
-      }
-    } catch {
-      // fallback to localStorage in static preview
-    }
-    try {
-      const raw = localStorage.getItem('attaie_chat_conversations_v1');
-      return raw ? (JSON.parse(raw) as ChatConversation[]) : [];
-    } catch {
-      return [];
-    }
+    const data=await chatRequest<{conversations:ChatConversation[]}>('admin_list');
+    if(!Array.isArray(data.conversations)) throw new Error('Invalid chat response');
+    return data.conversations;
   },
-
-  replyToChat: async (
-    sessionId: string,
-    message: string,
-    adminName = 'Attaie Admin'
-  ): Promise<ChatConversation | null> => {
-    const baseRoot = BASE.replace(/\/api\/?$/, '');
-    try {
-      const res = await fetch(`${baseRoot}/chat-service.php?action=admin_reply`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'admin_reply',
-          session_id: sessionId,
-          message,
-          admin_name: adminName,
-        }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { conversation?: ChatConversation };
-        if (data.conversation) {
-          try {
-            const raw = localStorage.getItem('attaie_chat_conversations_v1');
-            const list: ChatConversation[] = raw ? JSON.parse(raw) : [];
-            const filtered = list.filter(c => c.id !== sessionId);
-            filtered.unshift(data.conversation);
-            localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(filtered));
-          } catch {
-            // ignore
-          }
-          return data.conversation;
-        }
-      }
-    } catch {
-      // fallback to localStorage in static preview
-    }
-
-    try {
-      const raw = localStorage.getItem('attaie_chat_conversations_v1');
-      const list: ChatConversation[] = raw ? JSON.parse(raw) : [];
-      const idx = list.findIndex(c => c.id === sessionId);
-      if (idx === -1) return null;
-      const now = new Date().toISOString();
-      const updatedMessages = list[idx].messages.map(m =>
-        m.sender === 'customer' && m.read_status !== 'read'
-          ? { ...m, read_status: 'read' as const, read_at: now }
-          : m
-      );
-      const newMsg: ChatMessage = {
-        id: `msg_${Date.now()}_adm`,
-        sender: 'admin',
-        sender_name: adminName,
-        text: message,
-        created_at: now,
-        read_status: 'sent',
-        read_at: null,
-      };
-      const updated: ChatConversation = {
-        ...list[idx],
-        unread_admin: 0,
-        unread_customer: (list[idx].unread_customer || 0) + 1,
-        typing_admin_at: null,
-        is_admin_typing: false,
-        updated_at: now,
-        messages: [...updatedMessages, newMsg],
-      };
-      list.splice(idx, 1);
-      list.unshift(updated);
-      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(list));
-      try {
-        if (typeof BroadcastChannel !== 'undefined') {
-          const bc = new BroadcastChannel('attaie_live_chat_channel');
-          bc.postMessage({
-            type: 'NEW_ADMIN_REPLY',
-            conversationId: sessionId,
-            messageId: newMsg.id,
-            senderName: adminName,
-            createdAt: now,
-          });
-          bc.close();
-        }
-      } catch {
-        // ignore
-      }
-      return updated;
-    } catch {
-      return null;
-    }
+  replyToChat: async (sessionId:string,message:string,adminName='Attaie Admin',clientMessageId:string=crypto.randomUUID()): Promise<ChatConversation|null> => {
+    const data=await chatRequest<{conversation:ChatConversation}>('admin_reply',{session_id:sessionId,message,admin_name:adminName,client_message_id:clientMessageId});
+    if(!data.conversation) throw new Error('Chat reply was not confirmed');
+    return data.conversation;
   },
-
-  markChatRead: async (sessionId: string): Promise<void> => {
-    const baseRoot = BASE.replace(/\/api\/?$/, '');
-    try {
-      await fetch(`${baseRoot}/chat-service.php?action=mark_read`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'mark_read',
-          reader: 'admin',
-          session_id: sessionId,
-        }),
-      });
-    } catch {
-      // ignore
-    }
-    try {
-      const raw = localStorage.getItem('attaie_chat_conversations_v1');
-      if (!raw) return;
-      const list: ChatConversation[] = JSON.parse(raw);
-      const now = new Date().toISOString();
-      const updated = list.map(c => {
-        if (c.id !== sessionId) return c;
-        return {
-          ...c,
-          unread_admin: 0,
-          messages: c.messages.map(m =>
-            m.sender === 'customer'
-              ? { ...m, read_status: 'read' as const, read_at: m.read_at || now }
-              : m
-          ),
-        };
-      });
-      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(updated));
-      if (typeof BroadcastChannel !== 'undefined') {
-        const bc = new BroadcastChannel('attaie_live_chat_channel');
-        bc.postMessage({
-          type: 'MESSAGES_READ',
-          conversationId: sessionId,
-          reader: 'admin',
-          readAt: now,
-        });
-        bc.close();
-      }
-    } catch {
-      // ignore
-    }
+  markChatRead: async (sessionId:string):Promise<void> => { await chatRequest('admin_mark_read',{session_id:sessionId}); },
+  sendAdminTypingSignal: async (sessionId:string,isTyping:boolean,adminName='Attaie Admin'):Promise<void> => {
+    try { await chatRequest('typing',{session_id:sessionId,actor:'admin',actor_name:adminName,is_typing:isTyping}); }
+    catch { /* Typing is ephemeral; message mutations report transport errors separately. */ }
   },
-
-  sendAdminTypingSignal: async (
-    sessionId: string,
-    isTyping: boolean,
-    adminName = 'Attaie Advisor'
-  ): Promise<void> => {
-    if (!sessionId) return;
-    const now = new Date().toISOString();
-    try {
-      const raw = localStorage.getItem('attaie_chat_conversations_v1');
-      if (raw) {
-        const list: ChatConversation[] = JSON.parse(raw);
-        const idx = list.findIndex(c => c.id === sessionId);
-        if (idx !== -1) {
-          list[idx] = {
-            ...list[idx],
-            typing_admin_at: isTyping ? now : null,
-            typing_admin_name: adminName,
-            is_admin_typing: isTyping,
-          };
-          localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(list));
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    try {
-      if (typeof BroadcastChannel !== 'undefined') {
-        const bc = new BroadcastChannel('attaie_live_chat_channel');
-        bc.postMessage({
-          type: 'TYPING_STATUS',
-          conversationId: sessionId,
-          sender: 'admin',
-          senderName: adminName,
-          isTyping,
-          timestamp: now,
-        });
-        bc.close();
-      }
-    } catch {
-      // ignore
-    }
-
-    const baseRoot = BASE.replace(/\/api\/?$/, '');
-    try {
-      await fetch(`${baseRoot}/chat-service.php?action=typing`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'typing',
-          session_id: sessionId,
-          sender: 'admin',
-          sender_name: adminName,
-          is_typing: isTyping,
-        }),
-      });
-    } catch {
-      // ignore
-    }
-  },
-
-  updateChatStatus: async (sessionId: string, status: 'open' | 'resolved'): Promise<void> => {
-    const baseRoot = BASE.replace(/\/api\/?$/, '');
-    try {
-      await fetch(`${baseRoot}/chat-service.php?action=admin_status`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'admin_status', session_id: sessionId, status }),
-      });
-    } catch {
-      // ignore
-    }
-    try {
-      const raw = localStorage.getItem('attaie_chat_conversations_v1');
-      if (!raw) return;
-      const list: ChatConversation[] = JSON.parse(raw);
-      const updated = list.map(c => (c.id === sessionId ? { ...c, status, unread_admin: 0 } : c));
-      localStorage.setItem('attaie_chat_conversations_v1', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-  },
-
-  deleteChatConversation: async (sessionId: string): Promise<void> => {
-    const baseRoot = BASE.replace(/\/api\/?$/, '');
-    try {
-      await fetch(`${baseRoot}/chat-service.php?action=admin_delete`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'admin_delete', session_id: sessionId }),
-      });
-    } catch {
-      // ignore
-    }
-    try {
-      const raw = localStorage.getItem('attaie_chat_conversations_v1');
-      if (!raw) return;
-      const list: ChatConversation[] = JSON.parse(raw);
-      localStorage.setItem(
-        'attaie_chat_conversations_v1',
-        JSON.stringify(list.filter(c => c.id !== sessionId))
-      );
-    } catch {
-      // ignore
-    }
-  },
-
+  updateChatStatus: async (sessionId:string,status:'open'|'resolved'):Promise<void> => {await chatRequest('admin_status',{session_id:sessionId,status});},
+  deleteChatConversation: async (sessionId:string):Promise<void> => {await chatRequest('admin_delete',{session_id:sessionId});},
   getAiAdminSettings: async (): Promise<AiAdminSettings> => {
     const baseRoot = BASE.replace(/\/api\/?$/, '');
     const token = await getCsrfToken();
@@ -1217,6 +963,8 @@ export interface CareerApplication {
 }
 
 export interface ChatMessage {
+  client_message_id?: string;
+  delivery_status?: 'pending' | 'confirmed' | 'needs_attention';
   id: string;
   sender: 'customer' | 'admin' | 'system';
   sender_name: string;

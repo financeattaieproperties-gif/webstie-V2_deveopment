@@ -7,12 +7,14 @@ import assert from 'node:assert/strict';
 
 const root = process.cwd();
 export const php = process.env.WEBSITE_TEST_PHP || path.resolve('releases/validation/php/php.exe');
-export const phpArgs = ['-d', `extension_dir=${path.join(path.dirname(php), 'ext')}`, '-d', 'extension=mysqli'];
+export const phpArgs = ['-d', `extension_dir=${path.join(path.dirname(php), 'ext')}`, '-d', 'extension=mysqli', '-d', 'extension=mbstring'];
 export async function startWebsiteFixture() {
   assert.ok(fs.existsSync(php), 'Local PHP with mysqli required; no HTTP test was run');
   const database = `attaie_v2_test_${crypto.randomUUID().replaceAll('-', '').slice(0, 20)}`;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'attaie-website-fixture-'));
   const env = {...process.env, STAFF_LOCAL_TEST:'1', WEBSITE_TEST_DATABASE:database};
+  env.WEBSITE_CHAT_STORE_DIR=path.join(dir,'private-chat');
+  fs.mkdirSync(env.WEBSITE_CHAT_STORE_DIR);
   const fixture = (action) => {
     const result = spawnSync(php, [...phpArgs, 'tests/website/support/fixture.php', action], {cwd:root, env, encoding:'utf8'});
     assert.equal(result.status, 0, result.stdout + result.stderr);
@@ -21,6 +23,7 @@ export async function startWebsiteFixture() {
   fixture('setup');
   const publicDir = path.join(dir, 'public');
   fs.mkdirSync(path.join(publicDir, 'api/admin'), {recursive:true});
+  fs.copyFileSync('public/chat-service.php',path.join(publicDir,'chat-service.php'));
   for (const file of ['bootstrap.php', 'submit-lead.php', 'inquiry-service.php', 'admin/leads.php', 'admin-login.php', 'admin/csrf.php']) {
     if (fs.existsSync(`public/api/${file}`)) fs.copyFileSync(`public/api/${file}`, path.join(publicDir, 'api', file));
   }
