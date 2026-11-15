@@ -2310,8 +2310,8 @@ td small,
   color: #64748B;
 }
 .icon-button {
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 44px;
+  min-height: 44px;
 }
 .form-grid > .button {
   min-height: 44px;
