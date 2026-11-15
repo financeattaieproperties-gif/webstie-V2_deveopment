@@ -1,5 +1,6 @@
 /** Fresh, manual V2 delivery. Never reads local credentials or existing build outputs. */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -25,11 +26,21 @@ function sourceAudit() {
 sourceAudit();
 if (process.argv.includes('--audit-source')) process.exit(0);
 if (!/^AIza[A-Za-z0-9_-]{35}$/.test(process.env.VITE_STAFF_FIREBASE_API_KEY || '')) throw new Error('Set VITE_STAFF_FIREBASE_API_KEY to the V2 Firebase public Web API key before creating an upload package.');
+const roleMapPath=process.env.V2_TESTING_ROLE_MAP_FILE||'';
+if(!path.isAbsolute(roleMapPath)||!fs.statSync(roleMapPath,{throwIfNoEntry:false})?.isFile()) throw new Error('Set V2_TESTING_ROLE_MAP_FILE to an absolute private role-map JSON file before creating an upload package.');
+const run = (command,args) => {const result=spawnSync(command,args,{cwd:root,encoding:'utf8',maxBuffer:16*1024*1024});if(result.stdout)process.stdout.write(result.stdout);if(result.status!==0)throw new Error(result.stderr||result.stdout||`Command failed: ${command}`);};
+const roleMapProbe=fs.mkdtempSync(path.join(os.tmpdir(),'attaie-v2-role-map-'));
+let roleMappingSql=''; let roleMapIdentityValues=[];
+try {
+  const probeOutput=path.join(roleMapProbe,'04-firebase-role-mapping.sql');
+  run(process.execPath,['scripts/create-testing-role-mapping.mjs',roleMapPath,probeOutput]);
+  roleMappingSql=fs.readFileSync(probeOutput,'utf8');
+  roleMapIdentityValues=JSON.parse(fs.readFileSync(roleMapPath,'utf8')).users.flatMap(user=>[String(user.firebaseUid),String(user.email)]);
+} finally { fs.rmSync(roleMapProbe,{recursive:true,force:true}); }
 if (path.dirname(output) !== path.join(root,'releases') || !path.basename(output).startsWith('manual-staging-dashboard-completion-') || fs.existsSync(output)) throw new Error('Use a NEW manual-staging-dashboard-completion-* folder directly under releases/.');
 const dist = path.join(output,'dist');
 const write = (relative,content) => {const target=path.join(output,relative);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,content);};
 const copy = (source,relative) => {const target=path.join(output,relative);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,source),target);};
-const run = (command,args) => {const result=spawnSync(command,args,{cwd:root,encoding:'utf8',maxBuffer:16*1024*1024});if(result.stdout)process.stdout.write(result.stdout);if(result.status!==0)throw new Error(result.stderr||result.stdout||`Command failed: ${command}`);};
 
 // Type checks precede all output. A failure leaves no misleading upload folder.
 for (const config of ['tsconfig.json','admin-panel/tsconfig.json','apps/staff/tsconfig.json']) run(process.execPath,['node_modules/typescript/bin/tsc','--noEmit','-p',config]);
@@ -111,6 +122,7 @@ const header=name=>`-- ${name}. V2 TESTING ONLY. Verify DATABASE() in phpMyAdmin
 write('database/fresh/01-website.sql',header('WEBSITE database')+read('public/api/schema.sql')+"\n"+read('staff-service/database/102-website-submission-map.sql')+"\nUPDATE seo_settings SET canonical_base_url='https://website.attaieproperties.com',robots_index=0 WHERE id=1;\n");
 write('database/fresh/02-internal-crm.sql',header('SEPARATE INTERNAL OFFICE CRM database')+freshInternal.map(name=>`\n-- SOURCE ${name}\n`+read(`staff-service/database/${name}`)).join('\n'));
 write('database/fresh/03-submissions.sql',header('SEPARATE THIRD SUBMISSION database')+read('staff-service/database/055-submissions-db.sql')+'\n'+read('staff-service/database/106-submission-revisions-third.sql'));
+write('database/04-firebase-role-mapping.sql',roleMappingSql);
 for(const name of ['090-role-migration.sql','095-retire-finance-assistant.sql','100-dashboard-completion.sql'])copy(`staff-service/database/${name}`,`database/upgrade/internal-crm/${name}`);
 copy('staff-service/database/102-website-submission-map.sql','database/upgrade/website/102-website-submission-map.sql');
 copy('staff-service/database/101-submission-assets.sql','database/upgrade/submissions/101-submission-assets.sql');
@@ -144,7 +156,9 @@ write('BUILD-STATUS.json',JSON.stringify({builtAt:new Date().toISOString(),targe
 for(const file of walk(dist)) {
   const relative=path.relative(dist,file).replaceAll('\\','/');
   if(/(?:\.sql$|\.env|\.local\.php$|config\.php$|firebase\.json$|service.account|(?:^|\/)(?:private|database|node_modules)\/)/i.test(relative))throw new Error(`Private material in public output: ${relative}`);
-  if(/\.(?:js|html|php|css|json|ini)$/.test(file)&&/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(fs.readFileSync(file,'utf8')))throw new Error(`Private key found: ${relative}`);
+  const content=/\.(?:js|html|php|css|json|ini)$/.test(file)?fs.readFileSync(file,'utf8'):'';
+  if(/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(content))throw new Error(`Private key found: ${relative}`);
+  if(relative.includes('04-firebase-role-mapping')||roleMapIdentityValues.some(value=>value&&content.includes(value)))throw new Error(`Private role mapping leaked into public output: ${relative}`);
   if(/^(?:dashboard|management|callcenter)\/assets\/.*\.js$/.test(relative)&&/Sample workspace only|Explore sample workspace/.test(fs.readFileSync(file,'utf8')))throw new Error(`Preview code leaked: ${relative}`);
   if(relative.startsWith('assets/aistudio/')&&!referencedAssets.has('/'+relative))throw new Error(`Unreferenced artwork: ${relative}`);
 }

@@ -10,6 +10,8 @@ The script builds website, `/admin/`, `/dashboard/`, `/management/`, `/callcente
 
 Set `VITE_STAFF_FIREBASE_API_KEY` in the packaging process environment before building. It is Firebase's public web API identifier, not a service-account secret. Missing configuration stops packaging before upload output is created. Maps likewise accept `VITE_GOOGLE_MAPS_API_KEY` from process environment only.
 
+Set `V2_TESTING_ROLE_MAP_FILE` to an absolute path for a private JSON role map before packaging. The package validates it before creating a release directory and writes `database/04-firebase-role-mapping.sql` only into `UPLOAD-PRIVATE-OUTSIDE-WEBROOT.zip`. Never add that JSON file, generated mapping SQL, Firebase UIDs, or staff emails to Git or the public upload archive.
+
 ## Three separate databases
 
 Create three **new empty V2 testing databases**, with distinct least-privilege users. In phpMyAdmin explicitly select each database and run `SELECT DATABASE();` before import:
@@ -19,6 +21,8 @@ Create three **new empty V2 testing databases**, with distinct least-privilege u
 3. Submission database: `database/fresh/03-submissions.sql` only.
 
 Never combine the files or import them into V1. Only Admin accesses website data. Staff runtime accesses internal CRM and authorized submission workflows; Admin must not receive internal CRM credentials.
+
+After importing the fresh Internal CRM schema, import the generated `database/04-firebase-role-mapping.sql` from the private archive into that same empty Internal CRM database. It creates the approved testing branch and Firebase-to-role mappings. Do not upload it into the document root, run it against a populated upgrade database, or import it into Website, Submission, or V1 databases.
 
 Existing V2 installations: back up all three databases, current upload files and private configuration first. Use `database/upgrade/README.md`; do not import fresh schemas. Inspect installed versions/columns, apply missing role migration 090 if needed, then 095 and 100 to Internal CRM. Migration 095 disables retired Finance Assistant accounts and preserves historical references. Migration 100 adds fields/tables and adjusts permission grants. Run each ALTER once; inspect partial failures before proceeding. No existing inventory/account reset is authorized.
 
