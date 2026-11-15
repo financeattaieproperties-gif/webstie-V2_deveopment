@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-14-v2-testing-release-design.md`
 
-## Execution progress — 2026-11-14
+## Execution progress — 2026-11-15
 
 Completed:
 
@@ -21,11 +21,20 @@ Completed:
 - [x] Built a fresh local testing release. It contains all 10 dashboard entry points and has no mapped Firebase identity values in public output.
 - [x] Added a regression test and updated the ZIP builder so the private archive includes `database/04-firebase-role-mapping.sql`, while the public archive contains zero SQL files.
 - [x] Rebuilt and audited the manual-staging release after the archive fix. The generated `BUILD-STATUS.json` still records all hosted-state flags as `false`.
+- [x] Created the isolated V2 testing subdomain environment and three separate V2 databases; imported the Website, Internal CRM, Submission, and private Firebase role-mapping schemas into their intended databases only.
+- [x] Installed public files in the testing document root and private PHP/service files outside all document roots; configured public path bridges and separate Website, CRM, and Submission runtime connections.
+- [x] Created and verified the separate Website Admin account. The public site and `/admin/` now load against the V2 Website database.
+- [x] Diagnosed and corrected the hosted staff service: PHP 8.1 rejected a trait constant, so `ACTIVE_ROLES` now lives on `Staff\\App`; the CRM runtime connection was also corrected after a safe no-secret PDO probe.
+- [x] Updated dashboard CSP policy to allow required React inline styles while retaining `script-src 'self'`; applied the correction to the hosted dashboard policy files.
+- [x] Confirmed hosted Firebase sign-in and workspace access for CEO, Manager, Call Center, Sales Leader, Sales, Marketing Manager, Editor, Videographer, Finance Manager, Architect, Graphic Designer, 3D Visual Designer, and the shared `/dashboard/` route.
 
 Pending implementation:
 
 - [ ] Run fresh-schema and publication PHP fixtures when the disposable MySQL service at `127.0.0.1:3397` is available.
-- [ ] Perform the owner-managed cPanel upload, three-database import, Firebase sign-in, and hosted role/RTL/responsive checks. `BUILD-STATUS.json` remains false for all hosted-state flags until then.
+- [ ] Rebuild the manual-staging archive so future uploads include the PHP 8.1 compatibility and CSP corrections. The currently hosted testing installation has those two corrections applied manually.
+- [ ] Complete hosted acceptance: create and publish a fictional property through `/admin/`, verify it publicly, exercise representative role workflows and denied actions, verify uploads/chat/inquiry handling, and check Dari/RTL plus 375/768/1024/1440 layouts.
+- [ ] After acceptance, remove only fictional test records through their authorized UI and retain the V2-only backups. Do not reset V2 or alter V1.
+- [ ] `BUILD-STATUS.json` in the generated archive remains a local build record with hosted-state flags false; record actual hosted acceptance separately rather than editing it to infer deployment success.
 
 ## Global Constraints
 
