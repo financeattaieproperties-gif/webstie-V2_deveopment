@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, type Plugin, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { resolve } from "node:path";
@@ -31,13 +31,13 @@ export default defineConfig(({ command }) => {
   const allowPreview =
     command === "serve" || process.env.STAFF_ALLOW_PREVIEW === "1";
 
-  const plugins = [react(), localRoleRouting];
+  const plugins: PluginOption[] = [react(), localRoleRouting];
   if (isSalesPwa) {
     const scope = isMobileApp ? "./" : "/sales/";
     const startUrl = isMobileApp ? "./index.html" : "/sales/leads";
     const navigateFallback = isMobileApp ? "index.html" : "/sales/index.html";
     plugins.push(
-      VitePWA({
+      ...(VitePWA({
         registerType: "autoUpdate",
         injectRegister: false,
         includeAssets: [
@@ -104,7 +104,7 @@ export default defineConfig(({ command }) => {
           enabled: true,
           navigateFallback: "/sales/index.html",
         },
-      }),
+      }) as unknown as PluginOption[]),
     );
   }
 
