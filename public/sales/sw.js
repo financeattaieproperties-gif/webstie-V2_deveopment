@@ -93,7 +93,7 @@ define(['./workbox-970124e6'], (function (workbox) { 'use strict';
     "revision": "e04fc45d2129633250578fe6f19126af"
   }, {
     "url": "index.html",
-    "revision": "63cfbe25cea81575b1f955c87a0d7873"
+    "revision": "3998767ebb4e4ffacaa0e18ae56b831e"
   }, {
     "url": "assets/window-4-C9gUup8J.png",
     "revision": null
@@ -128,13 +128,13 @@ define(['./workbox-970124e6'], (function (workbox) { 'use strict';
     "url": "assets/inventory-DVvxCqn8.js",
     "revision": null
   }, {
-    "url": "assets/index-D7xAq_pg.js",
+    "url": "assets/index-CxR3uF1f.css",
     "revision": null
   }, {
-    "url": "assets/index-B4bREKMs.css",
+    "url": "assets/index-BXe8gnHH.js",
     "revision": null
   }, {
-    "url": "assets/fa-CFWleIc4.js",
+    "url": "assets/fa-DQLyoD7g.js",
     "revision": null
   }, {
     "url": "assets/attaie-original-D6FwvO_c.png",

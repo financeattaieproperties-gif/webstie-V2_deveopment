@@ -275,5 +275,8 @@
   "Submitted": "ارسال شده",
   "Approved": "تأیید شده",
   "Published": "نشر شده",
-  "Rejected": "رد شده"
+  "Rejected": "رد شده",
+  "Low battery": "هشدار کم بودن باتری",
+  "Battery dropped below {{threshold}}%. Connect a charger soon to keep working smoothly in the field.": "شارژ باتری به زیر {{threshold}}٪ رسیده است. برای ادامه بدون وقفه در ساحه، دستگاه را به شارژ وصل کنید.",
+  "Dismiss": "بستن هشدار"
 }

@@ -309,3 +309,24 @@ export function formatBatteryStatus(status = {}) {
   };
 }
 
+export const LOW_BATTERY_WARNING_THRESHOLD = 15;
+
+/**
+ * Returns true when device battery telemetry is available, unplugged,
+ * and strictly below the warning threshold (default: < 15%).
+ * @param {{ visible?: boolean; percent?: number; charging?: boolean } | null | undefined} formattedStatus
+ * @param {number} [thresholdPercent]
+ */
+export function shouldWarnLowBattery(
+  formattedStatus,
+  thresholdPercent = LOW_BATTERY_WARNING_THRESHOLD,
+) {
+  if (!formattedStatus || !formattedStatus.visible) return false;
+  if (formattedStatus.charging) return false;
+  if (typeof formattedStatus.percent !== "number" || !Number.isFinite(formattedStatus.percent)) {
+    return false;
+  }
+  return formattedStatus.percent < thresholdPercent;
+}
+
+
