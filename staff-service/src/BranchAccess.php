@@ -4,7 +4,6 @@ namespace Staff;
 
 /** Branch boundaries are server policy; request routes and UI visibility grant no access. */
 trait BranchAccess {
-    private const ACTIVE_ROLES=['ceo','manager','callcenter','sales_leader','sales','marketing_manager','editor','videographer','finance_manager','architect','graphic_designer','visual_designer_3d'];
     private function currentBranchId(): ?int { return empty($this->user['branch_id'])?null:(int)$this->user['branch_id']; }
     private function isCeo(): bool { return ($this->user['role']??null)==='ceo'; }
     private function requireCeo(): void { if (!$this->isCeo()) throw new HttpError(403,'CEO permission is required.'); }

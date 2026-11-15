@@ -15,6 +15,8 @@ final class HttpError extends RuntimeException {
 }
 
 final class App {
+    /** PHP 8.1-compatible class constant consumed by BranchAccess. */
+    private const ACTIVE_ROLES=['ceo','manager','callcenter','sales_leader','sales','marketing_manager','editor','videographer','finance_manager','architect','graphic_designer','visual_designer_3d'];
     use Completion;
     use LeadPropertyClaims;
     use BranchAccess;
