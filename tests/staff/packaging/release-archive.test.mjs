@@ -11,7 +11,21 @@ test('private archive contains generated database mapping and public archive exc
     fs.mkdirSync(path.join(release, 'dist'), {recursive: true});
     fs.mkdirSync(path.join(release, 'private'), {recursive: true});
     fs.mkdirSync(path.join(release, 'database'), {recursive: true});
-    fs.writeFileSync(path.join(release, 'dist', 'index.html'), '<!doctype html>');
+    for (const relativePath of [
+      'index.html',
+      '.htaccess',
+      '.user.ini',
+      'admin/index.html',
+      'callcenter/index.html',
+      'management/index.html',
+      'staff-api/index.php',
+      'staff-api/paths.php',
+      'api/db.php',
+    ]) {
+      const file = path.join(release, 'dist', relativePath);
+      fs.mkdirSync(path.dirname(file), {recursive: true});
+      fs.writeFileSync(file, 'fixture');
+    }
     fs.writeFileSync(path.join(release, 'private', 'config.example.php'), '<?php');
     fs.writeFileSync(path.join(release, 'database', '04-firebase-role-mapping.sql'), '-- private mapping');
     const result = spawnSync('python', ['scripts/zip-v2-release.py', release], {encoding: 'utf8'});

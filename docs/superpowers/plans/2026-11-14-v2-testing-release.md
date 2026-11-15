@@ -19,11 +19,11 @@ Completed:
 - [x] Verified the Alabaster shell for all 12 roles at 375px and 1440px, and corrected the mobile navigation target from 40px to the required 44px.
 - [x] Added an Admin-local React 18-compatible `lucide-react` dependency and resolved the Staff Vite TypeScript 6 plugin-type recursion.
 - [x] Built a fresh local testing release. It contains all 10 dashboard entry points and has no mapped Firebase identity values in public output.
+- [x] Added a regression test and updated the ZIP builder so the private archive includes `database/04-firebase-role-mapping.sql`, while the public archive contains zero SQL files.
+- [x] Rebuilt and audited the manual-staging release after the archive fix. The generated `BUILD-STATUS.json` still records all hosted-state flags as `false`.
 
 Pending implementation:
 
-- [ ] Update the private ZIP archive so it includes `database/04-firebase-role-mapping.sql`; the current archive includes only `private/` and leaves database SQL beside the ZIP.
-- [ ] Rebuild and re-audit the manual-staging release after the private-archive fix.
 - [ ] Run fresh-schema and publication PHP fixtures when the disposable MySQL service at `127.0.0.1:3397` is available.
 - [ ] Perform the owner-managed cPanel upload, three-database import, Firebase sign-in, and hosted role/RTL/responsive checks. `BUILD-STATUS.json` remains false for all hosted-state flags until then.
 
