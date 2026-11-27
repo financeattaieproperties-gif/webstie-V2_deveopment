@@ -73,6 +73,14 @@ All routes use the **existing Website Admin session**; mutation requires CSRF:
   - Approval/rejection and reviewer username are recorded in verification event history; on approval, the business-contact review timestamp and reviewer username are saved as well
 - Admin UI: `/admin/agency-verification` accessible through the Website Admin sidebar
 
+## Frontend delivery status
+
+- `src/lib/customerAgencyClient.ts`: typed authenticated customer agency API client
+- `src/components/customer/AgencyOnboarding.tsx`: reusable private agency creation, representative/business-contact form, document upload and review status UI
+- `admin-panel/src/pages/AgencyVerification.tsx`: Website Admin review page, explicit manual business-contact acknowledgement required before approval
+- The customer component is **not mounted in the public router**. A dedicated Firebase sign-in/sign-out and secure token refresh lifecycle must be added before exposing it.
+- The owner's email/phone must be verified by Firebase, whereas the business email/phone are submitted contact details reviewed manually by Website Admin; the UI must not describe them as OTP-verified.
+
 ## Implementation and launch gates
 
 Still required before production:
@@ -80,7 +88,7 @@ Still required before production:
 2. Test actual upload size/type checks, symlink/path refusal, ownership and CSRF, concurrent review updates, document integrity, repeated uploads and upload-abuse limits.
 3. Reconfirm owner's verified contact information from Firebase before approval; existing stored verification flags must be treated as potentially stale. Manually compare agency business contacts against submitted documents, without implying independent phone/email OTP verification.
 4. Add safe replacement and appeal/resubmission flow for rejected applications.
-5. Build public customer registration, agency application, representative and document upload screens once Firebase project is configured.
+5. Connect the reusable customer agency application and document upload component to a protected account route when dedicated Firebase customer authentication and token refresh are configured.
 6. Decide and implement private-document malware scanning, retention, access audit and lawful handling.
 7. Review and document administrator actions: rejecting an application must not expose private documents or customer PII to public pages.
 8. Run manual cPanel staging acceptance and backup/restore drills; no V1 deployments.
