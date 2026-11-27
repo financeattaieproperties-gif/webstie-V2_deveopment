@@ -1,0 +1,38 @@
+name: Customer identity and public visibility PHP checks
+
+on:
+  push:
+    branches:
+      - feature/customer-marketplace-phase2-identity-foundation
+  pull_request:
+    paths:
+      - 'public/api/customer/**'
+      - 'public/api/customer-*.php'
+      - 'public/api/property-visibility.php'
+      - 'public/api/get-propert*.php'
+      - 'tests/website/customer-identity.php'
+      - 'tests/website/public-property-visibility.php'
+      - '.github/workflows/customer-identity-checks.yml'
+
+jobs:
+  php-policy-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PHP CLI version
+        run: php -v
+      - name: Lint changed customer API and visibility sources
+        run: |
+          php -l public/api/customer-identity.php
+          php -l public/api/customer-cors.php
+          php -l public/api/customer-firebase-auth.php
+          php -l public/api/customer/me.php
+          php -l public/api/property-visibility.php
+          php -l public/api/get-properties.php
+          php -l public/api/get-property.php
+          php -l tests/website/customer-identity.php
+          php -l tests/website/public-property-visibility.php
+      - name: Customer identity policy tests
+        run: php tests/website/customer-identity.php
+      - name: Public property visibility tests
+        run: php tests/website/public-property-visibility.php
