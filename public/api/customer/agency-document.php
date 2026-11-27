@@ -55,6 +55,10 @@ try {
     }
     @chmod($dest,0600);
     $sha=hash_file('sha256',$dest);
+    if (!is_string($sha) || !preg_match('/^[a-f0-9]{64}$/D',$sha)) {
+        @unlink($dest);
+        throw new RuntimeException('Private document checksum unavailable');
+    }
     $original=basename((string)($uploaded['name']??'document'));
     $original=preg_replace('/[^a-zA-Z0-9._-]/','_',$original);
     $original=substr($original?:'document',0,180);
@@ -82,10 +86,6 @@ try {
             @unlink($dest);
             json_out(['error'=>'Document replacement limit reached; contact Website Admin'],429);
         }
-        $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=? AND is_current=1');
-        if (!$count) throw new RuntimeException('Document limit unavailable');
-        $count->bind_param('i',$agencyId);
-        if (!$count->execute()) throw new RuntimeException('Document limit unavailable');
         $replace=$db->prepare('UPDATE customer_agency_documents SET is_current=0,superseded_at=UTC_TIMESTAMP() WHERE agency_id=? AND document_type=? AND is_current=1');
         if (!$replace) throw new RuntimeException('Document replacement unavailable');
         $replace->bind_param('is',$agencyId,$type);
