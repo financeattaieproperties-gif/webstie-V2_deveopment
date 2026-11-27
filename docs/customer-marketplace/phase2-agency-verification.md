@@ -43,33 +43,35 @@ All customer APIs require an active customer and valid Firebase bearer token; br
 - `GET /api/customer/agencies.php`: own agency profile
 - `GET /api/customer/agency-verification.php`: own representative fields/status
 - `POST /api/customer/agency-verification.php`: JSON:
-  `{"representative_name":"Example Representative","representative_position":"Director","representative_contact_method":"email","business_email":"office@example.com","business_phone_e164":"+93701234567"}`
+  `{"version":N,"representative_name":"Example Representative","representative_position":"Director","representative_contact_method":"email","business_email":"office@example.com","business_phone_e164":"+93701234567"}`
   - Only `email` or `phone` if the corresponding Firebase-linked contact is verified
-  - Owner-only, pending applications only; no status or reviewer mutation
+  - Owner-only, pending or revision applications only; requires current optimistic-lock version; no status or reviewer mutation
   - Agency business email/phone are independent of the verified owner's contact; at least one business contact is required, and those values are NOT automatically OTP-verified
   - Any edit resets business-contact review evidence
-- `POST /api/customer/agency-document.php`: multipart `document_type=registration|license`, `document=<PDF|JPEG|PNG>`
-  - Up to 5 MB per file, maximum six files per application
-  - Owner-only; pending status required
+- `POST /api/customer/agency-document.php`: multipart `version=N`, `document_type=registration|license`, `document=<PDF|JPEG|PNG>`
+  - Up to 5 MB per file; one current document per category; previous versions remain private; maximum 30 lifetime uploads per agency
+  - Owner-only; pending or revision status required; version check and audit event
   - Validation checks file size, magic signature and MIME; random opaque private storage key; integrity hash recorded in DB
-  - Returns metadata ID only, never a public download URL
-- `GET /api/customer/agency-documents.php`: own document metadata/status, no bytes or storage keys
+  - Returns metadata ID and new version only, never a public download URL
+- `GET /api/customer/agency-documents.php`: own current document metadata/status, no bytes or storage keys
+- `GET /api/admin/customer-agency-history.php?agency_id=…`: Website Admin-only transition and change-event history
+- Website Admin document metadata includes both current and superseded documents, with private authenticated download.
 
 ## Website Admin API
 
 All routes use the **existing Website Admin session**; mutation requires CSRF:
 
-- `GET /api/admin/customer-agencies.php?status=pending|verified|rejected|all`
+- `GET /api/admin/customer-agencies.php?status=pending|verified|rejected|revision|all`
   - Returns review queue (max 100) including owner contact verification and document count
 - `GET /api/admin/customer-agency-document.php?agency_id=…`
   - Lists private document metadata
 - `GET /api/admin/customer-agency-document.php?agency_id=…&document_id=…`
   - Authenticated attachment-only file read; file size and SHA-256 integrity checked
 - `POST /api/admin/customer-agencies.php`:
-  `{"agency_id":123,"version":1,"decision":"verified","reason":"","business_contact_reviewed":true}`
+  `{"agency_id":123,"version":1,"decision":"verified","reason":"","business_contact_reviewed":true,"documents_reviewed":true}`
   or
-  `{"agency_id":123,"version":1,"decision":"rejected","reason":"Missing valid registration document","business_contact_reviewed":false}`
-  - Server checks pending state, optimistic-lock version, the owner's verified contact, representative details, at least one supplied agency business email/phone, an explicit Website Admin manual business-contact review confirmation, and at least one intact private document before approval
+  `{"agency_id":123,"version":1,"decision":"rejected","reason":"Missing valid registration document","business_contact_reviewed":false,"documents_reviewed":false}`
+  - Server checks pending state, optimistic-lock version, the owner's verified contact, representative details, at least one supplied agency business email/phone, explicit Website Admin confirmations of business-contact and document review, and at least one intact private document before approval
   - Rejection reason is required
   - Approval/rejection and reviewer username are recorded in verification event history; on approval, the business-contact review timestamp and reviewer username are saved as well
 - Admin UI: `/admin/agency-verification` accessible through the Website Admin sidebar
@@ -79,7 +81,9 @@ All routes use the **existing Website Admin session**; mutation requires CSRF:
 - `src/lib/customerAgencyClient.ts`: typed authenticated customer agency API client
 - `src/components/customer/AgencyOnboarding.tsx`: reusable private agency creation, representative/business-contact form, document upload and review status UI
 - `admin-panel/src/pages/AgencyVerification.tsx`: Website Admin review page, explicit manual business-contact acknowledgement required before approval
-- The customer component is **not mounted in the public router**. A dedicated Firebase sign-in/sign-out and secure token refresh lifecycle must be added before exposing it.
+- The customer onboarding component is mounted at **`/customer/account`** behind an in-memory Firebase email sign-in/verification flow (`src/pages/CustomerAccountPage.tsx` and `src/lib/customerEmailAuth.ts`). The backend independently enforces Firebase bearer tokens. Browser reload signs out by design; no token is persisted in browser storage.
+- Configure the **public Firebase Web API key** as `VITE_FIREBASE_API_KEY` at frontend build time; enable Email/Password and email verification in Firebase. The backend separately requires `CUSTOMER_FIREBASE_PROJECT_ID` and `CUSTOMER_FIREBASE_API_KEY`. Do not embed admin/service-account secrets in the frontend.
+- **Phone OTP is not implemented**: requires supported Firebase phone authentication, reCAPTCHA and real-carrier acceptance testing. Do not claim full email/phone parity.
 - The owner's email/phone must be verified by Firebase, whereas the business email/phone are submitted contact details reviewed manually by Website Admin; the UI must not describe them as OTP-verified.
 
 ## Rejected agency correction and resubmission (draft)
@@ -91,7 +95,7 @@ All routes use the **existing Website Admin session**; mutation requires CSRF:
 - Uploading a replacement of the same registration/license type supersedes prior document metadata (`is_current=0`); **historical files are retained privately**, and Website Admin can still download them for audit. Current document metadata is returned to the customer.
 - Every transition creates an append-only `customer_agency_verification_events` record; Website Admin's `GET /api/admin/customer-agency-history.php?agency_id=…` and review page display decisions and resubmission rounds.
 - The revision API does not automatically approve or publish agency listings; Website Admin remains sole decision-maker.
-- Security caveats: database migrations, actual PHP/MySQL integration tests, storage integrity and rollback validation have **not been executed**. Document replacements and profile edits do not yet each create their own full field-level change snapshots; those should be added before claiming comprehensive edit-level audit coverage.
+- Profile, representative/contact and document changes now create transactional audit events with version/round references. The event log does **not** yet contain complete immutable before/after field snapshots. Database migrations, PHP/MySQL HTTP integration tests, full browser builds, storage integrity and rollback validation have **not been executed**.
 
 ## Implementation and launch gates
 
@@ -100,7 +104,7 @@ Still required before production:
 2. Test actual upload size/type checks, symlink/path refusal, ownership and CSRF, concurrent review updates, document integrity, repeated uploads and upload-abuse limits.
 3. Reconfirm owner's verified contact information from Firebase before approval; existing stored verification flags must be treated as potentially stale. Manually compare agency business contacts against submitted documents, without implying independent phone/email OTP verification.
 4. Rehearse and harden the committed correction/resubmission flow, including historical document access, audit completeness, concurrent updates, and a field-level change log.
-5. Connect the reusable customer agency application and document upload component to a protected account route when dedicated Firebase customer authentication and token refresh are configured.
+5. Validate the new `/customer/account` route in browser with real Firebase configuration and refresh behavior; complete supported phone OTP and sign-in recovery, then test protected agency onboarding end to end.
 6. Decide and implement private-document malware scanning, retention, access audit and lawful handling.
 7. Review and document administrator actions: rejecting an application must not expose private documents or customer PII to public pages.
 8. Run manual cPanel staging acceptance and backup/restore drills; no V1 deployments.
