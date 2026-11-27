@@ -105,7 +105,7 @@ export const api = {
   },
   getCsrf: () => getCsrfToken(),
 
-  getCustomerAgencies: (status: 'pending' | 'verified' | 'rejected' | 'all' = 'pending') =>
+  getCustomerAgencies: (status: 'pending' | 'verified' | 'rejected' | 'revision' | 'all' = 'pending') =>
     request<{items:CustomerAgencyReview[]}>(`/admin/customer-agencies.php?status=${encodeURIComponent(status)}`),
   reviewCustomerAgency: (payload: {agency_id:number;version:number;decision:'verified'|'rejected';reason:string;business_contact_reviewed:boolean}) =>
     request<{agency_id:number;verification_status:'verified'|'rejected';version:number}>('/admin/customer-agencies.php', {method:'POST',body:JSON.stringify(payload)}),
