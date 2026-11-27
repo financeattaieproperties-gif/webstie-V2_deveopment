@@ -21,6 +21,8 @@ try {
     $owner=require_customer_context($db);
     $ownerId=(int)$owner['id'];
     $type=$_POST['document_type']??null;
+    $version=filter_var($_POST['version']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+    if (!$version) json_out(['error'=>'Current agency version required'],422);
     if (!is_string($type) || !in_array($type,['registration','license'],true)) {
         json_out(['error'=>'Select registration or license document'],422);
     }
@@ -58,11 +60,13 @@ try {
     $original=substr($original?:'document',0,180);
     try {
         $db->begin_transaction();
-        $lock=$db->prepare('SELECT id FROM customer_agencies WHERE id=? AND owner_customer_id=? AND verification_status IN (\'pending\',\'revision\') FOR UPDATE');
+        $lock=$db->prepare('SELECT id,verification_status,review_round,version FROM customer_agencies WHERE id=? AND owner_customer_id=? FOR UPDATE');
         if (!$lock) throw new RuntimeException('Agency lock unavailable');
         $lock->bind_param('ii',$agencyId,$ownerId);
-        $lock->execute();
-        if (!$lock->get_result()->fetch_assoc()) {
+        if (!$lock->execute()) throw new RuntimeException('Agency lock failed');
+        $lockedAgency=$lock->get_result()->fetch_assoc();
+        if (!$lockedAgency || (int)$lockedAgency['version']!==$version ||
+            !in_array($lockedAgency['verification_status'],['pending','revision'],true)) {
             $db->rollback();
             @unlink($dest);
             json_out(['error'=>'Agency review state changed'],409);
@@ -90,13 +94,27 @@ try {
         $insert->bind_param('isssssi',$agencyId,$type,$key,$sha,$mime,$original,$bytes);
         if (!$insert->execute()) throw new RuntimeException('Document metadata write failed');
         $documentId=(int)$db->insert_id;
+        // Invalidate stale admin review snapshots whenever documents change.
+        $bump=$db->prepare("UPDATE customer_agencies SET version=version+1,
+            business_contact_reviewed_at=NULL,business_contact_reviewed_by=NULL
+            WHERE id=? AND version=? AND verification_status IN ('pending','revision')");
+        if (!$bump) throw new RuntimeException('Agency document version update unavailable');
+        $bump->bind_param('ii',$agencyId,$version);
+        if (!$bump->execute() || $bump->affected_rows!==1) throw new RuntimeException('Agency document version conflict');
+        $audit=$db->prepare('INSERT INTO customer_agency_verification_events (agency_id,previous_status,next_status,reason,review_round) VALUES (?,?,?,?,?)');
+        if (!$audit) throw new RuntimeException('Document audit unavailable');
+        $state=$lockedAgency['verification_status'];
+        $reason='Owner uploaded '.$type.' document #'.$documentId.' (previous '.$type.' documents superseded; version '.$version.' to '.($version+1).')';
+        $round=(int)$lockedAgency['review_round'];
+        $audit->bind_param('isssi',$agencyId,$state,$state,$reason,$round);
+        if (!$audit->execute()) throw new RuntimeException('Document audit failed');
         $db->commit();
     } catch (Throwable $e) {
         $db->rollback();
         @unlink($dest);
         throw $e;
     }
-    json_out(['id'=>$documentId,'document_type'=>$type,'verification_status'=>$agency['verification_status']],201);
+    json_out(['id'=>$documentId,'document_type'=>$type,'verification_status'=>$agency['verification_status'],'version'=>$version+1],201);
 } catch (Throwable $e) {
     error_log('Agency private document upload failed');
     json_out(['error'=>'Could not securely store agency document'],503);
