@@ -262,6 +262,7 @@ const ADMIN_PILLARS: AdminPillarGroup[] = [
       { to: '/agents', label: 'Agents & Employees', icon: 'users', sourceTag: 'Core' },
       { to: '/branches', label: 'Branches', icon: 'pin', sourceTag: 'Web' },
       { to: '/careers', label: 'Careers', icon: 'briefcase', sourceTag: 'Web' },
+      { to: '/agency-verification', label: 'Agency Verification', icon: 'check', sourceTag: 'Web' },
     ],
   },
   {
