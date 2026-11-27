@@ -11,6 +11,7 @@ on:
       - 'public/api/property-visibility.php'
       - 'public/api/get-propert*.php'
       - 'tests/website/customer-identity.php'
+      - 'tests/website/customer-firebase.php'
       - 'tests/website/public-property-visibility.php'
       - '.github/workflows/customer-identity-checks.yml'
 
@@ -31,8 +32,11 @@ jobs:
           php -l public/api/get-properties.php
           php -l public/api/get-property.php
           php -l tests/website/customer-identity.php
+          php -l tests/website/customer-firebase.php
           php -l tests/website/public-property-visibility.php
       - name: Customer identity policy tests
         run: php tests/website/customer-identity.php
+      - name: Customer Firebase verifier tests
+        run: php tests/website/customer-firebase.php
       - name: Public property visibility tests
         run: php tests/website/public-property-visibility.php
