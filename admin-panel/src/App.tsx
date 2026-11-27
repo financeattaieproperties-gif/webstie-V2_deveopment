@@ -21,6 +21,7 @@ import CareerForm from './pages/CareerForm';
 import CareerApplications from './pages/CareerApplications';
 import ChatInbox from './pages/ChatInbox';
 import PublishingTasks from './pages/PublishingTasks';
+import AgencyVerification from './pages/AgencyVerification';
 import { AttaieLogoEntrance } from './components/AttaieLogoEntrance';
 
 const isElectron = !!window.electronAPI?.isElectron;
@@ -69,6 +70,7 @@ function ProtectedRoutes() {
         <Route path="/projects/new" element={<ProjectForm />} />
         <Route path="/projects/:id/edit" element={<ProjectForm />} />
         <Route path="/tasks" element={<PublishingTasks />} />
+        <Route path="/agency-verification" element={<AgencyVerification />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/chat" element={<ChatInbox />} />
         <Route path="/visits" element={<Visits />} />
