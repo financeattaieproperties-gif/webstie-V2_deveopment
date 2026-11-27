@@ -19,8 +19,10 @@ function customer_property_submission_decision(array $account, string $serverRis
     if (($account['status'] ?? null) !== 'active') {
         return ['allowed' => false, 'reason' => 'account_unavailable'];
     }
-    $emailVerified = $account['email_verified'] === true || $account['email_verified'] === 1 || $account['email_verified'] === '1';
-    $phoneVerified = $account['phone_verified'] === true || $account['phone_verified'] === 1 || $account['phone_verified'] === '1';
+    $emailFlag = $account['email_verified'] ?? null;
+    $phoneFlag = $account['phone_verified'] ?? null;
+    $emailVerified = $emailFlag === true || $emailFlag === 1 || $emailFlag === '1';
+    $phoneVerified = $phoneFlag === true || $phoneFlag === 1 || $phoneFlag === '1';
 
     if (!$emailVerified && !$phoneVerified) {
         return ['allowed' => false, 'reason' => 'verification_required'];
