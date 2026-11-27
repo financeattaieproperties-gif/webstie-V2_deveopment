@@ -109,6 +109,8 @@ export const api = {
     request<{items:CustomerAgencyReview[]}>(`/admin/customer-agencies.php?status=${encodeURIComponent(status)}`),
   reviewCustomerAgency: (payload: {agency_id:number;version:number;decision:'verified'|'rejected';reason:string;business_contact_reviewed:boolean}) =>
     request<{agency_id:number;verification_status:'verified'|'rejected';version:number}>('/admin/customer-agencies.php', {method:'POST',body:JSON.stringify(payload)}),
+  getCustomerAgencyHistory: (agencyId: number) =>
+    request<{events: Array<{id:number;previous_status:string;next_status:string;reason:string|null;reviewer_username:string|null;review_round:number|null;created_at:string}>}>(`/admin/customer-agency-history.php?agency_id=${agencyId}`),
   getCustomerAgencyDocuments: (agencyId: number) =>
     request<{documents: Array<{id:number;document_type:string;original_filename:string;byte_size:number}>}>(`/admin/customer-agency-document.php?agency_id=${agencyId}`),
   downloadCustomerAgencyDocument: async (agencyId:number, documentId:number, originalName:string) => {
@@ -1064,7 +1066,9 @@ export interface CustomerAgencyReview {
   business_phone_e164: string | null;
   business_contact_reviewed_at: string | null;
   business_contact_reviewed_by: string | null;
-  verification_status: 'pending' | 'verified' | 'rejected';
+  verification_status: 'pending' | 'verified' | 'rejected' | 'revision';
+  review_round: number;
+  resubmitted_at: string | null;
   operational_status: 'active' | 'suspended';
   rejection_reason: string | null;
   version: number;
