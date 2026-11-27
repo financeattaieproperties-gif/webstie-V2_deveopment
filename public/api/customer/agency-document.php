@@ -71,6 +71,17 @@ try {
             @unlink($dest);
             json_out(['error'=>'Agency review state changed'],409);
         }
+        // Superseded documents are never deleted by customers; cap total lifetime
+        // uploads to prevent unbounded private storage consumption.
+        $lifetime=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=?');
+        if (!$lifetime) throw new RuntimeException('Document retention limit unavailable');
+        $lifetime->bind_param('i',$agencyId);
+        if (!$lifetime->execute()) throw new RuntimeException('Document retention limit unavailable');
+        if ((int)$lifetime->get_result()->fetch_assoc()['total']>=30) {
+            $db->rollback();
+            @unlink($dest);
+            json_out(['error'=>'Document replacement limit reached; contact Website Admin'],429);
+        }
         $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=? AND is_current=1');
         if (!$count) throw new RuntimeException('Document limit unavailable');
         $count->bind_param('i',$agencyId);
