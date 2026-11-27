@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../../public/api/customer-agency-verification-policy.php';
 function ok(bool $condition, string $reason):void{if(!$condition)throw new RuntimeException($reason);}
-function deny(callable $fn):void {try{$fn();}catch(InvalidArgumentException|RuntimeException){return;}throw new RuntimeException('Expected rejection');}
+function deny(callable $fn):void {try{$fn();}catch(InvalidArgumentException|RuntimeException $e){return;}throw new RuntimeException('Expected rejection');}
 
 $fields=agency_representative_fields([
   'representative_name'=>' Example Owner ',
