@@ -12,8 +12,9 @@ export default function AgencyVerification() {
   const [loading, setLoading] = useState(true);
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [reviewedContacts, setReviewedContacts] = useState<Record<number, boolean>>({});
+  const [reviewedDocuments, setReviewedDocuments] = useState<Record<number, boolean>>({});
   const [history, setHistory] = useState<Record<number, Array<{id:number;previous_status:string;next_status:string;reason:string|null;reviewer_username:string|null;review_round:number|null;created_at:string}>>>({});
-  const [documents, setDocuments] = useState<Record<number, Array<{id:number;document_type:string;original_filename:string;byte_size:number}>>>({});
+  const [documents, setDocuments] = useState<Record<number, Array<{id:number;document_type:string;original_filename:string;byte_size:number;is_current:boolean;superseded_at:string|null}>>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -22,6 +23,8 @@ export default function AgencyVerification() {
       const response = await api.getCustomerAgencies(filter);
       setItems(response.items);
       setReviewedContacts({}); // Reviewing a new snapshot requires fresh acknowledgement.
+      setReviewedDocuments({});
+      setDocuments({});
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to load agency applications.');
     } finally {
@@ -36,6 +39,7 @@ export default function AgencyVerification() {
     try {
       const response = await api.getCustomerAgencyDocuments(agencyId);
       setDocuments((current) => ({ ...current, [agencyId]: response.documents }));
+      setReviewedDocuments((current) => ({ ...current, [agencyId]: false }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to inspect documents.');
     }
@@ -57,6 +61,10 @@ export default function AgencyVerification() {
       setError('Review the agency business email or phone and confirm the checkbox before approval.');
       return;
     }
+    if (decision === 'verified' && (!reviewedDocuments[item.id] || !documents[item.id])) {
+      setError('Inspect current and historical documents, then confirm the document-review checkbox.');
+      return;
+    }
     if (decision === 'rejected' && !reason) {
       setError('Enter a rejection reason before rejecting an agency.');
       return;
@@ -71,7 +79,7 @@ export default function AgencyVerification() {
     setError('');
     setNotice('');
     try {
-      await api.reviewCustomerAgency({ agency_id: item.id, version: item.version, decision, reason, business_contact_reviewed: decision === 'verified' && reviewedContacts[item.id] === true });
+      await api.reviewCustomerAgency({ agency_id: item.id, version: item.version, decision, reason, business_contact_reviewed: decision === 'verified' && reviewedContacts[item.id] === true, documents_reviewed: decision === 'verified' && reviewedDocuments[item.id] === true });
       setNotice(`Agency ${decision === 'verified' ? 'verified' : 'rejected'} successfully.`);
       await load();
     } catch (e) {
@@ -139,7 +147,7 @@ export default function AgencyVerification() {
               {documents[agency.id] && <ul className="text-sm space-y-2">
                 {documents[agency.id].map((doc) => (
                   <li key={doc.id} className="flex items-center justify-between gap-3 border border-slate-100 rounded-lg p-2">
-                    <span>{doc.document_type}: {doc.original_filename} ({Math.ceil(doc.byte_size / 1024)} KB)</span>
+                    <span>{doc.document_type}: {doc.original_filename} ({Math.ceil(doc.byte_size / 1024)} KB) · {doc.is_current ? 'Current' : 'Superseded / retained for audit'}</span>
                     <button type="button" className="text-blue-800 underline" onClick={() => void api.downloadCustomerAgencyDocument(agency.id, doc.id, doc.original_filename).catch((e: unknown) => setError(e instanceof Error ? e.message : 'Private document download failed.'))}>Download</button>
                   </li>
                 ))}
@@ -156,8 +164,15 @@ export default function AgencyVerification() {
                     className="mt-1" />
                   I checked the submitted agency business email/phone against the registration/license and reviewed the representative details. I understand these business contacts are not independently OTP-verified.
                 </label>
+                <label className="flex gap-2 items-start text-sm">
+                  <input type="checkbox" checked={reviewedDocuments[agency.id] === true}
+                    disabled={!documents[agency.id]}
+                    onChange={(event) => setReviewedDocuments((old) => ({ ...old, [agency.id]: event.target.checked }))}
+                    className="mt-1" />
+                  I inspected the current registration/license and the superseded document history. I understand approval applies only to current documents.
+                </label>
                 <div className="flex gap-2 flex-wrap">
-                  <button type="button" disabled={busy !== null || !reviewedContacts[agency.id]} onClick={() => void review(agency, 'verified')}
+                  <button type="button" disabled={busy !== null || !reviewedContacts[agency.id] || !reviewedDocuments[agency.id] || !documents[agency.id]} onClick={() => void review(agency, 'verified')}
                     className="rounded-lg bg-slate-900 text-white px-4 py-2 text-sm disabled:opacity-50">Approve agency</button>
                   <button type="button" disabled={busy !== null} onClick={() => void review(agency, 'rejected')}
                     className="rounded-lg border border-red-300 text-red-800 px-4 py-2 text-sm disabled:opacity-50">Reject agency</button>
