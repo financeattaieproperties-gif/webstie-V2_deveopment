@@ -22,6 +22,7 @@ try {
         }
         $sql="SELECT a.id,a.owner_customer_id,a.legal_name,a.public_name,a.registration_reference,
                  a.representative_name,a.representative_position,a.representative_contact_method,
+                 a.business_email,a.business_phone_e164,a.business_contact_reviewed_at,a.business_contact_reviewed_by,
                  a.verification_status,a.operational_status,a.rejection_reason,a.version,
                  a.created_at,a.updated_at,c.display_name AS owner_name,
                  c.email,c.email_verified,c.phone_e164,c.phone_verified,c.status AS owner_status,
@@ -43,17 +44,21 @@ try {
         json_out(['items'=>$items]);
     }
     $input=body();
-    if (array_diff(array_keys($input),['agency_id','version','decision','reason'])) {
+    if (array_diff(array_keys($input),['agency_id','version','decision','reason','business_contact_reviewed'])) {
         json_out(['error'=>'Unsupported review field'],422);
     }
     $agencyId=filter_var($input['agency_id']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
     $version=filter_var($input['version']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
     $decision=$input['decision']??null;
     $reason=$input['reason']??'';
+    $businessReviewed=$input['business_contact_reviewed']??false;
     if (!$agencyId || !$version || !is_string($decision) || !in_array($decision,['verified','rejected'],true)
         || !is_string($reason) || strlen($reason)>1000 ||
         ($decision==='rejected' && trim($reason)==='')) {
         json_out(['error'=>'Valid agency, version, decision and rejection reason required'],422);
+    }
+    if (!is_bool($businessReviewed) || ($decision==='verified' && !$businessReviewed)) {
+        json_out(['error'=>'Website Admin must explicitly confirm reviewing agency business contacts'],422);
     }
     $reason=trim($reason);
     $reviewer=substr((string)($_SESSION['admin_user']??'website-admin'),0,120);
@@ -107,11 +112,14 @@ try {
         }
         $stmt=$db->prepare("UPDATE customer_agencies
             SET verification_status=?,rejection_reason=?,verified_at=IF(?='verified',UTC_TIMESTAMP(),NULL),
-                verified_by_username=IF(?='verified',?,NULL),reviewed_version=version,version=version+1
+                verified_by_username=IF(?='verified',?,NULL),
+                business_contact_reviewed_at=IF(?='verified',UTC_TIMESTAMP(),NULL),
+                business_contact_reviewed_by=IF(?='verified',?,NULL),
+                reviewed_version=version,version=version+1
             WHERE id=? AND version=? AND verification_status='pending'");
         if (!$stmt) throw new RuntimeException('Agency review update unavailable');
         $reviewReason=$decision==='rejected'?$reason:null;
-        $stmt->bind_param('sssssii',$decision,$reviewReason,$decision,$decision,$reviewer,$agencyId,$version);
+        $stmt->bind_param('sssssssii',$decision,$reviewReason,$decision,$decision,$reviewer,$decision,$reviewer,$agencyId,$version);
         if (!$stmt->execute() || $stmt->affected_rows!==1) throw new RuntimeException('Agency review update conflict');
         $event=$db->prepare('INSERT INTO customer_agency_verification_events(agency_id,previous_status,next_status,reason,reviewer_username) VALUES (?,?,?,?,?)');
         if (!$event) throw new RuntimeException('Review audit unavailable');
