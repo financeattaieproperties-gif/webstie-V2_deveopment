@@ -24,6 +24,7 @@ jobs:
           php -l public/api/customer-agency-revision-policy.php
           php -l public/api/customer/agency-revision.php
           php -l public/api/customer/agency-revision-details.php
+          php -l public/api/admin/customer-agency-history.php
           php -l public/api/customer-agency-verification-policy.php
           php -l public/api/customer-auth-context.php
           php -l public/api/customer/agency-verification.php
