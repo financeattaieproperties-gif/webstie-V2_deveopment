@@ -1,6 +1,8 @@
 # Attaie Properties — Phase 2 customer authentication (V2 only)
 
-Status: **foundation in draft PR; not live or fully integrated.**
+Status: **identity and agency verification foundations in draft PR; not live or fully integrated.**
+
+See [agency verification implementation and staged rollout](./phase2-agency-verification.md) for private document intake, representative details and Website Admin-only approval.
 
 ## Agreed product decision
 
@@ -111,9 +113,9 @@ recoverable through verified email, cost controls enabled, and explicit user con
 9. Add rate limits and abuse controls; monitor production telemetry before general availability.
 10. Add customer-owned property draft API only after identity integration passes, and enforce `customer_property_submission_decision` in the backend for every submission.
 11. Define server-derived risk triggers, review procedures and appeal/recovery before enabling step-up in production.
-12. Build Website Admin agency verification/rejection workflow with review audit trails and private supporting-document storage; it is **not yet built**.
+12. Website Admin agency approval/rejection API + screen, private registration/license upload, and audit are committed; these are **not yet tested or deployed**.
 13. Build owned listing drafts and reviewer-controlled publication that writes `customer_property_ownership` only after approval; it is **not yet built**.
-14. Build React agency application, pending/rejected status, and owner dashboard; it is **not yet built**.
+14. Build React customer-facing agency application, representative/document upload, pending/rejected status, and owner dashboard; it is **not yet built**.
 15. Test agency application HTTP/MySQL concurrency, rejection of unauthorized owners, and suspension; policy tests alone do not verify database transactions.
 
 ## Review constraints
