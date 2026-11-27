@@ -7,7 +7,8 @@ ALTER TABLE customer_agencies
   ADD COLUMN representative_name VARCHAR(160) NOT NULL DEFAULT '',
   ADD COLUMN representative_position VARCHAR(120) NOT NULL DEFAULT '',
   ADD COLUMN representative_contact_method ENUM('email','phone') DEFAULT NULL,
-  ADD COLUMN reviewed_version INT UNSIGNED NOT NULL DEFAULT 0;
+  ADD COLUMN reviewed_version INT UNSIGNED NOT NULL DEFAULT 0,
+  ADD COLUMN verified_by_username VARCHAR(120) DEFAULT NULL;
 
 CREATE TABLE customer_agency_documents (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -24,3 +25,7 @@ CREATE TABLE customer_agency_documents (
   CONSTRAINT fk_agency_document_owner FOREIGN KEY (agency_id)
     REFERENCES customer_agencies(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Review events remain independent of the existing CRM's user database.
+ALTER TABLE customer_agency_verification_events
+  ADD COLUMN reviewer_username VARCHAR(120) DEFAULT NULL;
