@@ -11,6 +11,7 @@ export default function AgencyVerification() {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(true);
   const [reasons, setReasons] = useState<Record<number, string>>({});
+  const [reviewedContacts, setReviewedContacts] = useState<Record<number, boolean>>({});
   const [documents, setDocuments] = useState<Record<number, Array<{id:number;document_type:string;original_filename:string;byte_size:number}>>>({});
 
   const load = useCallback(async () => {
@@ -40,6 +41,10 @@ export default function AgencyVerification() {
 
   async function review(item: CustomerAgencyReview, decision: 'verified' | 'rejected') {
     const reason = (reasons[item.id] ?? '').trim();
+    if (decision === 'verified' && !reviewedContacts[item.id]) {
+      setError('Review the agency business email or phone and confirm the checkbox before approval.');
+      return;
+    }
     if (decision === 'rejected' && !reason) {
       setError('Enter a rejection reason before rejecting an agency.');
       return;
@@ -54,7 +59,7 @@ export default function AgencyVerification() {
     setError('');
     setNotice('');
     try {
-      await api.reviewCustomerAgency({ agency_id: item.id, version: item.version, decision, reason });
+      await api.reviewCustomerAgency({ agency_id: item.id, version: item.version, decision, reason, business_contact_reviewed: decision === 'verified' && reviewedContacts[item.id] === true });
       setNotice(`Agency ${decision === 'verified' ? 'verified' : 'rejected'} successfully.`);
       await load();
     } catch (e) {
@@ -98,6 +103,7 @@ export default function AgencyVerification() {
                 <div><dt className="font-medium">Representative</dt><dd>{agency.representative_name || 'Not provided'} — {agency.representative_position || 'Role missing'}</dd></div>
                 <div><dt className="font-medium">Contact method</dt><dd>{agency.representative_contact_method || 'Missing'} · {agency.representative_contact_method === 'email' ? (agency.email_verified ? 'Verified' : 'Unverified') : agency.representative_contact_method === 'phone' ? (agency.phone_verified ? 'Verified' : 'Unverified') : 'Not selected'}</dd></div>
                 <div><dt className="font-medium">Owner</dt><dd>{agency.owner_name || 'Customer'} · {agency.owner_status}</dd></div>
+                <div><dt className="font-medium">Agency business contact (admin review required)</dt><dd>{agency.business_email || 'No business email'} · {agency.business_phone_e164 || 'No business phone'}<br/><span className="text-slate-500">Submitted details — not independently OTP-verified</span></dd></div>
                 <div><dt className="font-medium">Uploaded documents</dt><dd>{agency.document_count}</dd></div>
               </dl>
               <button type="button" onClick={() => void inspect(agency.id)} className="text-sm font-semibold underline underline-offset-4">
@@ -117,8 +123,14 @@ export default function AgencyVerification() {
                   value={reasons[agency.id] ?? ''} onChange={(e) => setReasons((old) => ({ ...old, [agency.id]: e.target.value }))}
                   className="w-full border border-slate-300 rounded-lg p-2 text-sm"
                   placeholder="Explain missing documents or why this agency cannot be verified." />
+                <label className="flex gap-2 items-start text-sm">
+                  <input type="checkbox" checked={reviewedContacts[agency.id] === true}
+                    onChange={(event) => setReviewedContacts((old) => ({ ...old, [agency.id]: event.target.checked }))}
+                    className="mt-1" />
+                  I have manually reviewed the agency's submitted business contact details and supporting documents.
+                </label>
                 <div className="flex gap-2 flex-wrap">
-                  <button type="button" disabled={busy !== null} onClick={() => void review(agency, 'verified')}
+                  <button type="button" disabled={busy !== null || !reviewedContacts[agency.id]} onClick={() => void review(agency, 'verified')}
                     className="rounded-lg bg-slate-900 text-white px-4 py-2 text-sm disabled:opacity-50">Approve agency</button>
                   <button type="button" disabled={busy !== null} onClick={() => void review(agency, 'rejected')}
                     className="rounded-lg border border-red-300 text-red-800 px-4 py-2 text-sm disabled:opacity-50">Reject agency</button>
