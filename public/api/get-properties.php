@@ -1,16 +1,21 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/property-visibility.php';
 cors();
 header('Content-Type: application/json; charset=utf-8');
 
 $db     = db();
-$where  = ['1=1'];
+$where  = [public_property_search_visibility_sql()];
 $params = [];
 $types  = '';
 
-if (!empty($_GET['status'])) {
+$requestedStatus = public_property_requested_status($_GET['status'] ?? null);
+if ($requestedStatus === '__not_public__') {
+    json_out([], 200);
+}
+if ($requestedStatus !== null) {
     $where[]  = 'status = ?';
-    $params[] = $_GET['status'];
+    $params[] = $requestedStatus;
     $types   .= 's';
 }
 if (!empty($_GET['type'])) {
