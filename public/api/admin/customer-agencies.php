@@ -17,7 +17,7 @@ try {
     $db=db();
     if ($method==='GET') {
         $filter=$_GET['status']??'pending';
-        if (!is_string($filter) || !in_array($filter,['pending','verified','rejected','all'],true)) {
+        if (!is_string($filter) || !in_array($filter,['pending','verified','rejected','revision','all'],true)) {
             json_out(['error'=>'Invalid review status filter'],422);
         }
         $sql="SELECT a.id,a.owner_customer_id,a.legal_name,a.public_name,a.registration_reference,
