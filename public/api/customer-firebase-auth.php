@@ -2,7 +2,7 @@
 declare(strict_types=1);
 namespace AttaieCustomer;
 
-final class CustomerCustomerFirebaseAuthException extends \RuntimeException {}
+final class CustomerFirebaseAuthException extends \RuntimeException {}
 
 /** Customer verifier adapted from the existing staff verifier. Standalone for website deployment.\n * Verifies Firebase JWT signatures/claims and checks current account state with Google.
  * Dependency callbacks are for isolated tests; production always uses fixed Google HTTPS URLs.
@@ -33,7 +33,7 @@ final class CustomerFirebaseAuth {
             return ['localId'=>$uid,'email'=>$account['email']??null,'emailVerified'=>(bool)($account['emailVerified']??false),'phoneNumber'=>$account['phoneNumber']??null];
         } catch (\Throwable $e) {
             // Never expose token, account response, API key, or upstream exception text.
-            throw new CustomerCustomerFirebaseAuthException('Sign-in could not be verified. Please try again.');
+            throw new CustomerFirebaseAuthException('Sign-in could not be verified. Please try again.');
         }
     }
     private function decode(string $value): string {
