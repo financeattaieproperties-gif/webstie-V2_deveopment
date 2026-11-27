@@ -20,6 +20,7 @@ After a verified staging database backup and checking `SELECT DATABASE()`, apply
 2. `public/api/migrations/2026-11-27-customer-agencies.sql`
 3. `public/api/migrations/2026-11-27-customer-agency-verification.sql`
 4. `public/api/migrations/2026-11-27-customer-agency-business-contacts.sql`
+5. `public/api/migrations/2026-11-27-customer-agency-resubmission.sql`
 
 Each script is **additive**. Do not apply to V1 or internal CRM/submission databases.
 Staging MySQL must support CHECK constraints (MySQL 8.0.16+); confirm before applying ownership migration.
@@ -81,13 +82,24 @@ All routes use the **existing Website Admin session**; mutation requires CSRF:
 - The customer component is **not mounted in the public router**. A dedicated Firebase sign-in/sign-out and secure token refresh lifecycle must be added before exposing it.
 - The owner's email/phone must be verified by Firebase, whereas the business email/phone are submitted contact details reviewed manually by Website Admin; the UI must not describe them as OTP-verified.
 
+## Rejected agency correction and resubmission (draft)
+
+- `rejected → revision → pending` is the **only** owner-controlled review-state transition. A verified or pending agency cannot open a revision; owners cannot approve themselves.
+- `POST /api/customer/agency-revision.php` with `{"action":"start_revision","version":N}` opens correction. `{"action":"resubmit","version":N}` checks required representative, owner-verified contact, business contact and current document before returning to the Website Admin queue.
+- `POST /api/customer/agency-revision-details.php` edits legal/public name, registration reference and description **only in revision** with optimistic version control.
+- `POST /api/customer/agency-verification.php` edits representative and business contacts in pending or revision.
+- Uploading a replacement of the same registration/license type supersedes prior document metadata (`is_current=0`); **historical files are retained privately**, and Website Admin can still download them for audit. Current document metadata is returned to the customer.
+- Every transition creates an append-only `customer_agency_verification_events` record; Website Admin's `GET /api/admin/customer-agency-history.php?agency_id=…` and review page display decisions and resubmission rounds.
+- The revision API does not automatically approve or publish agency listings; Website Admin remains sole decision-maker.
+- Security caveats: database migrations, actual PHP/MySQL integration tests, storage integrity and rollback validation have **not been executed**. Document replacements and profile edits do not yet each create their own full field-level change snapshots; those should be added before claiming comprehensive edit-level audit coverage.
+
 ## Implementation and launch gates
 
 Still required before production:
 1. Ensure GitHub Actions runner works; run PHP lint, policy tests, admin TypeScript build, and full HTTP/MySQL fixture integration.
 2. Test actual upload size/type checks, symlink/path refusal, ownership and CSRF, concurrent review updates, document integrity, repeated uploads and upload-abuse limits.
 3. Reconfirm owner's verified contact information from Firebase before approval; existing stored verification flags must be treated as potentially stale. Manually compare agency business contacts against submitted documents, without implying independent phone/email OTP verification.
-4. Add safe replacement and appeal/resubmission flow for rejected applications.
+4. Rehearse and harden the committed correction/resubmission flow, including historical document access, audit completeness, concurrent updates, and a field-level change log.
 5. Connect the reusable customer agency application and document upload component to a protected account route when dedicated Firebase customer authentication and token refresh are configured.
 6. Decide and implement private-document malware scanning, retention, access audit and lawful handling.
 7. Review and document administrator actions: rejecting an application must not expose private documents or customer PII to public pages.
