@@ -39,7 +39,7 @@ function customer_identity_from_verified_account(array $account): array {
 function customer_profile_fields(array $input): array {
     $name = $input['display_name'] ?? '';
     $locale = $input['locale'] ?? 'en';
-    if (!is_string($name) || mb_strlen(trim($name), 'UTF-8') > 160 || preg_match('/[\x00-\x1f\x7f]/u', $name)) {
+    if (!is_string($name) || (($length = preg_match_all('/./us', trim($name))) === false || $length > 160) || preg_match('/[\x00-\x1f\x7f]/u', $name)) {
         throw new InvalidArgumentException('Invalid display name.');
     }
     if (!is_string($locale) || !in_array($locale, ['en','fa','ps'], true)) {
