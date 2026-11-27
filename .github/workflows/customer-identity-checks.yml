@@ -21,6 +21,9 @@ jobs:
           php -l public/api/customer-firebase-auth.php
           php -l public/api/customer-publication-policy.php
           php -l public/api/customer-agency-policy.php
+          php -l public/api/customer-agency-revision-policy.php
+          php -l public/api/customer/agency-revision.php
+          php -l public/api/customer/agency-revision-details.php
           php -l public/api/customer-agency-verification-policy.php
           php -l public/api/customer-auth-context.php
           php -l public/api/customer/agency-verification.php
@@ -36,6 +39,7 @@ jobs:
           php -l tests/website/customer-identity.php
           php -l tests/website/customer-publication-policy.php
           php -l tests/website/customer-agency-policy.php
+          php -l tests/website/customer-agency-revision.php
           php -l tests/website/customer-agency-verification.php
           php -l tests/website/customer-firebase.php
           php -l tests/website/public-property-visibility.php
@@ -45,6 +49,8 @@ jobs:
         run: php tests/website/customer-publication-policy.php
       - name: Agency policy tests
         run: php tests/website/customer-agency-policy.php
+      - name: Agency correction and resubmission policy tests
+        run: php tests/website/customer-agency-revision.php
       - name: Agency representative and documents policy tests
         run: php tests/website/customer-agency-verification.php
       - name: Customer Firebase verifier tests
