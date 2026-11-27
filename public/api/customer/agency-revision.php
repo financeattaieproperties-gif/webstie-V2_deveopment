@@ -10,6 +10,7 @@ require_once __DIR__.'/../customer-identity.php';
 require_once __DIR__.'/../customer-firebase-auth.php';
 require_once __DIR__.'/../customer-auth-context.php';
 require_once __DIR__.'/../customer-agency-verification-policy.php';
+require_once __DIR__.'/../customer-agency-revision-policy.php';
 customer_api_cors();
 header('Cache-Control: no-store, private');
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') json_out(['error'=>'POST only'],405);
@@ -39,10 +40,12 @@ try {
             $db->rollback();json_out(['error'=>'Agency unavailable'],403);
         }
         $previous=$agency['verification_status'];
-        $expected=$action==='start_revision'?'rejected':'revision';
-        if ($previous!==$expected) {
+        try {
+            $next=agency_revision_next_status($previous,$action);
+        } catch (DomainException $e) {
             $db->rollback();json_out(['error'=>'Agency is not in the required review state'],409);
         }
+        $expected=$previous;
         if ($action==='resubmit') {
             $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=? AND is_current=1');
             if (!$count) throw new RuntimeException('Document check unavailable');
@@ -55,7 +58,6 @@ try {
                 $db->rollback();json_out(['error'=>'Application incomplete: '.$readiness['reason']],422);
             }
         }
-        $next=$action==='start_revision'?'revision':'pending';
         $agencyId=(int)$agency['id'];
         $stmt=$db->prepare("UPDATE customer_agencies SET verification_status=?,rejection_reason=IF(?='pending',NULL,rejection_reason),
             business_contact_reviewed_at=NULL,business_contact_reviewed_by=NULL,
