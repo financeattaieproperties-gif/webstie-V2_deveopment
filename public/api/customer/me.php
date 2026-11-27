@@ -12,9 +12,10 @@ declare(strict_types=1);
  */
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../customer-identity.php';
+require_once __DIR__ . '/../customer-cors.php';
 require_once __DIR__ . '/../customer-firebase-auth.php';
 
-cors();
+customer_api_cors();
 header('Cache-Control: no-store, private');
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
