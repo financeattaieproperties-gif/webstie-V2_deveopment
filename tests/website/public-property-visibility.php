@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 /**
  * Run: php tests/website/public-property-visibility.php
- * Unit/policy and endpoint wiring regression checks.
- * This does not replace HTTP/MySQL integration tests in staging.
+ * Policy and endpoint wiring regression assertions.
+ * Additional HTTP/MySQL integration testing is required before merging.
  */
 require_once __DIR__ . '/../../public/api/property-visibility.php';
 
@@ -15,25 +15,30 @@ function check(bool $condition, string $message): void {
 }
 
 check(
-    public_property_visibility_sql() === "status IN ('available','sold','rented')",
-    'Legacy public visibility policy changed unexpectedly'
+    public_property_search_visibility_sql() === "status = 'available'",
+    'Catalog must only expose available properties'
 );
-
-foreach (['available','sold','rented'] as $status) {
-    check(public_property_requested_status($status) === $status, "Public status rejected: $status");
+check(
+    public_property_detail_visibility_sql() === "status IN ('available','sold','rented')",
+    'Details must preserve direct links for sold and rented records'
+);
+check(public_property_requested_status(null) === null, 'Default search should use available-only predicate');
+check(public_property_requested_status('') === null, 'Empty filter should use available-only predicate');
+check(public_property_requested_status('available') === 'available', 'Explicit available filter should be allowed');
+foreach (['pending','draft','approved','rejected','archived','sold','rented','Published','anything'] as $status) {
+    check(public_property_requested_status($status) === '__not_public__', "Nonavailable search status accepted: $status");
 }
-foreach (['pending','draft','approved','rejected','archived','Published','anything'] as $status) {
-    check(public_property_requested_status($status) === '__not_public__', "Nonpublic status accepted: $status");
-}
-check(public_property_requested_status(null) === null, 'Absent status filter should keep base visibility rule');
-check(public_property_requested_status('') === null, 'Empty status filter should keep base visibility rule');
-check(public_property_requested_status(['pending']) === '__not_public__', 'Array status must not bypass filter');
+check(public_property_requested_status(['available']) === '__not_public__', 'Array status filter must not bypass policy');
 
-foreach (['get-properties.php','get-property.php'] as $file) {
-    $source = file_get_contents(__DIR__ . '/../../public/api/' . $file);
-    check($source !== false, "Could not read $file");
-    check(str_contains($source, "require_once __DIR__ . '/property-visibility.php';"), "Missing visibility helper in $file");
-    check(str_contains($source, 'public_property_visibility_sql()'), "Missing public visibility predicate in $file");
+$list = file_get_contents(__DIR__ . '/../../public/api/get-properties.php');
+$detail = file_get_contents(__DIR__ . '/../../public/api/get-property.php');
+check(is_string($list) && is_string($detail), 'Could not read both public endpoints');
+foreach ([$list,$detail] as $source) {
+    check(str_contains($source, "require_once __DIR__ . '/property-visibility.php';"), 'Missing shared visibility helper');
 }
+check(str_contains($list, 'public_property_search_visibility_sql()'), 'List endpoint must enforce available-only policy');
+check(str_contains($list, 'public_property_requested_status('), 'List endpoint must reject nonavailable status filters');
+check(str_contains($detail, 'public_property_detail_visibility_sql()'), 'Detail endpoint must preserve historical detail access');
+check(!str_contains($list, 'public_property_detail_visibility_sql()'), 'Listing must never use historical visibility');
 
-echo "Public property visibility policy and endpoint wiring checks passed.\n";
+echo "Public property visibility policy and wiring checks passed.\n";
