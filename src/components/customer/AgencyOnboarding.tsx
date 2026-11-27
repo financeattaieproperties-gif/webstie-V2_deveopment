@@ -172,7 +172,7 @@ export function AgencyOnboarding({ idToken }: { idToken: string }) {
             <form className="space-y-4 rounded-2xl bg-white p-5 shadow-sm border border-slate-200"
               onSubmit={(event) => {
                 event.preventDefault();
-                void perform(() => customerAgencyApi.saveRepresentative(idToken, contact),
+                void perform(() => customerAgencyApi.saveRepresentative(idToken, agency.version, contact),
                   'Representative and business contacts saved for manual review.');
               }}>
               <h2 className="text-lg font-semibold">Representative and contacts</h2>
@@ -216,7 +216,7 @@ export function AgencyOnboarding({ idToken }: { idToken: string }) {
                 event.preventDefault();
                 if (!selectedFile) { setError('Choose a document first.'); return; }
                 if (selectedFile.size > 5 * 1024 * 1024) { setError('Document exceeds 5 MB.'); return; }
-                void perform(() => customerAgencyApi.uploadDocument(idToken, documentType, selectedFile),
+                void perform(() => customerAgencyApi.uploadDocument(idToken, agency.version, documentType, selectedFile),
                   'Document uploaded privately for administrator review.');
               }}>
                 <label className="block text-sm font-medium">Document category
