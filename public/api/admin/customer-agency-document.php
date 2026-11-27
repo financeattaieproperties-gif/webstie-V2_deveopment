@@ -14,7 +14,7 @@ if (!$agencyId) json_out(['error'=>'Valid agency ID required'],422);
 try {
     $db=db();
     $dir=agency_private_storage_dir((string)(getenv('CUSTOMER_AGENCY_PRIVATE_DIR')?:''),(string)($_SERVER['DOCUMENT_ROOT']??''));
-    $list=$db->prepare('SELECT id,document_type,mime_type,original_filename,byte_size,uploaded_at FROM customer_agency_documents WHERE agency_id=? ORDER BY id DESC LIMIT 30');
+    $list=$db->prepare('SELECT id,document_type,mime_type,original_filename,byte_size,uploaded_at,is_current,superseded_at FROM customer_agency_documents WHERE agency_id=? ORDER BY id DESC LIMIT 30');
     if (!$list) throw new RuntimeException('Document query unavailable');
     $list->bind_param('i',$agencyId);
     if (!$list->execute()) throw new RuntimeException('Document query failed');
@@ -24,6 +24,7 @@ try {
         while ($row=$rows->fetch_assoc()) {
             $row['id']=(int)$row['id'];
             $row['byte_size']=(int)$row['byte_size'];
+            $row['is_current']=(bool)$row['is_current'];
             $out[]=$row;
         }
         json_out(['documents'=>$out]);
