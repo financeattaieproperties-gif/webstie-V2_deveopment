@@ -55,6 +55,8 @@ $agencyPublic = static function(array $row):array {
         'registration_reference'=>$row['registration_reference'],
         'description'=>$row['description'],
         'verification_status'=>$row['verification_status'],
+        'version'=>(int)$row['version'],
+        'review_round'=>(int)$row['review_round'],
         'operational_status'=>$row['operational_status'],
         'rejection_reason'=>$row['rejection_reason'],
         'created_at'=>$row['created_at'],
@@ -62,7 +64,7 @@ $agencyPublic = static function(array $row):array {
     ];
 };
 $findAgency = static function(int $customerId) use($db):?array {
-    $stmt=$db->prepare('SELECT id,legal_name,public_name,registration_reference,description,verification_status,operational_status,rejection_reason,created_at,updated_at FROM customer_agencies WHERE owner_customer_id = ? LIMIT 1');
+    $stmt=$db->prepare('SELECT id,legal_name,public_name,registration_reference,description,verification_status,operational_status,rejection_reason,version,review_round,created_at,updated_at FROM customer_agencies WHERE owner_customer_id = ? LIMIT 1');
     if (!$stmt) throw new RuntimeException('Agency lookup unavailable');
     $stmt->bind_param('i',$customerId);
     if (!$stmt->execute()) throw new RuntimeException('Agency lookup failed');
