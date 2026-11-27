@@ -8,8 +8,14 @@ on:
     paths:
       - 'public/api/customer/**'
       - 'public/api/customer-*.php'
+      - 'public/api/admin/customer-agenc*.php'
+      - 'admin-panel/src/pages/AgencyVerification.tsx'
+      - 'admin-panel/src/api.ts'
+      - 'admin-panel/src/App.tsx'
+      - 'admin-panel/src/components/Layout.tsx'
       - 'tests/website/customer-publication-policy.php'
       - 'tests/website/customer-agency-policy.php'
+      - 'tests/website/customer-agency-verification.php'
       - 'public/api/migrations/2026-11-27-customer-agencies.sql'
       - 'public/api/property-visibility.php'
       - 'public/api/get-propert*.php'
@@ -32,6 +38,12 @@ jobs:
           php -l public/api/customer-firebase-auth.php
           php -l public/api/customer-publication-policy.php
           php -l public/api/customer-agency-policy.php
+          php -l public/api/customer-agency-verification-policy.php
+          php -l public/api/customer-auth-context.php
+          php -l public/api/customer/agency-verification.php
+          php -l public/api/customer/agency-document.php
+          php -l public/api/admin/customer-agencies.php
+          php -l public/api/admin/customer-agency-document.php
           php -l public/api/customer/agencies.php
           php -l public/api/customer/me.php
           php -l public/api/property-visibility.php
@@ -40,6 +52,7 @@ jobs:
           php -l tests/website/customer-identity.php
           php -l tests/website/customer-publication-policy.php
           php -l tests/website/customer-agency-policy.php
+          php -l tests/website/customer-agency-verification.php
           php -l tests/website/customer-firebase.php
           php -l tests/website/public-property-visibility.php
       - name: Customer identity policy tests
@@ -48,7 +61,20 @@ jobs:
         run: php tests/website/customer-publication-policy.php
       - name: Agency policy tests
         run: php tests/website/customer-agency-policy.php
+      - name: Agency representative and documents policy tests
+        run: php tests/website/customer-agency-verification.php
       - name: Customer Firebase verifier tests
         run: php tests/website/customer-firebase.php
       - name: Public property visibility tests
         run: php tests/website/public-property-visibility.php
+
+  admin-typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p admin-panel/tsconfig.json
