@@ -1,6 +1,6 @@
 # Agency verification workflow — Attaie Properties V2
 
-**Owner-approved decision:** Every real estate agency must submit a **business registration OR business license document**, a verified contact method, and a named representative. **Only Website Admin** may approve or reject.
+**Owner-approved decision:** Every real estate agency must submit a **business registration OR business license document**, the owner's verified email OR phone, separately supplied agency business contact details, and a named representative. **Only Website Admin** may approve or reject.
 
 **Implementation status:** Development branch draft. Not merged or deployed. Migration, testing and credential setup remain pending.
 
@@ -19,6 +19,7 @@ After a verified staging database backup and checking `SELECT DATABASE()`, apply
 1. `public/api/migrations/2026-11-27-customer-identity.sql`
 2. `public/api/migrations/2026-11-27-customer-agencies.sql`
 3. `public/api/migrations/2026-11-27-customer-agency-verification.sql`
+4. `public/api/migrations/2026-11-27-customer-agency-business-contacts.sql`
 
 Each script is **additive**. Do not apply to V1 or internal CRM/submission databases.
 Staging MySQL must support CHECK constraints (MySQL 8.0.16+); confirm before applying ownership migration.
@@ -41,9 +42,11 @@ All customer APIs require an active customer and valid Firebase bearer token; br
 - `GET /api/customer/agencies.php`: own agency profile
 - `GET /api/customer/agency-verification.php`: own representative fields/status
 - `POST /api/customer/agency-verification.php`: JSON:
-  `{"representative_name":"Example Representative","representative_position":"Director","representative_contact_method":"email"}`
+  `{"representative_name":"Example Representative","representative_position":"Director","representative_contact_method":"email","business_email":"office@example.com","business_phone_e164":"+93701234567"}`
   - Only `email` or `phone` if the corresponding Firebase-linked contact is verified
   - Owner-only, pending applications only; no status or reviewer mutation
+  - Agency business email/phone are independent of the verified owner's contact; at least one business contact is required, and those values are NOT automatically OTP-verified
+  - Any edit resets business-contact review evidence
 - `POST /api/customer/agency-document.php`: multipart `document_type=registration|license`, `document=<PDF|JPEG|PNG>`
   - Up to 5 MB per file, maximum six files per application
   - Owner-only; pending status required
@@ -62,12 +65,12 @@ All routes use the **existing Website Admin session**; mutation requires CSRF:
 - `GET /api/admin/customer-agency-document.php?agency_id=…&document_id=…`
   - Authenticated attachment-only file read; file size and SHA-256 integrity checked
 - `POST /api/admin/customer-agencies.php`:
-  `{"agency_id":123,"version":1,"decision":"verified","reason":""}`
+  `{"agency_id":123,"version":1,"decision":"verified","reason":"","business_contact_reviewed":true}`
   or
-  `{"agency_id":123,"version":1,"decision":"rejected","reason":"Missing valid registration document"}`
-  - Server checks pending state, optimistic-lock version, verified contact, representative details and at least one intact private document before approval
+  `{"agency_id":123,"version":1,"decision":"rejected","reason":"Missing valid registration document","business_contact_reviewed":false}`
+  - Server checks pending state, optimistic-lock version, the owner's verified contact, representative details, at least one supplied agency business email/phone, an explicit Website Admin manual business-contact review confirmation, and at least one intact private document before approval
   - Rejection reason is required
-  - Approval/rejection and reviewer username are recorded in verification event history
+  - Approval/rejection and reviewer username are recorded in verification event history; on approval, the business-contact review timestamp and reviewer username are saved as well
 - Admin UI: `/admin/agency-verification` accessible through the Website Admin sidebar
 
 ## Implementation and launch gates
@@ -75,7 +78,7 @@ All routes use the **existing Website Admin session**; mutation requires CSRF:
 Still required before production:
 1. Ensure GitHub Actions runner works; run PHP lint, policy tests, admin TypeScript build, and full HTTP/MySQL fixture integration.
 2. Test actual upload size/type checks, symlink/path refusal, ownership and CSRF, concurrent review updates, document integrity, repeated uploads and upload-abuse limits.
-3. Reconfirm verified contact information from Firebase before approval; existing stored verification flags must be treated as potentially stale.
+3. Reconfirm owner's verified contact information from Firebase before approval; existing stored verification flags must be treated as potentially stale. Manually compare agency business contacts against submitted documents, without implying independent phone/email OTP verification.
 4. Add safe replacement and appeal/resubmission flow for rejected applications.
 5. Build public customer registration, agency application, representative and document upload screens once Firebase project is configured.
 6. Decide and implement private-document malware scanning, retention, access audit and lawful handling.
