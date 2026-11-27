@@ -211,7 +211,7 @@ export function AgencyOnboarding({ idToken }: { idToken: string }) {
             <ul className="space-y-1 text-sm">
               {documents.map((doc) => <li key={doc.id}>{doc.document_type}: {doc.original_filename} ({Math.ceil(doc.byte_size / 1024)} KB)</li>)}
             </ul>
-            {agency.verification_status === 'pending' && (
+            {(agency.verification_status === 'pending' || agency.verification_status === 'revision') && (
               <form className="space-y-3" onSubmit={(event) => {
                 event.preventDefault();
                 if (!selectedFile) { setError('Choose a document first.'); return; }
