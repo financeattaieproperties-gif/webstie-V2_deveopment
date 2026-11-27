@@ -67,6 +67,15 @@ try {
             @unlink($dest);
             json_out(['error'=>'Agency review state changed'],409);
         }
+        $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=?');
+        if (!$count) throw new RuntimeException('Document limit unavailable');
+        $count->bind_param('i',$agencyId);
+        if (!$count->execute()) throw new RuntimeException('Document limit unavailable');
+        if ((int)$count->get_result()->fetch_assoc()['total']>=6) {
+            $db->rollback();
+            @unlink($dest);
+            json_out(['error'=>'A maximum of six verification documents is allowed'],429);
+        }
         $insert=$db->prepare('INSERT INTO customer_agency_documents (agency_id,document_type,storage_key,sha256,mime_type,original_filename,byte_size) VALUES (?,?,?,?,?,?,?)');
         if (!$insert) throw new RuntimeException('Document record unavailable');
         $insert->bind_param('isssssi',$agencyId,$type,$key,$sha,$mime,$original,$bytes);
