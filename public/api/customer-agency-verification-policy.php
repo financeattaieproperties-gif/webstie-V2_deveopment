@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /** Customer may submit representative details, never any approval field. */
 function agency_representative_fields(array $input): array {
-    $allowed = ['representative_name','representative_position','representative_contact_method'];
+    $allowed = ['representative_name','representative_position','representative_contact_method','business_email','business_phone_e164'];
     if (array_diff(array_keys($input), $allowed)) {
         throw new InvalidArgumentException('Unsupported representative field.');
     }
@@ -22,6 +22,24 @@ function agency_representative_fields(array $input): array {
         throw new InvalidArgumentException('Choose a verified email or phone contact.');
     }
     $out['representative_contact_method']=$method;
+    $businessEmail=$input['business_email'] ?? '';
+    $businessPhone=$input['business_phone_e164'] ?? '';
+    if (!is_string($businessEmail) || !is_string($businessPhone)) {
+        throw new InvalidArgumentException('Invalid agency business contact.');
+    }
+    $businessEmail=strtolower(trim($businessEmail));
+    $businessPhone=trim($businessPhone);
+    if ($businessEmail!=='' && (strlen($businessEmail)>254 || !filter_var($businessEmail,FILTER_VALIDATE_EMAIL))) {
+        throw new InvalidArgumentException('Invalid agency business email.');
+    }
+    if ($businessPhone!=='' && !preg_match('/^\\+[1-9][0-9]{7,14}$/D',$businessPhone)) {
+        throw new InvalidArgumentException('Business phone must use international E.164 format.');
+    }
+    if ($businessEmail==='' && $businessPhone==='') {
+        throw new InvalidArgumentException('Supply at least one agency business contact.');
+    }
+    $out['business_email']=$businessEmail!==''?$businessEmail:null;
+    $out['business_phone_e164']=$businessPhone!==''?$businessPhone:null;
     return $out;
 }
 
@@ -43,6 +61,12 @@ function agency_approval_readiness(array $agency, array $owner, int $documents):
     }
     if (!agency_verified_contact_available($owner,(string)($agency['representative_contact_method']??''))) {
         return ['ready'=>false,'reason'=>'verified_contact_required'];
+    }
+    $email=$agency['business_email']??null;
+    $phone=$agency['business_phone_e164']??null;
+    if ((!is_string($email) || !filter_var($email,FILTER_VALIDATE_EMAIL)) &&
+        (!is_string($phone) || !preg_match('/^\\+[1-9][0-9]{7,14}$/D',$phone))) {
+        return ['ready'=>false,'reason'=>'business_contact_required'];
     }
     if ($documents<1) return ['ready'=>false,'reason'=>'business_document_required'];
     return ['ready'=>true,'reason'=>null];
