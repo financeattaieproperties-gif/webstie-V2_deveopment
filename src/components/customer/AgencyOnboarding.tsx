@@ -207,7 +207,7 @@ export function AgencyOnboarding({ idToken }: { idToken: string }) {
           )}
           <section className="space-y-3 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold">Registration / license documents</h2>
-            <p className="text-sm text-slate-600">Private files, visible to authorized Website Admin only. Accepted: PDF, JPEG, PNG; maximum 5 MB each, up to six documents.</p>
+            <p className="text-sm text-slate-600">Private files, visible to authorized Website Admin only. Accepted: PDF, JPEG, PNG; maximum 5 MB each. One current document per category; replacements are retained privately for audit (30 uploads maximum per agency).</p>
             <ul className="space-y-1 text-sm">
               {documents.map((doc) => <li key={doc.id}>{doc.document_type}: {doc.original_filename} ({Math.ceil(doc.byte_size / 1024)} KB)</li>)}
             </ul>
