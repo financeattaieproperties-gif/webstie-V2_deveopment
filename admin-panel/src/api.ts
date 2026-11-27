@@ -105,6 +105,29 @@ export const api = {
   },
   getCsrf: () => getCsrfToken(),
 
+  getCustomerAgencies: (status: 'pending' | 'verified' | 'rejected' | 'all' = 'pending') =>
+    request<{items:CustomerAgencyReview[]}>(`/admin/customer-agencies.php?status=${encodeURIComponent(status)}`),
+  reviewCustomerAgency: (payload: {agency_id:number;version:number;decision:'verified'|'rejected';reason:string}) =>
+    request<{agency_id:number;verification_status:'verified'|'rejected';version:number}>('/admin/customer-agencies.php', {method:'POST',body:JSON.stringify(payload)}),
+  getCustomerAgencyDocuments: (agencyId: number) =>
+    request<{documents: Array<{id:number;document_type:string;original_filename:string;byte_size:number}>}>(`/admin/customer-agency-document.php?agency_id=${agencyId}`),
+  downloadCustomerAgencyDocument: async (agencyId:number, documentId:number, originalName:string) => {
+    const response=await fetch(`${BASE}/admin/customer-agency-document.php?agency_id=${agencyId}&document_id=${documentId}`,{credentials:'include',cache:'no-store'});
+    if(!response.ok) throw new Error('Unable to retrieve private document.');
+    const blob=await response.blob();
+    const url=URL.createObjectURL(blob);
+    try {
+      const link=document.createElement('a');
+      link.href=url;
+      link.download=originalName.replace(/[^a-zA-Z0-9._-]/g,'_')||'document';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+  },
+
   getProperties:    () => request<Property[]>('/admin/properties.php'),
   createProperty:   (data: PropertyInput) =>
     request<{ id: number }>('/admin/properties.php', { method: 'POST', body: JSON.stringify(data) }),
@@ -1027,3 +1050,27 @@ export interface SubmissionPost {
 }
 
 
+
+export interface CustomerAgencyReview {
+  id: number;
+  owner_customer_id: number;
+  legal_name: string;
+  public_name: string;
+  registration_reference: string | null;
+  representative_name: string;
+  representative_position: string;
+  representative_contact_method: 'email' | 'phone' | null;
+  verification_status: 'pending' | 'verified' | 'rejected';
+  operational_status: 'active' | 'suspended';
+  rejection_reason: string | null;
+  version: number;
+  document_count: number;
+  owner_name: string;
+  owner_status: 'active' | 'suspended' | 'deleted';
+  email: string | null;
+  email_verified: boolean;
+  phone_e164: string | null;
+  phone_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
