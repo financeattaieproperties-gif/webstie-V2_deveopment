@@ -107,7 +107,7 @@ export default function AgencyVerification() {
                 {documents[agency.id].map((doc) => (
                   <li key={doc.id} className="flex items-center justify-between gap-3 border border-slate-100 rounded-lg p-2">
                     <span>{doc.document_type}: {doc.original_filename} ({Math.ceil(doc.byte_size / 1024)} KB)</span>
-                    <button type="button" className="text-blue-800 underline" onClick={() => void api.downloadCustomerAgencyDocument(agency.id, doc.id, doc.original_filename)}>Download</button>
+                    <button type="button" className="text-blue-800 underline" onClick={() => void api.downloadCustomerAgencyDocument(agency.id, doc.id, doc.original_filename).catch((e: unknown) => setError(e instanceof Error ? e.message : 'Private document download failed.'))}>Download</button>
                   </li>
                 ))}
               </ul>}
