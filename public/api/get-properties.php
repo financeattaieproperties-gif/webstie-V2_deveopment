@@ -5,7 +5,7 @@ cors();
 header('Content-Type: application/json; charset=utf-8');
 
 $db     = db();
-$where  = [public_property_visibility_sql()];
+$where  = [public_property_search_visibility_sql()];
 $params = [];
 $types  = '';
 
