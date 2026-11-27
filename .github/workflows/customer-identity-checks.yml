@@ -8,6 +8,7 @@ on:
     paths:
       - 'public/api/customer/**'
       - 'public/api/customer-*.php'
+      - 'tests/website/customer-publication-policy.php'
       - 'public/api/property-visibility.php'
       - 'public/api/get-propert*.php'
       - 'tests/website/customer-identity.php'
@@ -27,15 +28,19 @@ jobs:
           php -l public/api/customer-identity.php
           php -l public/api/customer-cors.php
           php -l public/api/customer-firebase-auth.php
+          php -l public/api/customer-publication-policy.php
           php -l public/api/customer/me.php
           php -l public/api/property-visibility.php
           php -l public/api/get-properties.php
           php -l public/api/get-property.php
           php -l tests/website/customer-identity.php
+          php -l tests/website/customer-publication-policy.php
           php -l tests/website/customer-firebase.php
           php -l tests/website/public-property-visibility.php
       - name: Customer identity policy tests
         run: php tests/website/customer-identity.php
+      - name: Customer property publishing eligibility tests
+        run: php tests/website/customer-publication-policy.php
       - name: Customer Firebase verifier tests
         run: php tests/website/customer-firebase.php
       - name: Public property visibility tests
