@@ -9,7 +9,7 @@ if (!$id) {
     json_out(['error' => 'id required'], 400);
 }
 
-$stmt = db()->prepare('SELECT * FROM properties WHERE id = ? AND ' . public_property_visibility_sql() . ' LIMIT 1');
+$stmt = db()->prepare('SELECT * FROM properties WHERE id = ? AND ' . public_property_detail_visibility_sql() . ' LIMIT 1');
 if (!$stmt) {
     json_out(['error' => 'Not found'], 404);
 }
