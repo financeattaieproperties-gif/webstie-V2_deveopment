@@ -43,7 +43,7 @@ try {
     if (!$stmt->execute()) throw new RuntimeException('Agency lookup failed');
     $agency=$stmt->get_result()->fetch_assoc();
     if (!$agency) json_out(['error'=>'Agency application required'],404);
-    if ($agency['verification_status']!=='pending') json_out(['error'=>'Reviewed agency documents cannot be changed'],409);
+    if (!in_array($agency['verification_status'],['pending','revision'],true)) json_out(['error'=>'Reviewed agency documents cannot be changed'],409);
     $agencyId=(int)$agency['id'];
     // No real names in storage keys. Never allow user-supplied paths.
     $key=bin2hex(random_bytes(32));
@@ -58,7 +58,7 @@ try {
     $original=substr($original?:'document',0,180);
     try {
         $db->begin_transaction();
-        $lock=$db->prepare('SELECT id FROM customer_agencies WHERE id=? AND owner_customer_id=? AND verification_status=\'pending\' FOR UPDATE');
+        $lock=$db->prepare('SELECT id FROM customer_agencies WHERE id=? AND owner_customer_id=? AND verification_status IN (\'pending\',\'revision\') FOR UPDATE');
         if (!$lock) throw new RuntimeException('Agency lock unavailable');
         $lock->bind_param('ii',$agencyId,$ownerId);
         $lock->execute();
@@ -67,7 +67,16 @@ try {
             @unlink($dest);
             json_out(['error'=>'Agency review state changed'],409);
         }
-        $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=?');
+        $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=? AND is_current=1');
+        if (!$count) throw new RuntimeException('Document limit unavailable');
+        $count->bind_param('i',$agencyId);
+        if (!$count->execute()) throw new RuntimeException('Document limit unavailable');
+        $replace=$db->prepare('UPDATE customer_agency_documents SET is_current=0,superseded_at=UTC_TIMESTAMP() WHERE agency_id=? AND document_type=? AND is_current=1');
+        if (!$replace) throw new RuntimeException('Document replacement unavailable');
+        $replace->bind_param('is',$agencyId,$type);
+        if (!$replace->execute()) throw new RuntimeException('Document replacement failed');
+        // Replaced documents remain private, immutable and in the audit history.
+        $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=? AND is_current=1');
         if (!$count) throw new RuntimeException('Document limit unavailable');
         $count->bind_param('i',$agencyId);
         if (!$count->execute()) throw new RuntimeException('Document limit unavailable');
@@ -87,7 +96,7 @@ try {
         @unlink($dest);
         throw $e;
     }
-    json_out(['id'=>$documentId,'document_type'=>$type,'verification_status'=>'pending'],201);
+    json_out(['id'=>$documentId,'document_type'=>$type,'verification_status'=>$agency['verification_status']],201);
 } catch (Throwable $e) {
     error_log('Agency private document upload failed');
     json_out(['error'=>'Could not securely store agency document'],503);
