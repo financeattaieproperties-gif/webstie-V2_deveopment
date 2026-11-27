@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type CustomerAgencyReview } from '../api';
 
-type Filter = 'pending' | 'verified' | 'rejected' | 'all';
+type Filter = 'pending' | 'verified' | 'rejected' | 'revision' | 'all';
 
 export default function AgencyVerification() {
   const [filter, setFilter] = useState<Filter>('pending');
@@ -78,7 +78,7 @@ export default function AgencyVerification() {
       </header>
 
       <div className="flex gap-2 flex-wrap" aria-label="Filter agency verification status">
-        {(['pending', 'verified', 'rejected', 'all'] as const).map((option) => (
+        {(['pending', 'verified', 'rejected', 'revision', 'all'] as const).map((option) => (
           <button key={option} type="button" onClick={() => setFilter(option)}
             aria-pressed={filter === option}
             className={`px-4 py-2 rounded-lg border text-sm capitalize focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700 ${filter === option ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-800 border-slate-300'}`}>
