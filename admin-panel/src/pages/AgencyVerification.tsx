@@ -20,6 +20,7 @@ export default function AgencyVerification() {
     try {
       const response = await api.getCustomerAgencies(filter);
       setItems(response.items);
+      setReviewedContacts({}); // Reviewing a new snapshot requires fresh acknowledgement.
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to load agency applications.');
     } finally {
@@ -51,7 +52,7 @@ export default function AgencyVerification() {
     }
     const confirmed = window.confirm(
       decision === 'verified'
-        ? `Verify ${item.public_name}? Ensure the representative, verified contact and business document have been checked.`
+        ? `Verify ${item.public_name}? Ensure the owner's verified contact, agency business contact and private registration/license were reviewed.`
         : `Reject ${item.public_name} with the stated reason?`
     );
     if (!confirmed) return;
@@ -73,7 +74,7 @@ export default function AgencyVerification() {
     <section className="p-4 md:p-7 max-w-6xl mx-auto space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-slate-900">Agency verification</h1>
-        <p className="text-sm text-slate-600 mt-1">Review agency documents and verified representative contact details. Only authorized Website Admin users can decide.</p>
+        <p className="text-sm text-slate-600 mt-1">Review a verified owner's contact, separate agency business details and private registration/license documents. Only Website Admin can decide.</p>
       </header>
 
       <div className="flex gap-2 flex-wrap" aria-label="Filter agency verification status">
@@ -127,7 +128,7 @@ export default function AgencyVerification() {
                   <input type="checkbox" checked={reviewedContacts[agency.id] === true}
                     onChange={(event) => setReviewedContacts((old) => ({ ...old, [agency.id]: event.target.checked }))}
                     className="mt-1" />
-                  I have manually reviewed the agency's submitted business contact details and supporting documents.
+                  I checked the submitted agency business email/phone against the registration/license and reviewed the representative details. I understand these business contacts are not independently OTP-verified.
                 </label>
                 <div className="flex gap-2 flex-wrap">
                   <button type="button" disabled={busy !== null || !reviewedContacts[agency.id]} onClick={() => void review(agency, 'verified')}
