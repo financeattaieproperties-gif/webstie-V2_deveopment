@@ -2,28 +2,32 @@
 declare(strict_types=1);
 
 /**
- * Legacy public property visibility policy.
+ * Legacy website property visibility.
  *
- * Website DB property status currently mixes availability and review status.
- * "pending" must never be readable through anonymous listing/detail APIs.
- * The existing "sold" and "rented" statuses remain browsable for compatibility
- * until publication state is modeled separately in the customer marketplace.
+ * The existing website schema stores availability in status, not a separate
+ * publication flag. Until a dedicated publication state exists, only the
+ * existing available/sold/rented rows are eligible for public detail pages.
+ * Pending rows are private. Once added, a separate publication predicate
+ * must be enforced in BOTH public endpoints.
  *
- * Administrative endpoints do not use this helper.
+ * Administrative endpoints are not governed by these public read rules.
  */
-function public_property_visibility_sql(): string {
+function public_property_detail_visibility_sql(): string {
     return "status IN ('available','sold','rented')";
 }
 
 /**
- * Retain the legacy status filter for public statuses; a request for pending
- * or any unknown status returns no results (and cannot override the policy).
+ * Search and catalog pages include actively available properties ONLY.
+ * Sold and rented records are reachable exclusively by their public detail URL.
  */
+function public_property_search_visibility_sql(): string {
+    return "status = 'available'";
+}
+
+/** An explicit attempt to search a non-available status must return no rows. */
 function public_property_requested_status(mixed $requested): ?string {
-    if (!is_string($requested) || $requested === '') {
+    if ($requested === null || $requested === '') {
         return null;
     }
-    return in_array($requested, ['available', 'sold', 'rented'], true)
-        ? $requested
-        : '__not_public__';
+    return $requested === 'available' ? 'available' : '__not_public__';
 }
