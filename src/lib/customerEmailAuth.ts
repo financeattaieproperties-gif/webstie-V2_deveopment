@@ -43,7 +43,7 @@ async function firebaseRequest<T>(path: string, payload: object): Promise<T> {
     if (code.includes('TOO_MANY_ATTEMPTS')) throw new Error('Too many attempts. Try again later.');
     throw new Error('Authentication failed. Check your details and try again.');
   }
-  return data as T;
+  return data as unknown as T;
 }
 function toSession(tokens: FirebaseTokens, fallbackEmail: string): CustomerEmailSession {
   return {
