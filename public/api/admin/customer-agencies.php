@@ -23,7 +23,7 @@ try {
         $sql="SELECT a.id,a.owner_customer_id,a.legal_name,a.public_name,a.registration_reference,
                  a.representative_name,a.representative_position,a.representative_contact_method,
                  a.business_email,a.business_phone_e164,a.business_contact_reviewed_at,a.business_contact_reviewed_by,
-                 a.verification_status,a.operational_status,a.rejection_reason,a.version,
+                 a.verification_status,a.operational_status,a.rejection_reason,a.version,a.review_round,a.resubmitted_at,
                  a.created_at,a.updated_at,c.display_name AS owner_name,
                  c.email,c.email_verified,c.phone_e164,c.phone_verified,c.status AS owner_status,
                  (SELECT COUNT(*) FROM customer_agency_documents d WHERE d.agency_id=a.id AND d.is_current=1) AS document_count
@@ -37,7 +37,7 @@ try {
         $items=[];
         $rows=$stmt->get_result();
         while ($row=$rows->fetch_assoc()) {
-            foreach (['id','owner_customer_id','document_count','version'] as $k) $row[$k]=(int)$row[$k];
+            foreach (['id','owner_customer_id','document_count','version','review_round'] as $k) $row[$k]=(int)$row[$k];
             foreach (['email_verified','phone_verified'] as $k) $row[$k]=(bool)$row[$k];
             $items[]=$row;
         }
@@ -119,13 +119,14 @@ try {
             WHERE id=? AND version=? AND verification_status='pending'");
         if (!$stmt) throw new RuntimeException('Agency review update unavailable');
         $reviewReason=$decision==='rejected'?$reason:null;
-        $stmt->bind_param('sssssssii',$decision,$reviewReason,$decision,$decision,$reviewer,$decision,$reviewer,$agencyId,$version);
+        $stmt->bind_param('ssssssssii',$decision,$reviewReason,$decision,$decision,$reviewer,$decision,$decision,$reviewer,$agencyId,$version);
         if (!$stmt->execute() || $stmt->affected_rows!==1) throw new RuntimeException('Agency review update conflict');
-        $event=$db->prepare('INSERT INTO customer_agency_verification_events(agency_id,previous_status,next_status,reason,reviewer_username) VALUES (?,?,?,?,?)');
+        $event=$db->prepare('INSERT INTO customer_agency_verification_events(agency_id,previous_status,next_status,reason,reviewer_username,review_round) VALUES (?,?,?,?,?,?)');
         if (!$event) throw new RuntimeException('Review audit unavailable');
         $prior='pending';
         $eventReason=$reason!==''?$reason:null;
-        $event->bind_param('issss',$agencyId,$prior,$decision,$eventReason,$reviewer);
+        $round=(int)$agency['review_round'];
+        $event->bind_param('issssi',$agencyId,$prior,$decision,$eventReason,$reviewer,$round);
         if (!$event->execute()) throw new RuntimeException('Review audit write failed');
         $db->commit();
         json_out(['agency_id'=>$agencyId,'verification_status'=>$decision,'version'=>$version+1]);
