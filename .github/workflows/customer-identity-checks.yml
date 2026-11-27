@@ -1,31 +1,11 @@
 name: Customer identity and public visibility PHP checks
 
+# Temporarily manual-only: GitHub-hosted jobs are currently failing before
+# reporting any steps, producing repeated notifications on each push/PR.
+# Restore automatic triggers only after resolving runner/account configuration
+# and a successful manually dispatched run.
 on:
-  push:
-    branches:
-      - feature/customer-marketplace-phase2-identity-foundation
-  pull_request:
-    paths:
-      - 'public/api/customer/**'
-      - 'public/api/customer-*.php'
-      - 'public/api/admin/customer-agenc*.php'
-      - 'public/api/customer/agency-*.php'
-      - 'tests/website/customer-agency-verification.php'
-      - 'public/api/migrations/2026-11-27-customer-agency-verification.sql'
-      - 'admin-panel/src/pages/AgencyVerification.tsx'
-      - 'admin-panel/src/api.ts'
-      - 'admin-panel/src/App.tsx'
-      - 'admin-panel/src/components/Layout.tsx'
-      - 'tests/website/customer-publication-policy.php'
-      - 'tests/website/customer-agency-policy.php'
-      - 'tests/website/customer-agency-verification.php'
-      - 'public/api/migrations/2026-11-27-customer-agencies.sql'
-      - 'public/api/property-visibility.php'
-      - 'public/api/get-propert*.php'
-      - 'tests/website/customer-identity.php'
-      - 'tests/website/customer-firebase.php'
-      - 'tests/website/public-property-visibility.php'
-      - '.github/workflows/customer-identity-checks.yml'
+  workflow_dispatch:
 
 jobs:
   php-policy-tests:
