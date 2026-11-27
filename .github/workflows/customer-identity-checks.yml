@@ -9,6 +9,8 @@ on:
       - 'public/api/customer/**'
       - 'public/api/customer-*.php'
       - 'tests/website/customer-publication-policy.php'
+      - 'tests/website/customer-agency-policy.php'
+      - 'public/api/migrations/2026-11-27-customer-agencies.sql'
       - 'public/api/property-visibility.php'
       - 'public/api/get-propert*.php'
       - 'tests/website/customer-identity.php'
@@ -29,18 +31,23 @@ jobs:
           php -l public/api/customer-cors.php
           php -l public/api/customer-firebase-auth.php
           php -l public/api/customer-publication-policy.php
+          php -l public/api/customer-agency-policy.php
+          php -l public/api/customer/agencies.php
           php -l public/api/customer/me.php
           php -l public/api/property-visibility.php
           php -l public/api/get-properties.php
           php -l public/api/get-property.php
           php -l tests/website/customer-identity.php
           php -l tests/website/customer-publication-policy.php
+          php -l tests/website/customer-agency-policy.php
           php -l tests/website/customer-firebase.php
           php -l tests/website/public-property-visibility.php
       - name: Customer identity policy tests
         run: php tests/website/customer-identity.php
       - name: Customer property publishing eligibility tests
         run: php tests/website/customer-publication-policy.php
+      - name: Agency policy tests
+        run: php tests/website/customer-agency-policy.php
       - name: Customer Firebase verifier tests
         run: php tests/website/customer-firebase.php
       - name: Public property visibility tests
