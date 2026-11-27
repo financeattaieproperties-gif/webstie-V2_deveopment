@@ -47,6 +47,10 @@ export function AgencyOnboarding({ idToken }: { idToken: string }) {
         business_phone_e164: rep.agency.business_phone_e164 ?? '',
       });
       setDocuments(docs.documents);
+      setAgencyName(result.agency.legal_name);
+      setPublicName(result.agency.public_name);
+      setRegistrationReference(result.agency.registration_reference ?? '');
+      setDescription(result.agency.description ?? '');
     }
   }, [idToken]);
 
@@ -123,9 +127,48 @@ export function AgencyOnboarding({ idToken }: { idToken: string }) {
             <p className="font-semibold">{agency.public_name}</p>
             <p className="text-sm text-slate-600">Application: <strong className="capitalize">{agency.verification_status}</strong></p>
             {agency.rejection_reason && <p className="mt-2 text-sm text-red-800">Review feedback: {agency.rejection_reason}</p>}
+            {agency.verification_status === 'rejected' && (
+              <button type="button" disabled={busy} className="mt-3 rounded-xl bg-slate-950 text-white px-4 py-2 disabled:opacity-50"
+                onClick={() => void perform(() => customerAgencyApi.startRevision(idToken,agency.version),
+                  'Correction window opened. Update your information and documents, then submit for review.')}>
+                Correct and resubmit
+              </button>
+            )}
+            {agency.verification_status === 'revision' && (
+              <div className="mt-3 space-y-3">
+                <p className="text-sm text-slate-700">Correction round {agency.review_round}. Your previous review decisions and documents remain in the private audit history.</p>
+                <form className="space-y-3" onSubmit={(event) => {
+                  event.preventDefault();
+                  void perform(() => customerAgencyApi.updateBusinessProfile(idToken,agency.version,{
+                    legal_name:agencyName,public_name:publicName,registration_reference:registrationReference,description
+                  }), 'Agency business profile updated.');
+                }}>
+                  <label className="block text-sm font-medium">Registered business name
+                    <input required maxLength={200} className={fieldClass} value={agencyName} onChange={(e) => setAgencyName(e.target.value)}/>
+                  </label>
+                  <label className="block text-sm font-medium">Public agency name
+                    <input required maxLength={200} className={fieldClass} value={publicName} onChange={(e) => setPublicName(e.target.value)}/>
+                  </label>
+                  <label className="block text-sm font-medium">Registration reference
+                    <input maxLength={100} className={fieldClass} value={registrationReference} onChange={(e) => setRegistrationReference(e.target.value)}/>
+                  </label>
+                  <label className="block text-sm font-medium">Description
+                    <textarea maxLength={2000} rows={3} className={fieldClass} value={description} onChange={(e) => setDescription(e.target.value)}/>
+                  </label>
+                  <button disabled={busy} className="rounded-xl border border-slate-900 px-4 py-2 font-semibold disabled:opacity-50">
+                    Save corrected business profile
+                  </button>
+                </form>
+                <button type="button" disabled={busy} className="rounded-xl bg-emerald-800 text-white px-5 py-3 font-semibold disabled:opacity-50"
+                  onClick={() => void perform(() => customerAgencyApi.resubmit(idToken,agency.version),
+                    'Revised agency application submitted to Website Admin for another review.')}>
+                  Submit revised application for review
+                </button>
+              </div>
+            )}
             <p className="mt-2 text-xs text-slate-500">Agency verification does not automatically publish any listing.</p>
           </div>
-          {agency.verification_status === 'pending' && (
+          {(agency.verification_status === 'pending' || agency.verification_status === 'revision') && (
             <form className="space-y-4 rounded-2xl bg-white p-5 shadow-sm border border-slate-200"
               onSubmit={(event) => {
                 event.preventDefault();
