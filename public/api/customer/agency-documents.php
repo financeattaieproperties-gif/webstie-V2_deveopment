@@ -20,7 +20,7 @@ try {
     $agency=$stmt->get_result()->fetch_assoc();
     if (!$agency) json_out(['error'=>'Agency application required'],404);
     $agencyId=(int)$agency['id'];
-    $stmt=$db->prepare('SELECT id,document_type,original_filename,byte_size,uploaded_at FROM customer_agency_documents WHERE agency_id=? ORDER BY id DESC LIMIT 30');
+    $stmt=$db->prepare('SELECT id,document_type,original_filename,byte_size,uploaded_at FROM customer_agency_documents WHERE agency_id=? AND is_current=1 ORDER BY id DESC LIMIT 30');
     if (!$stmt) throw new RuntimeException('Document lookup unavailable');
     $stmt->bind_param('i',$agencyId);
     if (!$stmt->execute()) throw new RuntimeException('Document lookup failed');
