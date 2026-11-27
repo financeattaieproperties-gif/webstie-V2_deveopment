@@ -26,7 +26,7 @@ try {
                  a.verification_status,a.operational_status,a.rejection_reason,a.version,
                  a.created_at,a.updated_at,c.display_name AS owner_name,
                  c.email,c.email_verified,c.phone_e164,c.phone_verified,c.status AS owner_status,
-                 (SELECT COUNT(*) FROM customer_agency_documents d WHERE d.agency_id=a.id) AS document_count
+                 (SELECT COUNT(*) FROM customer_agency_documents d WHERE d.agency_id=a.id AND d.is_current=1) AS document_count
               FROM customer_agencies a JOIN customer_accounts c ON c.id=a.owner_customer_id";
         if ($filter!=='all') $sql.=" WHERE a.verification_status=?";
         $sql.=" ORDER BY a.created_at DESC,a.id DESC LIMIT 100";
@@ -81,14 +81,14 @@ try {
               'email_verified'=>$agency['email_verified'],
               'phone_verified'=>$agency['phone_verified']
             ];
-            $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=?');
+            $count=$db->prepare('SELECT COUNT(*) AS total FROM customer_agency_documents WHERE agency_id=? AND is_current=1');
             if (!$count) throw new RuntimeException('Document review unavailable');
             $count->bind_param('i',$agencyId);
             $count->execute();
             $total=(int)$count->get_result()->fetch_assoc()['total'];
             // A metadata row alone cannot prove a document is still securely stored.
             $dir=agency_private_storage_dir((string)(getenv('CUSTOMER_AGENCY_PRIVATE_DIR')?:''),(string)($_SERVER['DOCUMENT_ROOT']??''));
-            $files=$db->prepare('SELECT storage_key,sha256,byte_size FROM customer_agency_documents WHERE agency_id=?');
+            $files=$db->prepare('SELECT storage_key,sha256,byte_size FROM customer_agency_documents WHERE agency_id=? AND is_current=1');
             if (!$files) throw new RuntimeException('Document integrity query unavailable');
             $files->bind_param('i',$agencyId);
             if (!$files->execute()) throw new RuntimeException('Document integrity query failed');
