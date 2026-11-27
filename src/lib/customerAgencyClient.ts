@@ -4,11 +4,13 @@
  */
 const ROOT = (import.meta.env?.VITE_API_URL as string | undefined) || '/api';
 
-export type AgencyStatus = 'pending' | 'verified' | 'rejected';
+export type AgencyStatus = 'pending' | 'verified' | 'rejected' | 'revision';
 export type ContactMethod = 'email' | 'phone';
 
 export interface AgencyApplication {
   id: number;
+  version: number;
+  review_round: number;
   legal_name: string;
   public_name: string;
   registration_reference: string | null;
@@ -87,6 +89,19 @@ export const customerAgencyApi = {
         method: 'POST', body: JSON.stringify(data), isJson: true,
       },
     ),
+  startRevision: (token: string, version: number) =>
+    customerRequest<{agency_id:number;verification_status:'revision';version:number}>('/customer/agency-revision.php',token,{
+      method:'POST', body:JSON.stringify({action:'start_revision',version}),isJson:true
+    }),
+  resubmit: (token: string, version: number) =>
+    customerRequest<{agency_id:number;verification_status:'pending';version:number}>('/customer/agency-revision.php',token,{
+      method:'POST', body:JSON.stringify({action:'resubmit',version}),isJson:true
+    }),
+  updateBusinessProfile: (token:string,version:number, data:{
+    legal_name:string;public_name:string;registration_reference:string;description:string
+  }) => customerRequest<{success:true;version:number;verification_status:'revision'}>('/customer/agency-revision-details.php',token,{
+    method:'POST',body:JSON.stringify({...data,version}),isJson:true
+  }),
   getDocuments: (token: string) =>
     customerRequest<AgencyDocumentsResponse>('/customer/agency-documents.php', token),
   uploadDocument: (token: string, documentType: 'registration' | 'license', file: File) => {
