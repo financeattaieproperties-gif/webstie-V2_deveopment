@@ -83,10 +83,10 @@ export const customerAgencyApi = {
     customerRequest<{ agency: RepresentativeInfo & { id: number; verification_status: AgencyStatus } }>(
       '/customer/agency-verification.php', token,
     ),
-  saveRepresentative: (token: string, data: RepresentativeInfo) =>
+  saveRepresentative: (token: string, version: number, data: RepresentativeInfo) =>
     customerRequest<{ success: true; verification_status: AgencyStatus }>(
       '/customer/agency-verification.php', token, {
-        method: 'POST', body: JSON.stringify(data), isJson: true,
+        method: 'POST', body: JSON.stringify({...data,version}), isJson: true,
       },
     ),
   startRevision: (token: string, version: number) =>
@@ -104,9 +104,11 @@ export const customerAgencyApi = {
   }),
   getDocuments: (token: string) =>
     customerRequest<AgencyDocumentsResponse>('/customer/agency-documents.php', token),
-  uploadDocument: (token: string, documentType: 'registration' | 'license', file: File) => {
+  uploadDocument: (token: string, version: number, documentType: 'registration' | 'license', file: File) => {
+    if (!Number.isSafeInteger(version) || version < 1) throw new Error('Refresh your agency before uploading.');
     const payload = new FormData();
     payload.set('document_type', documentType);
+    payload.set('version', String(version));
     payload.set('document', file);
     return customerRequest<{ id: number; document_type: string; verification_status: AgencyStatus }>(
       '/customer/agency-document.php', token, { method: 'POST', body: payload },
