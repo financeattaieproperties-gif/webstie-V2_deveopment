@@ -44,7 +44,7 @@ try {
         json_out(['items'=>$items]);
     }
     $input=body();
-    if (array_diff(array_keys($input),['agency_id','version','decision','reason','business_contact_reviewed'])) {
+    if (array_diff(array_keys($input),['agency_id','version','decision','reason','business_contact_reviewed','documents_reviewed'])) {
         json_out(['error'=>'Unsupported review field'],422);
     }
     $agencyId=filter_var($input['agency_id']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
@@ -52,6 +52,7 @@ try {
     $decision=$input['decision']??null;
     $reason=$input['reason']??'';
     $businessReviewed=$input['business_contact_reviewed']??false;
+    $documentsReviewed=$input['documents_reviewed']??false;
     if (!$agencyId || !$version || !is_string($decision) || !in_array($decision,['verified','rejected'],true)
         || !is_string($reason) || strlen($reason)>1000 ||
         ($decision==='rejected' && trim($reason)==='')) {
@@ -59,6 +60,9 @@ try {
     }
     if (!is_bool($businessReviewed) || ($decision==='verified' && !$businessReviewed)) {
         json_out(['error'=>'Website Admin must explicitly confirm reviewing agency business contacts'],422);
+    }
+    if (!is_bool($documentsReviewed) || ($decision==='verified' && !$documentsReviewed)) {
+        json_out(['error'=>'Website Admin must confirm inspecting current agency documents'],422);
     }
     $reason=trim($reason);
     $reviewer=substr((string)($_SESSION['admin_user']??'website-admin'),0,120);
