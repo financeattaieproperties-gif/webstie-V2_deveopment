@@ -1,0 +1,71 @@
+name: Customer identity and public visibility PHP checks
+
+# Temporarily manual-only: GitHub-hosted jobs are currently failing before
+# reporting any steps, producing repeated notifications on each push/PR.
+# Restore automatic triggers only after resolving runner/account configuration
+# and a successful manually dispatched run.
+on:
+  workflow_dispatch:
+
+jobs:
+  php-policy-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PHP CLI version
+        run: php -v
+      - name: Lint changed customer API and visibility sources
+        run: |
+          php -l public/api/customer-identity.php
+          php -l public/api/customer-cors.php
+          php -l public/api/customer-firebase-auth.php
+          php -l public/api/customer-publication-policy.php
+          php -l public/api/customer-agency-policy.php
+          php -l public/api/customer-agency-revision-policy.php
+          php -l public/api/customer/agency-revision.php
+          php -l public/api/customer/agency-revision-details.php
+          php -l public/api/admin/customer-agency-history.php
+          php -l public/api/customer-agency-verification-policy.php
+          php -l public/api/customer-auth-context.php
+          php -l public/api/customer/agency-verification.php
+          php -l public/api/customer/agency-document.php
+          php -l public/api/customer/agency-documents.php
+          php -l public/api/admin/customer-agencies.php
+          php -l public/api/admin/customer-agency-document.php
+          php -l public/api/customer/agencies.php
+          php -l public/api/customer/me.php
+          php -l public/api/property-visibility.php
+          php -l public/api/get-properties.php
+          php -l public/api/get-property.php
+          php -l tests/website/customer-identity.php
+          php -l tests/website/customer-publication-policy.php
+          php -l tests/website/customer-agency-policy.php
+          php -l tests/website/customer-agency-revision.php
+          php -l tests/website/customer-agency-verification.php
+          php -l tests/website/customer-firebase.php
+          php -l tests/website/public-property-visibility.php
+      - name: Customer identity policy tests
+        run: php tests/website/customer-identity.php
+      - name: Customer property publishing eligibility tests
+        run: php tests/website/customer-publication-policy.php
+      - name: Agency policy tests
+        run: php tests/website/customer-agency-policy.php
+      - name: Agency correction and resubmission policy tests
+        run: php tests/website/customer-agency-revision.php
+      - name: Agency representative and documents policy tests
+        run: php tests/website/customer-agency-verification.php
+      - name: Customer Firebase verifier tests
+        run: php tests/website/customer-firebase.php
+      - name: Public property visibility tests
+        run: php tests/website/public-property-visibility.php
+
+  admin-typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p admin-panel/tsconfig.json

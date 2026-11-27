@@ -105,6 +105,31 @@ export const api = {
   },
   getCsrf: () => getCsrfToken(),
 
+  getCustomerAgencies: (status: 'pending' | 'verified' | 'rejected' | 'revision' | 'all' = 'pending') =>
+    request<{items:CustomerAgencyReview[]}>(`/admin/customer-agencies.php?status=${encodeURIComponent(status)}`),
+  reviewCustomerAgency: (payload: {agency_id:number;version:number;decision:'verified'|'rejected';reason:string;business_contact_reviewed:boolean;documents_reviewed:boolean}) =>
+    request<{agency_id:number;verification_status:'verified'|'rejected';version:number}>('/admin/customer-agencies.php', {method:'POST',body:JSON.stringify(payload)}),
+  getCustomerAgencyHistory: (agencyId: number) =>
+    request<{events: Array<{id:number;previous_status:string;next_status:string;reason:string|null;reviewer_username:string|null;review_round:number|null;created_at:string}>}>(`/admin/customer-agency-history.php?agency_id=${agencyId}`),
+  getCustomerAgencyDocuments: (agencyId: number) =>
+    request<{documents: Array<{id:number;document_type:string;original_filename:string;byte_size:number;is_current:boolean;superseded_at:string|null}>}>(`/admin/customer-agency-document.php?agency_id=${agencyId}`),
+  downloadCustomerAgencyDocument: async (agencyId:number, documentId:number, originalName:string) => {
+    const response=await fetch(`${BASE}/admin/customer-agency-document.php?agency_id=${agencyId}&document_id=${documentId}`,{credentials:'include',cache:'no-store'});
+    if(!response.ok) throw new Error('Unable to retrieve private document.');
+    const blob=await response.blob();
+    const url=URL.createObjectURL(blob);
+    try {
+      const link=document.createElement('a');
+      link.href=url;
+      link.download=originalName.replace(/[^a-zA-Z0-9._-]/g,'_')||'document';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+  },
+
   getProperties:    () => request<Property[]>('/admin/properties.php'),
   createProperty:   (data: PropertyInput) =>
     request<{ id: number }>('/admin/properties.php', { method: 'POST', body: JSON.stringify(data) }),
@@ -1027,3 +1052,33 @@ export interface SubmissionPost {
 }
 
 
+
+export interface CustomerAgencyReview {
+  id: number;
+  owner_customer_id: number;
+  legal_name: string;
+  public_name: string;
+  registration_reference: string | null;
+  representative_name: string;
+  representative_position: string;
+  representative_contact_method: 'email' | 'phone' | null;
+  business_email: string | null;
+  business_phone_e164: string | null;
+  business_contact_reviewed_at: string | null;
+  business_contact_reviewed_by: string | null;
+  verification_status: 'pending' | 'verified' | 'rejected' | 'revision';
+  review_round: number;
+  resubmitted_at: string | null;
+  operational_status: 'active' | 'suspended';
+  rejection_reason: string | null;
+  version: number;
+  document_count: number;
+  owner_name: string;
+  owner_status: 'active' | 'suspended' | 'deleted';
+  email: string | null;
+  email_verified: boolean;
+  phone_e164: string | null;
+  phone_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
