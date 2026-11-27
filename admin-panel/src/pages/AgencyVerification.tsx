@@ -12,6 +12,7 @@ export default function AgencyVerification() {
   const [loading, setLoading] = useState(true);
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [reviewedContacts, setReviewedContacts] = useState<Record<number, boolean>>({});
+  const [history, setHistory] = useState<Record<number, Array<{id:number;previous_status:string;next_status:string;reason:string|null;reviewer_username:string|null;review_round:number|null;created_at:string}>>>({});
   const [documents, setDocuments] = useState<Record<number, Array<{id:number;document_type:string;original_filename:string;byte_size:number}>>>({});
 
   const load = useCallback(async () => {
@@ -37,6 +38,16 @@ export default function AgencyVerification() {
       setDocuments((current) => ({ ...current, [agencyId]: response.documents }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to inspect documents.');
+    }
+  }
+
+  async function inspectHistory(agencyId: number) {
+    setError('');
+    try {
+      const response = await api.getCustomerAgencyHistory(agencyId);
+      setHistory((current) => ({ ...current, [agencyId]: response.events }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to load review history.');
     }
   }
 
@@ -98,7 +109,7 @@ export default function AgencyVerification() {
                   <h2 className="font-semibold text-lg">{agency.public_name}</h2>
                   <p className="text-sm text-slate-600">{agency.legal_name} · {agency.registration_reference || 'No registration reference provided'}</p>
                 </div>
-                <span className="text-sm font-semibold capitalize">{agency.verification_status}</span>
+                <span className="text-sm font-semibold capitalize">{agency.verification_status} · Round {agency.review_round}</span>
               </div>
               <dl className="grid gap-3 sm:grid-cols-2 text-sm">
                 <div><dt className="font-medium">Representative</dt><dd>{agency.representative_name || 'Not provided'} — {agency.representative_position || 'Role missing'}</dd></div>
@@ -110,6 +121,21 @@ export default function AgencyVerification() {
               <button type="button" onClick={() => void inspect(agency.id)} className="text-sm font-semibold underline underline-offset-4">
                 Inspect private documents
               </button>
+              <button type="button" onClick={() => void inspectHistory(agency.id)} className="ml-4 text-sm font-semibold underline underline-offset-4">
+                View review history
+              </button>
+              {history[agency.id] && (
+                <ol className="text-sm space-y-2 border border-slate-200 rounded-lg p-3" aria-label="Agency review history">
+                  {history[agency.id].map((event) => (
+                    <li key={event.id}>
+                      <strong>{event.previous_status} → {event.next_status}</strong>
+                      {' · Round '}{event.review_round ?? '—'}{' · '}{event.created_at}
+                      {event.reviewer_username && <> · Reviewed by {event.reviewer_username}</>}
+                      {event.reason && <p className="text-slate-600">{event.reason}</p>}
+                    </li>
+                  ))}
+                </ol>
+              )}
               {documents[agency.id] && <ul className="text-sm space-y-2">
                 {documents[agency.id].map((doc) => (
                   <li key={doc.id} className="flex items-center justify-between gap-3 border border-slate-100 rounded-lg p-2">
