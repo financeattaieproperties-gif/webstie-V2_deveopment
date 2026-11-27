@@ -107,7 +107,7 @@ export const api = {
 
   getCustomerAgencies: (status: 'pending' | 'verified' | 'rejected' | 'all' = 'pending') =>
     request<{items:CustomerAgencyReview[]}>(`/admin/customer-agencies.php?status=${encodeURIComponent(status)}`),
-  reviewCustomerAgency: (payload: {agency_id:number;version:number;decision:'verified'|'rejected';reason:string}) =>
+  reviewCustomerAgency: (payload: {agency_id:number;version:number;decision:'verified'|'rejected';reason:string;business_contact_reviewed:boolean}) =>
     request<{agency_id:number;verification_status:'verified'|'rejected';version:number}>('/admin/customer-agencies.php', {method:'POST',body:JSON.stringify(payload)}),
   getCustomerAgencyDocuments: (agencyId: number) =>
     request<{documents: Array<{id:number;document_type:string;original_filename:string;byte_size:number}>}>(`/admin/customer-agency-document.php?agency_id=${agencyId}`),
@@ -1060,6 +1060,10 @@ export interface CustomerAgencyReview {
   representative_name: string;
   representative_position: string;
   representative_contact_method: 'email' | 'phone' | null;
+  business_email: string | null;
+  business_phone_e164: string | null;
+  business_contact_reviewed_at: string | null;
+  business_contact_reviewed_by: string | null;
   verification_status: 'pending' | 'verified' | 'rejected';
   operational_status: 'active' | 'suspended';
   rejection_reason: string | null;
