@@ -81,6 +81,25 @@ try {
             $count->bind_param('i',$agencyId);
             $count->execute();
             $total=(int)$count->get_result()->fetch_assoc()['total'];
+            // A metadata row alone cannot prove a document is still securely stored.
+            $dir=agency_private_storage_dir((string)(getenv('CUSTOMER_AGENCY_PRIVATE_DIR')?:''),(string)($_SERVER['DOCUMENT_ROOT']??''));
+            $files=$db->prepare('SELECT storage_key,sha256,byte_size FROM customer_agency_documents WHERE agency_id=?');
+            if (!$files) throw new RuntimeException('Document integrity query unavailable');
+            $files->bind_param('i',$agencyId);
+            if (!$files->execute()) throw new RuntimeException('Document integrity query failed');
+            $fileRows=$files->get_result();
+            while ($doc=$fileRows->fetch_assoc()) {
+                $key=(string)$doc['storage_key'];
+                $path=$dir.DIRECTORY_SEPARATOR.$key;
+                $resolved=realpath($path);
+                if (!preg_match('/^[a-f0-9]{64}$/D',$key) || !$resolved ||
+                    !str_starts_with(str_replace('\\\\','/',$resolved),$dir.'/') ||
+                    !is_file($resolved) || filesize($resolved)!==(int)$doc['byte_size'] ||
+                    !hash_equals((string)$doc['sha256'],hash_file('sha256',$resolved))) {
+                    $db->rollback();
+                    json_out(['error'=>'Agency document integrity check failed'],422);
+                }
+            }
             $readiness=agency_approval_readiness($agency,$owner,$total);
             if (!$readiness['ready']) {
                 $db->rollback();json_out(['error'=>'Agency not ready: '.$readiness['reason']],422);
