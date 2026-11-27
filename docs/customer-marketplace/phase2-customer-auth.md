@@ -7,7 +7,7 @@ Status: **foundation in draft PR; not live or fully integrated.**
 Support both verified email and verified phone sign-in for website and Android users.
 One verified factor is sufficient for initial registration in the current foundation; 
 customers may link the second factor to the same Firebase UID. 
-**Product owner still needs to confirm whether both are mandatory for property publication.**
+**Owner decision (confirmed):** One verified email OR one verified phone number is sufficient for registration and initial property submission. An authorized, server-derived risk check can require additional verification (both methods) when necessary. A client-provided risk level must never bypass the server policy.
 
 Staff and customer identities must never be joined by matching email or phone.
 The customer Website database has its own `customer_accounts` table keyed by Firebase UID.
@@ -18,9 +18,10 @@ Existing CRM (`core_users`), Website Admin, and Submissions DB access are unchan
 - `public/api/migrations/2026-11-27-customer-identity.sql`: manual additive V2 Website MySQL migration
 - `public/api/customer-firebase-auth.php`: verified Firebase JWT and active account lookup
 - `public/api/customer-identity.php`: canonical verified claim mapping and profile field allowlist
+- `public/api/customer-publication-policy.php`: server-only standard and step-up verification requirements; not yet wired into a listing submission route
 - `public/api/customer-cors.php`: allowlisted browser origins with bearer Authorization headers
 - `public/api/customer/me.php`: GET own profile, POST create/sync own profile
-- `tests/website/customer-firebase.php`, `tests/website/customer-identity.php`: policy and token verification regression tests
+- `tests/website/customer-firebase.php`, `tests/website/customer-identity.php`, `tests/website/customer-publication-policy.php`: policy and token verification regression tests
 - `.github/workflows/customer-identity-checks.yml`: PHP lint + isolated policy tests
 
 ## Environment setup (manual; do not use staff secret configuration)
@@ -74,7 +75,8 @@ recoverable through verified email, cost controls enabled, and explicit user con
 7. Build Android Kotlin Compose login and recovery with matching API contract.
 8. Implement verified customer account deletion/recovery/identity update workflows.
 9. Add rate limits and abuse controls; monitor production telemetry before general availability.
-10. Add customer-owned property draft API only after identity integration passes.
+10. Add customer-owned property draft API only after identity integration passes, and enforce `customer_property_submission_decision` in the backend for every submission.
+11. Define server-derived risk triggers, review procedures and appeal/recovery before enabling step-up in production.
 
 ## Review constraints
 
