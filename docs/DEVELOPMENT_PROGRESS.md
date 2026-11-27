@@ -34,7 +34,7 @@ _Last updated: 2026-11-27. This is a development-branch ledger, not production a
 - Do not re-enable automatic triggers or report CI green without a successful run.
 
 ## Next safe work for Codex Terminal
-1. Pull branch and run `php -l` for changed customer/admin PHP files.
+1. Pull branch, run `npm ci`, then `bash scripts/verify-phase2.sh` (local PHP syntax, policy tests and website/admin TypeScript).
 2. Run `php tests/website/customer-agency-revision.php` and `php tests/website/customer-agency-verification.php`.
 3. Run `npm ci`, `npx tsc --noEmit` and `npx tsc --noEmit -p admin-panel/tsconfig.json`.
 4. Fix any verified type/build failures; check that the new customer route renders without Firebase config and fails safely.
